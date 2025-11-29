@@ -1,0 +1,46 @@
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <title>{% block title %}RH{% endblock %}</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  {% load static %}
+  <link rel="icon" href="{% static 'img/ZirkLogo.jpg' %}" type="image/jpeg">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <link rel="stylesheet" href="{% static 'core/style.css' %}">
+
+</head>
+<body>
+  <div class="app">
+    <aside class="sidebar">
+      <div class="brand"><div class="logo">RH</div><div><h3>Zirk • RH</h3><div class="user-summary"></div></div></div>
+      <nav class="nav">
+        <a href="{% url 'dashboard' %}">Painel</a>
+        <a href="{% url 'funcionarios:funcionarios' %}">Funcionários</a>
+        <a href="{% url 'ferias:listar_funcionarios' %}">Gerenciar Férias</a>
+        <a href="{% url 'ferias:listar_pagamentos' %}">Pagamentos de Férias</a>
+        <a href="{% url 'pagar:pagar' %}">Contas a Pagar</a>
+        <a href="{% url 'receber:receber' %}">Contas a Receber</a>
+        <a href="{% url 'ferias:teste' %}">Teste</a>
+
+      </nav>
+    </aside>
+    
+<!-- Barra de pesquisar ideia
+    <main class="content">
+      <div class="topbar">
+        <div class="search"><input placeholder="Pesquisar..." /></div>
+        <div class="flex">
+          <div class="small">Olá, Gestor</div>
+        </div>
+      </div>
+-->
+      <div class="container">
+        {% block content %}{% endblock %}
+      </div>
+
+    </main>
+  </div>
+</body>
+</html>
+

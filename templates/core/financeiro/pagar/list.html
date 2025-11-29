@@ -1,0 +1,38 @@
+{% extends "core/base.html" %}
+{% block title %}Contas a Pagar{% endblock %}
+{% block content %}
+<section class="panel">
+  <div class="panel-header"><h3>Contas a Pagar</h3><div class="controls"><a class="btn" href="{% url 'pagar:pagar_add' %}">Nova conta</a></div></div>
+  <table>
+    <thead>
+      <tr>
+        <th>Descrição</th>  
+        <th>Valor</th>
+        <th>Venc.</th>
+        <th>Status</th>
+        <th>Ações</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for it in list %}
+      <tr>
+        <td>{{ it.desc }}</td>
+        <td style="text-align:left">{{ it.value }}</td>
+        <td>{{ it.due }}</td><td>{{ it.status|capfirst }}</td>
+        <td class="row-actions">
+          <a class="btn ghost" href="{% url 'pagar:pagar_edit' it.pk %}">Editar</a>
+          <a class="btn ghost" href="{% url 'pagar:pagar_delete' it.pk %}">Excluir</a>
+        </td>
+      </tr>
+      {% empty %}
+      <tr>
+        <td colspan="6">Nenhuma conta</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  <br>
+  <div class="totals">Total a Pagar: <strong>{{ total|floatformat:2 }}</strong></div>
+</section>
+{% endblock %}
+

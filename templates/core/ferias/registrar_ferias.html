@@ -1,0 +1,10 @@
+{% extends "core/base.html" %}
+{% block content %}
+<h2>{% if editar %}Editar Período Aquisitivo{% else %}Registrar Período Aquisitivo{% endif %}</h2>
+<form method="post">
+    {% csrf_token %}
+    {{ form.as_p }}
+    <button type="submit" class="btn btn-primary">{% if editar %}Atualizar{% else %}Salvar{% endif %}</button>
+    <a href="{% url 'ferias:listar_funcionarios' %}" class="btn btn-secondary">Cancelar</a>
+</form>
+{% endblock %}

@@ -1,0 +1,190 @@
+{% extends "core/base.html" %}
+{% load static %}
+
+{% block title %}Gerenciar Férias - RH{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'core/ferias.css' %}">
+{% endblock %}
+
+{% block content %}
+<header>
+  <div class="search">
+    <input id="searchInput" type="search" placeholder="Pesquisar funcionário por nome..." />
+  </div>
+
+  <div class="top-actions">
+  <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modalPeriodo">
+    Registrar Período
+  </button>
+  <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#modalFerias">
+    Registrar Férias
+  </button>
+  </div>
+
+</header>
+
+<h1 class="title">Gerenciar Férias</h1>
+
+<main id="employeesGrid" class="grid">
+  {% for funcionario in funcionarios %}
+  <div class="employee">
+    <div class="employee-head">
+      <div class="avatar">{{ funcionario.nome|slice:":2"|upper }}</div>
+      <div class="emp-info">
+        <div class="emp-name">{{ funcionario.nome }}</div>
+        <div class="small">
+          Períodos: {{ funcionario.periodos_aquisitivos.count }} •
+          {% with total_ferias=0 %}
+            {% for periodo in funcionario.periodos_aquisitivos.all %}
+              {% with total_ferias=total_ferias|add:periodo.ferias_registradas.count %}{% endwith %}
+            {% endfor %}
+            Férias registradas: {{ total_ferias }}
+          {% endwith %}
+        </div>
+    </div>
+    <div style="text-align:right">
+      <div class="small">Saldo total</div>
+          <div style="font-weight:700">${calculateTotalSaldo(emp)} dias</div>
+      </div>
+    </div>
+
+    <div class="tabs">
+          <div class="tab active" data-tab="periods">Períodos Aquisitivos</div>
+          <div class="tab" data-tab="uses">Férias Gozadas</div>
+        </div>
+
+        <div class="content">
+          <div class="col panel" data-panel="periods">
+            {% if funcionario.periodos_aquisitivos.all %}
+              <table>
+                <thead>
+                  <tr>
+                    <th>Período</th>
+                    <th>Dias direito</th>
+                    <th>Tirados</th>
+                    <th>Saldo</th>
+                    <th>Ações</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for p in funcionario.periodos_aquisitivos.all %}
+                  <tr>
+                    <td>{{ p.data_inicio|date:"d/m/Y" }} → {{ p.data_fim|date:"d/m/Y" }}</td>
+                    <td>{{ p.dias_direito }}</td>
+                    <td>{{ p.total_dias_tirados }}</td>
+                    <td>{{ p.saldo_restante }}</td>
+                    <td>
+                      <div class="actions-row">
+                        <a href="{% url 'ferias:editar_periodo' p.pk %}" class="btn btn-ghost">Editar</a>
+                        <form method="post" action="{% url 'ferias:deletar_periodo' p.pk %}">
+                          {% csrf_token %}
+                          <button type="submit" class="btn btn-ghost" id=btn_exluir>Excluir</button>
+                        </form>
+                      </div>
+                    </td>
+                  </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            {% else %}
+              <div class="empty">Nenhum período aquisitivo registrado.</div>
+            {% endif %}
+          </div>
+
+          <!-- Férias -->
+          <div class="col panel" data-panel="uses" style="display:none">
+            {% if funcionario.periodos_aquisitivos.all %}
+              {% for periodo in funcionario.periodos_aquisitivos.all %}
+                {% for f in periodo.ferias_registradas.all %}
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>Período</th>
+                        <th>Dias</th>
+                        <th>Recesso</th>
+                        <th>Obs</th>
+                        <th>Ações</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr>
+                        <td>{{ f.data_inicio|date:"d/m/Y" }} → {{ f.data_fim|date:"d/m/Y" }}</td>
+                        <td>{{ f.dias_tirados }}</td>
+                        <td>{% if f.ferias_no_recesso_final_ano %}Sim{% else %}Não{% endif %}</td>
+                        <td>{{ f.observacoes|default:"-" }}</td>
+                        <td>
+                          <div class="actions-row">
+                            <a href="{% url 'ferias:editar_ferias' f.pk %}" class="btn btn-ghost">Editar</a>
+                            <form method="post" action="{% url 'ferias:deletar_ferias' f.pk %}">
+                              {% csrf_token %}
+                              <button type="submit" class="btn btn-ghost">Excluir</button>
+                            </form>
+                          </div>
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                {% endfor %}
+              {% endfor %}
+            {% else %}
+              <div class="empty">Nenhum registro de férias.</div>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+
+  </div>
+  {% empty %}
+  <div class="empty">Nenhum funcionário cadastrado.</div>
+  {% endfor %}
+</main>
+
+<link rel="stylesheet" href="{% static 'core/ferias.css' %}">
+
+<!-- Modal para Registrar Período Aquisitivo -->
+<div class="modal fade" id="modalPeriodo" tabindex="-1" aria-labelledby="modalPeriodoLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="modalPeriodoLabel">Registrar Período Aquisitivo</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+      </div>
+      <div class="modal-body">
+        <form method="POST" id="formPeriodo">
+          {% csrf_token %}
+          {{ form_periodo.as_p }}
+          <button type="submit" class="btn btn-primary" name="submit_periodo">Salvar Período</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal para Registrar Férias -->
+<div class="modal fade" id="modalFerias" tabindex="-1" aria-labelledby="modalFeriasLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="modalFeriasLabel">Registrar Férias</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+      </div>
+      <div class="modal-body">
+        <form method="POST" id="formFerias">
+          {% csrf_token %}
+          {{ form_uso.as_p }}
+          <button type="submit" class="btn btn-primary" name="submit_uso">Salvar Férias</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+
+
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/ferias.js' %}"></script>
+{% endblock %}

@@ -1,0 +1,88 @@
+{% extends "core/base.html" %}
+{% load static %}
+{% block content %}
+<h2>Gerenciar Férias</h2>
+
+<a href="{% url 'ferias:registrar_periodo' %}" class="btn btn-primary mb-3">Registrar Período Aquisitivo</a>
+<a href="{% url 'ferias:registrar_ferias' %}" class="btn btn-success mb-3">Registrar Férias Gozadas</a>
+
+<table class="table table-striped">
+    <thead>
+        <tr>
+            <th>Funcionário</th>
+            <th>Períodos Aquisitivos</th>
+            <th>Saldo de Férias</th>
+            <th>Ações</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for funcionario in funcionarios %}
+            <tr>
+                <td>{{ funcionario.nome }}</td>
+                <td>
+                    {% for periodo in funcionario.periodos_aquisitivos.all %}
+                        <div>
+                            <strong>{{ periodo.data_inicio }} → {{ periodo.data_fim }}</strong><br>
+                            Dias direito: {{ periodo.dias_direito }}<br>
+                            Total tirado (bruto): {{ periodo.total_dias_tirados }}<br> <br>
+                            <div class="mt-1">
+                                <a href="{% url 'ferias:editar_periodo' periodo.pk %}" class="btn btn-sm btn-outline-secondary">Editar</a>
+
+                                <form action="{% url 'ferias:deletar_periodo' periodo.pk %}" method="post" style="display:inline;">
+                                    {% csrf_token %}
+                                    <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('Deletar período aquisitivo? Isso também apagará os registros de férias vinculados.')">Deletar</button>
+                                </form>
+                            </div>
+                        </div>
+                    {% empty %}
+                        Nenhum período registrado
+                    {% endfor %}
+                </td>
+                <td>
+                    {% for periodo in funcionario.periodos_aquisitivos.all %}
+                        {{ periodo.saldo_restante }} dias restantes<br>
+                    {% empty %}
+                        -
+                    {% endfor %}
+                </td>
+
+
+<td>
+    {% for periodo in funcionario.periodos_aquisitivos.all %}
+        {% if periodo.ferias_registradas.all %}
+            <ul>
+                {% for ferias in periodo.ferias_registradas.all %}
+                    <li>
+                        <strong>{{ ferias.data_inicio }} → {{ ferias.data_fim }} </strong>
+                        <br>
+                        ({{ ferias.dias_tirados }} dias{% if ferias.faltas_justificadas_descontadas %}, 
+                        {{ ferias.faltas_justificadas_descontadas }} faltas descontadas{% endif %})
+                        {% if ferias.ferias_no_recesso_final_ano %}<strong> • Recesso</strong>{% endif %}
+                        <br>
+                        Observações: {{ ferias.observacoes|default:"-" }}<br> <br>
+                        <a href="{% url 'ferias:editar_ferias' ferias.pk %}" class="btn btn-sm btn-outline-secondary">Editar</a>
+                        <form action="{% url 'ferias:deletar_ferias' ferias.pk %}" method="post" style="display:inline;">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-sm btn-danger"
+                                    onclick="return confirm('Deseja deletar este registro de férias?')">
+                                Deletar
+                            </button>
+                        </form>
+                    </li>
+                {% endfor %}
+            </ul>
+        {% else %}
+            <p>Nenhum registro de férias ainda.</p>
+        {% endif %}
+    {% empty %}
+        <p>Sem períodos cadastrados.</p>
+    {% endfor %}
+</td>
+
+
+
+            </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endblock %}

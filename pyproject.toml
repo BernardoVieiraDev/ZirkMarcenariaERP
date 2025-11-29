@@ -1,0 +1,30 @@
+[project]
+name = "zirk-rh-financeiro"
+version = "0.1.0"
+description = "Plataforma de RH e financeiro desenvolvida em Django para a Zirk Marcenaria, incluindo cadastro de funcionários, folha de pagamento, controle de contas a pagar e receber, cálculo de comissões de arquitetos e geração de relatórios em planilhas automatizadas."
+authors = [
+    {name = "BernardoVieiraDev",email = "bernardovdev@gmail.com"}
+]
+license = {text = "Proprietary"}
+requires-python = ">=3.13"
+dependencies = [
+    "django",
+    "xlsxwriter",
+    "requests"
+]
+
+[tool.poetry]
+package-mode = false
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^8.4.2"
+black = "^25.1.0"
+flake8 = "^7.3.0"
+isort = "^6.0.1"
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"
+
+
+

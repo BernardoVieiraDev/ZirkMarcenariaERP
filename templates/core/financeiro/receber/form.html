@@ -1,0 +1,24 @@
+{% extends "core/base.html" %}
+{% block content %}
+
+<div class="form-wrapper">
+  <h1>{{ title }}</h1>
+
+  <form method="POST" enctype="multipart/form-data" class="form-container">
+    {% csrf_token %}
+
+    <section class="form-section">
+      {{ form.as_p }}
+    </section>
+    
+    <div class="form-actions">
+      <button type="submit" class="btn-primary">Salvar</button>
+      <a class="btn ghost" href="{% url 'pagar:pagar' %}">Cancelar</a>
+    </div>
+  </form>
+</div>
+
+
+{% endblock %}
+
+

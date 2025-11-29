@@ -1,0 +1,43 @@
+{% extends "core/base.html" %}
+{% block content %}
+<h2>Pagamentos de 1/3 de Férias</h2>
+
+<a href="{% url 'ferias:registrar_pagamento' %}" class="btn btn-primary mb-3">+ Novo Pagamento</a>
+
+<table class="table table-striped">
+    <thead>
+        <tr>
+            <th>Funcionário</th>
+            <th>Vencimento</th>
+            <th>Valor</th>
+            <th>Pago em</th>
+            <th>Recibo Contábil</th>
+            <th>Ações</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for p in pagamentos %}
+        <tr>
+            <td>{{ p.funcionario }}</td>
+            <td>{{ p.vencimento }}</td>
+            <td>R$ {{ p.valor_a_pagar }}</td>
+            <td>{{ p.data_pagamento|default:"—" }}</td>
+            <td>
+                {% if p.data_recibo_contabilidade %}
+                    {{ p.data_recibo_contabilidade }}
+                {% else %}
+                    —
+                {% endif %}
+            </td>
+            <td>
+                <form action="{% url 'ferias:deletar_pagamento' p.pk %}" method="post">
+                    {% csrf_token %}
+                    <button class="btn btn-sm btn-danger"
+                        onclick="return confirm('Deseja excluir este pagamento?')">Excluir</button>
+                </form>
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endblock %}

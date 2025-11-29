@@ -1,0 +1,377 @@
+/* Definindo variáveis de cores, fontes e outras propriedades gerais */
+:root {
+  /* Cores principais */
+  --bg: #f5f7fb; /* Fundo da página */
+  --surface: #ffffff; /* Cor de fundo dos elementos */
+  --muted: #6b7280; /* Cor de texto desbotado */
+  --text: #111827; /* Cor de texto principal */
+  --primary: #1f6feb; /* Cor principal (azul) */
+  --accent: #13a38c; /* Cor de destaque (verde) */
+  --danger: #e5544b; /* Cor de erro ou perigo (vermelho) */
+  
+  /* Propriedades de layout e fontes */
+  --radius: 10px; /* Raio para bordas arredondadas */
+  --gap: 18px; /* Espaçamento entre elementos */
+  font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial; /* Família de fontes */
+  font-size: 15px; /* Tamanho base da fonte */
+}
+
+/* Definindo o comportamento básico para todos os elementos */
+* {
+  box-sizing: border-box; /* Inclui o padding e border no cálculo de largura e altura */
+}
+
+html, body {
+  height: 100%; /* Garante que o body ocupe toda a altura da tela */
+  margin: 0; /* Remove as margens padrões */
+  background: var(--bg); /* Cor de fundo geral */
+  color: var(--text); /* Cor do texto geral */
+  -webkit-font-smoothing: antialiased; /* Melhora a suavização das fontes no Webkit */
+}
+
+/* Links */
+a {
+  color: inherit; /* Links herdam a cor do texto */
+  text-decoration: none; /* Remove o sublinhado dos links */
+}
+
+/* Botões */
+button {
+  font: inherit; /* Herda a fonte do elemento pai */
+}
+
+/* Estrutura da aplicação */
+.app {
+  display: grid; /* Usa grid layout para disposição dos elementos */
+  grid-template-columns: 260px 1fr; /* Sidebar fixa e conteúdo flexível */
+  gap: var(--gap); /* Espaçamento entre os elementos */
+  padding: 28px;
+  min-height: 100vh; /* A altura mínima da tela será 100% da altura da janela */
+}
+
+/* Sidebar */
+.sidebar {
+  background: var(--surface); /* Cor de fundo da sidebar */
+  border-radius: var(--radius); /* Bordas arredondadas */
+  padding: 18px;
+  box-shadow: 0 8px 28px rgba(15, 23, 42, 0.06); /* Sombras sutis */
+  display: flex;
+  flex-direction: column;
+  gap: 14px; /* Espaçamento entre os elementos */
+}
+
+/* Brand (logo + título) */
+.brand {
+  display: flex;
+  gap: 12px;
+  align-items: center; /* Alinha o logo e título no centro */
+}
+
+/* Logo */
+.logo {
+  width: 44px;
+  height: 44px;
+  border-radius: 8px; /* Bordas arredondadas */
+  background: linear-gradient(135deg, var(--primary), #6ea8ff); /* Gradiente de cor */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-weight: 700;
+  box-shadow: 0 6px 18px rgba(31, 111, 235, 0.12); /* Sombra leve */
+}
+
+/* Título da marca */
+.brand h3 {
+  margin: 0;
+  font-size: 1.03rem;
+}
+
+/* Resumo do usuário (ex. nome ou avatar) */
+.user-summary {
+  color: var(--muted); /* Texto desbotado */
+  font-size: 0.92rem;
+}
+
+/* Navegação */
+.nav {
+  display: flex;
+  flex-direction: column; /* Organiza os itens verticalmente */
+  gap: 6px; /* Espaçamento entre os links */
+  margin-top: 6px;
+}
+
+/* Links de navegação */
+.nav a {
+  display: flex;
+  align-items: center;
+  gap: 10px; /* Espaçamento entre o ícone e o texto */
+  padding: 10px;
+  border-radius: 8px; /* Bordas arredondadas */
+  color: var(--text); /* Cor do texto */
+  transition: background .14s, transform .08s; /* Efeito de transição ao passar o mouse */
+}
+
+/* Efeito de hover nos links de navegação */
+.nav a:hover {
+  background: #F3F6FB; /* Cor de fundo ao passar o mouse */
+  transform: translateY(-1px); /* Leve animação de movimento */
+}
+
+/* Estado ativo da navegação */
+.nav a.active {
+  background: linear-gradient(90deg, rgba(31, 111, 235, 0.06), rgba(31, 111, 235, 0.02)); /* Gradiente suave */
+  border-left: 4px solid var(--primary); /* Linha à esquerda do link ativo */
+  padding-left: 8px; /* Ajuste no padding */
+}
+
+/* Texto pequeno */
+.small {
+  color: var(--muted);
+  font-size: 0.88rem;
+}
+
+/* Conteúdo principal */
+.content {
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap);
+}
+
+/* Topbar (barra superior) */
+.topbar {
+  display: flex;
+  justify-content: space-between; /* Espaço entre os itens */
+  align-items: center;
+  background: var(--surface); /* Cor de fundo */
+  padding: 14px;
+  border-radius: 12px; /* Bordas arredondadas */
+  box-shadow: 0 8px 28px rgba(15, 23, 42, 0.05); /* Sombra suave */
+}
+
+/* Barra de pesquisa */
+.search {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: #F7FAFF; /* Cor de fundo */
+  padding: 8px 12px;
+  border-radius: 8px;
+  width: 520px; /* Largura fixa */
+}
+
+.search input {
+  border: 0;
+  background: transparent;
+  outline: none; /* Remove o contorno ao focar */
+  width: 100%;
+}
+
+/* Botões */
+.btn {
+  background: var(--primary); /* Cor de fundo do botão */
+  color: white;
+  border: 0;
+  padding: 9px 12px;
+  border-radius: 8px;
+  cursor: pointer; /* Cursor de pointer para indicar que é clicável */
+  font-weight: 600;
+  box-shadow: 0 8px 26px rgba(31, 111, 235, 0.12); /* Sombra suave */
+}
+
+/* Botão "ghost" (transparente) */
+.btn.ghost {
+  background: transparent;
+  color: var(--primary); /* Cor do texto igual à cor primária */
+  border: 1px solid rgba(31, 111, 235, 0.08); /* Borda fina */
+  box-shadow: none; /* Sem sombra */
+}
+
+/* Cartões */
+.cards {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr); /* Três colunas de cartões */
+  gap: 14px; /* Espaçamento entre os cartões */
+}
+
+/* Cartão individual */
+.card {
+  background: var(--surface);
+  padding: 14px;
+  border-radius: 12px;
+  box-shadow: 0 8px 30px rgba(15, 23, 42, 0.04);
+}
+
+.card h4 {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.92rem;
+}
+
+/* Métricas dentro dos cartões */
+.metric {
+  font-weight: 700;
+  font-size: 1.35rem;
+  margin-top: 6px;
+}
+
+/* Painel de controle */
+.panel {
+  background: var(--surface);
+  padding: 14px;
+  border-radius: 12px;
+  box-shadow: 0 8px 30px rgba(15, 23, 42, 0.04);
+}
+
+.panel-header {
+  display: flex;
+  justify-content: space-between; /* Alinha os itens nas extremidades */
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+/* Controles dentro de um painel */
+.controls {
+  display: flex;
+  gap: 8px; /* Espaçamento entre os controles */
+  align-items: center;
+}
+
+/* Campos de input */
+.input {
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px solid #E7EDF8; /* Borda leve */
+  background: #FBFCFE; /* Cor de fundo do input */
+  min-width: 140px;
+}
+
+/* Tabelas */
+table {
+  width: 100%; /* Tabela ocupa toda a largura disponível */
+  border-collapse: collapse; /* Remove o espaço entre as bordas das células */
+  font-size: 0.95rem;
+}
+
+thead th {
+  text-align: left;
+  padding: 10px 8px;
+  color: var(--muted); /* Texto de cabeçalho desbotado */
+  font-weight: 700;
+  border-bottom: 1px solid
+}
+
+/* ---------- FORM STYLE ---------- */
+.form-wrapper {
+  background: #fff;
+  padding: 2rem;
+  border-radius: 16px;
+  box-shadow: 0 0 20px rgba(0,0,0,0.05);
+  max-width: 800px;
+  margin: 2rem auto;
+}
+
+.form-wrapper h1 {
+  font-size: 1.8rem;
+  margin-bottom: 1.5rem;
+  color: #333;
+  text-align: center;
+}
+
+.form-section {
+  margin-bottom: 2rem;
+}
+
+.form-section h2 {
+  font-size: 1.2rem;
+  margin-bottom: 1rem;
+  color: #555;
+  border-bottom: 2px solid #eee;
+  padding-bottom: 0.4rem;
+}
+
+.form-container p {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 1rem;
+}
+
+.form-container label {
+  font-weight: 600;
+  margin-bottom: 0.3rem;
+  color: #444;
+}
+
+.form-container input,
+.form-container select,
+.form-container textarea {
+  padding: 0.7rem;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  font-size: 1rem;
+  transition: all 0.2s ease;
+}
+
+.form-container input:focus,
+.form-container select:focus,
+.form-container textarea:focus {
+  border-color: #008cff;
+  box-shadow: 0 0 0 2px rgba(0,140,255,0.2);
+  outline: none;
+}
+
+.form-actions {
+  text-align: center;
+  margin-top: 2rem;
+}
+
+.btn-primary {
+  background-color: #008cff;
+  color: #fff;
+  border: none;
+  padding: 0.8rem 2rem;
+  border-radius: 8px;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.btn-primary:hover {
+  background-color: #0073d1;
+}
+
+
+th, td {
+    padding: 12px 20px; /* Aumente o padding para mais espaçamento */
+    text-align: left;
+    border-bottom: 1px solid #ddd;
+}
+
+th {
+    background-color: #f4f4f4; /* Cor de fundo para os cabeçalhos */
+}
+
+tbody tr:hover {
+    background-color: #f9f9f9; /* Destaca a linha quando o mouse passa */
+}
+
+.row-actions {
+    display: flex;
+    gap: 12px; /* Garantir que os botões não se sobreponham */
+}
+
+.btn {
+    padding: 8px 16px; /* Ajuste o padding dos botões */
+    font-size: 0.9rem; /* Ajuste o tamanho da fonte dos botões */
+    border-radius: var(--radius); /* Adicione bordas arredondadas consistentes */
+    box-shadow: 0 6px 20px rgba(31, 111, 235, 0.1); /* Suaviza a sombra */
+    transition: all 0.2s ease; /* Adiciona transição para efeito visual */
+}
+
+/* Botão "ghost" */
+.btn.ghost {
+    background: transparent;
+    color: var(--primary);
+    border: 1px solid rgba(31, 111, 235, 0.08);
+    box-shadow: none;
+}
