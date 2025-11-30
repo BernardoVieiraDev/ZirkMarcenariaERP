@@ -20,3 +20,6 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+    
+# Get-ChildItem -Recurse -Directory -Filter "__pycache__" | Remove-Item -Recurse -Force

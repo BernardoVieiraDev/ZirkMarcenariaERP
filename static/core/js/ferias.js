@@ -1,3 +1,7 @@
+// Purpose of this file:
+// This script is connect with: 
+//    
+    
     let employees = [
       {
         id:1, name:'Bernardo Vieira', periods:[{id:11, start:'2025-11-01',end:'2026-01-01', daysRight:30, taken:4}], uses:[{id:101,start:'2025-11-07',end:'2025-11-11',days:4,type:'Recesso',notes:'2 faltas descontadas'}]

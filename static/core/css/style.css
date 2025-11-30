@@ -30,15 +30,17 @@ html, body {
 }
 
 /* Links */
-a,
-a:link,
-a:visited,
-a:hover,
-a:active,
-a:focus {
+a:not(.btn),
+a:not(.btn):link,
+a:not(.btn):visited,
+a:not(.btn):hover,
+a:not(.btn):active,
+a:not(.btn):focus {
   text-decoration: none !important;
   color: inherit !important;
 }
+
+
 /* Botões */
 button {
   font: inherit; /* Herda a fonte do elemento pai */
@@ -171,6 +173,7 @@ button {
   width: 100%;
 }
 
+
 /* Botões */
 .btn {
   background: var(--primary); /* Cor de fundo do botão */
@@ -181,13 +184,34 @@ button {
   font-weight: 600;
   box-shadow: 0 8px 26px rgba(31, 111, 235, 0.12); /* Sombra suave */
   font-size: 0.9rem; /* Ajuste o tamanho da fonte dos botões */
-
-  
   border-radius: var(--radius); /* Adicione bordas arredondadas consistentes */
   box-shadow: 0 6px 20px rgba(31, 111, 235, 0.1); /* Suaviza a sombra */
   transition: all 0.2s ease; /* Adiciona transição para efeito visual */
 
 }
+
+/* Botão específico com a classe .btn-accent */
+.btn-accent {
+  background: var(--primary); /* Cor de fundo do botão */
+  color: white;
+  border: 0;
+  padding: 8px 16px;
+  cursor: pointer; /* Cursor de pointer para indicar que é clicável */
+  font-weight: 600;
+  box-shadow: 0 8px 26px rgba(31, 111, 235, 0.12); /* Sombra suave */
+  font-size: 0.9rem; /* Ajuste o tamanho da fonte dos botões */
+  border-radius: var(--radius); /* Bordas arredondadas consistentes */
+  box-shadow: 0 6px 20px rgba(31, 111, 235, 0.1); /* Suaviza a sombra */
+  transition: all 0.2s ease; /* Adiciona transição para efeito visual */
+}
+
+/* Efeito de hover somente no botão com a classe .btn-accent */
+.btn-accent:hover {
+  background: #1a5dbd; /* Um tom mais escuro de #1f6feb */
+  color: #fff !important;
+}
+
+
 
 /* Botão "ghost" (transparente) */
 .btn.ghost {
@@ -374,15 +398,12 @@ tbody tr:hover {
 
 .row-actions a.btn {
     line-height: normal !important;
-    padding: 8px 16px !important;
+    padding: 5px 10px !important;
     display: inline-flex;
     align-items: center;
     justify-content: center;
     height: auto !important;
 }
-
-
-
 /* Botão "ghost" */
 .btn.ghost {
     background: transparent;

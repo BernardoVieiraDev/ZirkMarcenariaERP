@@ -4,27 +4,25 @@
 {% block title %}Gerenciar Férias - RH{% endblock %}
 
 {% block extra_css %}
-<link rel="stylesheet" href="{% static 'core/ferias.css' %}">
+<link rel="stylesheet" href="{% static 'core/css/ferias.css' %}">
 {% endblock %}
 
 {% block content %}
-<header>
-  <div class="search">
-    <input id="searchInput" type="search" placeholder="Pesquisar funcionário por nome..." />
-  </div>
+
+<h1 class="title">Gerenciar Férias</h1>
 
   <div class="top-actions">
-  <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modalPeriodo">
+  <button type="button" class="btn btn-sm btn-accent" data-bs-toggle="modal" data-bs-target="#modalPeriodo">
     Registrar Período
   </button>
-  <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#modalFerias">
+  <button type="button" class="btn btn-sm btn-accent" data-bs-toggle="modal" data-bs-target="#modalFerias">
     Registrar Férias
   </button>
   </div>
 
 </header>
 
-<h1 class="title">Gerenciar Férias</h1>
+
 
 <main id="employeesGrid" class="grid">
   {% for funcionario in funcionarios %}
