@@ -44,3 +44,4 @@ class DadosTrabalhistasForm(forms.ModelForm):
             'funcao': 'Função',  # ← aqui você muda o rótulo
             'data_admissao': 'Data de Admissão',  # exemplo adicional
         }
+

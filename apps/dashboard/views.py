@@ -13,7 +13,7 @@ def dashboard(request):
     
     cont_funcionarios = Funcionario.objects.count()
     pagar_total = Pagar.objects.exclude(status=StatusPagamento.PAGO).aggregate(total=Sum('value'))['total'] or 0
-    receber_total = Receber.objects.exclude(status='Pago').exclude(when__isnull=False).aggregate(total=Sum('value'))['total'] or 0
+    receber_total = Receber.objects.exclude(status='Pago').exclude(data_vencimento__isnull=False).aggregate(total=Sum('valor'))['total'] or 0
     
     # Filtrando contas a pagar para o mês atual
     pagar_preview = Pagar.objects.filter(due__month=current_month, due__year=current_year)[:5]

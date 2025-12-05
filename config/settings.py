@@ -27,7 +27,7 @@ INSTALLED_APPS = [
     'apps.financeiro.pagar.apps.PagarConfig',
     'apps.financeiro.receber.apps.ReceberConfig',
     'apps.ferias.apps.FeriasConfig',
-
+    'apps.banco_horas.apps.BancoHorasConfig',
 
 ]
 

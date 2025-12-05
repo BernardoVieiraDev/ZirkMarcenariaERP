@@ -7,10 +7,20 @@ from apps.funcionarios.models import Funcionario
 from .forms import FeriasForm, PagamentoFeriasForm, PeriodoAquisitivoForm
 from .models import Ferias, PagamentoFerias, PeriodoAquisitivo
 
-
 def listar_funcionarios(request):
-    funcionarios = Funcionario.objects.all().order_by('nome')
-    return render(request, 'core/ferias/listar_funcionarios.html', {'funcionarios': funcionarios})
+    funcionarios = (
+        Funcionario.objects
+        .select_related("banco_horas")  # pega o banco de horas
+        .prefetch_related(
+            "periodos_aquisitivos__ferias_registradas"  # pega férias
+        )
+        .order_by("nome")
+    )
+
+    return render(request, "core/ferias/listar_funcionarios.html", {
+        "funcionarios": funcionarios
+    })
+
 
 def registrar_periodo(request):
     if request.method == 'POST':
@@ -72,6 +82,7 @@ def editar_ferias(request, pk):
         form = FeriasForm(instance=registro)
     return render(request, 'core/ferias/registrar_ferias.html', {'form': form, 'editar': True})
 
+
 @require_POST
 def deletar_ferias(request, pk):
     registro = get_object_or_404(Ferias, pk=pk)
@@ -105,6 +116,9 @@ def calcular_saldo_total(funcionario):
     for periodo in funcionario.periodos_aquisitivos.all():
         saldo_total += periodo.saldo_restante  # ou outra lógica que você use para saldo
     return saldo_total
+
+
+
 
 def teste(request):
     funcionarios = Funcionario.objects.all().order_by('nome')

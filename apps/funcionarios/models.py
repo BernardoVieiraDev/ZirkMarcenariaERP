@@ -88,3 +88,4 @@ class DadosTrabalhistas(models.Model):
     contrato_experiencia_dias = models.PositiveIntegerField(null=True, blank=True)
     prorrogação_dias = models.PositiveIntegerField(null=True, blank=True)
 
+

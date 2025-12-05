@@ -5,8 +5,10 @@
 
 <a href="{% url 'ferias:registrar_periodo' %}" class="btn ">Registrar Período Aquisitivo</a>
 <a href="{% url 'ferias:registrar_ferias' %}" class="btn">Registrar Férias Gozadas</a>
+    <a href="{% url 'banco_horas:registrar' %}?func={{ funcionario.id }}" class="btn"> Lançar Horas</a>
 
-<table class="table table-striped">
+
+    <table class="table table-striped">
     <thead>
         <tr>
             <th>Funcionário</th>
@@ -14,6 +16,8 @@
             <th>Saldo de Férias</th>
             <th>Ações</th>
         </tr>
+
+
     </thead>
     <tbody>
         {% for funcionario in funcionarios %}

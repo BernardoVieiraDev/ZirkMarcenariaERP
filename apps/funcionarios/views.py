@@ -107,7 +107,13 @@ def deletar_funcionario(request, pk):
         obj.delete()
         return redirect('funcionarios:funcionarios')
     return render(request, 'core/funcionarios/delete.html', {'object': obj})
-
+"""
+def editar_banco_dehoras(request, pk):
+    funcionario = get_object_or_404(Funcionario, pk=pk)
+    return render(request, '', {
+        'banco_de_horas_form': ""
+    })
+"""
 def gerar_excel_funcionario(request, pk):
     funcionario = get_object_or_404(Funcionario, pk=pk)
 
@@ -143,3 +149,4 @@ def buscar_endereco_por_cep(request):
         })
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=500)
+

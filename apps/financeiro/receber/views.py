@@ -8,7 +8,7 @@ from .models import Receber
 # Create your views here.
 def receber_list(request):
     qs = Receber.objects.all()
-    total = qs.aggregate(total=Sum('value'))['total'] or 0
+    total = qs.aggregate(total=Sum('valor'))['total'] or 0
     return render(request, 'core/financeiro/receber/list.html', {'list': qs, 'total': total})
 
 def receber_create(request):
