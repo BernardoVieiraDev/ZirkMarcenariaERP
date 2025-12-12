@@ -19,10 +19,16 @@
         <a href="{% url 'funcionarios:funcionarios' %}">Funcionários</a>
         <a href="{% url 'ferias:listar_funcionarios' %}">Gerenciar Férias</a>
         <a href="{% url 'ferias:listar_pagamentos' %}">Pagamentos de Férias</a>
-        <a href="{% url 'pagar:pagar' %}">Contas a Pagar</a>
-        <a href="{% url 'receber:receber' %}">Contas a Receber</a>
+        <a href="{% url 'pagar:pagar_list' %}" class="nav-item">Contas a Pagar</a>
+        <a href="{% url 'pagar:pagar_create' %}" class="nav-item sub-item">Lançar Novo Gasto</a>
+        <a href="{% url 'receber:receber' %}" class="nav-item">Contas a Receber</a>
         <a href="{% url 'ferias:teste' %}">Teste</a>
-
+        <a href="{% url 'comissionamento:contratos_list' %}">Contratos de RT</a>
+        <a href="{% url 'comissionamento:arquiteta_create' %}">Adicionar arquiteto</a>
+        <a href="{% url 'comissionamento:contrato_create' %}">Adicionar contrato</a>
+        <a href="{% url 'banco_horas:banco_horas_list' %}">Banco hora</a>
+        <a href="{% url 'relatorios:listar_planilhas' %}">Planilhas</a>
+        
       </nav>
     </aside>
     

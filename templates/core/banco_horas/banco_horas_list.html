@@ -1,0 +1,47 @@
+{% extends "core/base.html" %}
+
+{% block title %}Saldos de Banco de Horas{% endblock %}
+
+{% block content %}
+<section class="panel">
+    <div class="panel-header">
+        <h3>{{ title }}</h3>
+        <div class="controls">
+            <a class="btn btn-primary" href="{% url 'banco_horas:registrar' %}">
+                + Novo Lançamento de Horas
+            </a>
+        </div>
+    </div>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Funcionário</th>
+                <th>Saldo Atual (Horas)</th>
+                <th>Última Atualização</th>
+                <th>Ações</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for banco in bancos %}
+            <tr>
+                <td>{{ banco.funcionario.nome }}</td>
+                <td>
+                    <strong style="color: {% if banco.saldo > 0 %}green{% elif banco.saldo < 0 %}red{% else %}gray{% endif %};">
+                        {{ banco.saldo|floatformat:2 }}
+                    </strong>
+                </td>
+                <td>{{ banco.atualizado_em|date:"d/m/Y H:i" }}</td>
+                <td class="row-actions">
+                    <a class="btn btn-sm btn-info" href="{% url 'banco_horas:banco_horas_edit' pk=banco.pk %}">Ajustar Saldo</a>
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="4">Nenhum banco de horas encontrado.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</section>
+{% endblock %}

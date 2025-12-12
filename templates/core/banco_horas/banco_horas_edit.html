@@ -1,0 +1,32 @@
+{% extends "core/base.html" %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<section class="panel">
+    <div class="panel-header">
+        <h3>{{ title }}</h3>
+    </div>
+    
+    <div class="panel-body">
+        <p>Ajuste o saldo atual do banco de horas de <strong>{{ banco.funcionario.nome }}</strong>. Saldo atual: {{ banco.saldo|floatformat:2 }}h.</p>
+        
+        <form method="post">
+            {% csrf_token %}
+            
+            {{ form.as_p }}
+            
+            {% if form.non_field_errors %}
+                <div class="alert alert-danger">
+                    {{ form.non_field_errors }}
+                </div>
+            {% endif %}
+
+            <div class="form-actions" style="margin-top: 20px;">
+                <button type="submit" class="btn btn-success">Salvar Ajuste</button>
+                <a href="{% url 'banco_horas:banco_horas_list' %}" class="btn btn-secondary">Cancelar</a>
+            </div>
+        </form>
+    </div>
+</section>
+{% endblock %}

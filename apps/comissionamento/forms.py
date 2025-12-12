@@ -1,0 +1,43 @@
+# comissionamento/forms.py
+
+from django import forms
+from .models import Arquiteta, ContratoRT
+
+class ArquitetaForm(forms.ModelForm):
+    class Meta:
+        model = Arquiteta
+        fields = ['nome', 'cpf', 'banco', 'agencia', 'conta']
+        
+        widgets = {
+            'nome': forms.TextInput(attrs={'class': 'form-control'}),
+            'cpf': forms.TextInput(attrs={'class': 'form-control'}),
+            'banco': forms.TextInput(attrs={'class': 'form-control'}),
+            'agencia': forms.TextInput(attrs={'class': 'form-control'}),
+            'conta': forms.TextInput(attrs={'class': 'form-control'}),
+        }
+        
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Opcional: Aqui você pode adicionar lógica de pré-preenchimento ou validação customizada
+        pass
+
+
+class ContratoRTForm(forms.ModelForm):
+    class Meta:
+        model = ContratoRT
+        fields = [
+            'arquiteta', 
+            'cliente', 
+            'data_contrato', 
+            'valor_servico', 
+            'valor_rt_total', 
+            'percentual_rt'
+        ]
+        widgets = {
+            'arquiteta': forms.Select(attrs={'class': 'form-select'}),
+            'cliente': forms.TextInput(attrs={'class': 'form-control'}),
+            'data_contrato': forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
+            'valor_servico': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
+            'valor_rt_total': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
+            'percentual_rt': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
+        }

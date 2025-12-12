@@ -1,0 +1,52 @@
+{% extends "core/base.html" %}
+{% block title %}Detalhe RT: {{ contrato.cliente }}{% endblock %}
+
+{% block content %}
+<section class="panel">
+    <div class="panel-header">
+        <h3>Contrato: {{ contrato.cliente }} ({{ contrato.arquiteta.nome }})</h3>
+        <div class="controls">
+<a class="btn" href="{% url 'comissionamento:pagamento_create' contrato_pk=contrato.pk %}">
+    + Registrar Pagamento
+</a>
+
+            <a class="btn btn-secondary" href="{% url 'comissionamento:contratos_list' %}">Voltar à Lista</a>
+        </div>
+    </div>
+
+    <div class="alert alert-info row">
+        <div class="col-md-4"><strong>RT Total Devida:</strong> R$ {{ contrato.valor_rt_total|floatformat:2 }}</div>
+        <div class="col-md-4"><strong>Total Pago:</strong> R$ {{ total_pago|floatformat:2 }}</div>
+        <div class="col-md-4">
+            <strong>SALDO DEVEDOR:</strong> 
+            <strong style="color: {% if contrato.saldo_devedor > 0 %} red{% else %}green{% endif %};">
+                R$ {{ contrato.saldo_devedor|floatformat:2 }}
+            </strong>
+        </div>
+    </div>
+    
+    <h4>Histórico de Parcelas Pagas</h4>
+    <table>
+        <thead>
+            <tr>
+                <th>Data do Pagamento</th>
+                <th>Valor Pago (R$)</th>
+                <th>Observações</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for pagamento in pagamentos %}
+            <tr>
+                <td>{{ pagamento.data_pagamento|date:"d/m/Y" }}</td>
+                <td>R$ {{ pagamento.valor_pago|floatformat:2 }}</td>
+                <td>{{ pagamento.observacoes|default:"N/A" }}</td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="3">Nenhum pagamento registrado para este contrato.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</section>
+{% endblock %}

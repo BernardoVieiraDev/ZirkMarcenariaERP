@@ -4,57 +4,94 @@
 {% block content %}
 
 <section class="cards">
-  <div class="card">
-    <h4>Funcionários ativos</h4>
-    <div class="metric">{{ cont_funcionarios }}</div>
-  </div>
-  <div class="card">
-    <h4>Contas a Pagar</h4>
-    <div class="metric">{{ pagar_total|floatformat:2 }}</div>
-  </div>
-  <div class="card">
-    <h4>Contas a Receber</h4>
-    <div class="metric">{{ receber_total|floatformat:2 }}</div>
-  </div>
+    <div class="card">
+        <h4>Funcionários ativos</h4>
+        <div class="metric">{{ cont_funcionarios }}</div>
+    </div>
+    <div class="card">
+        <h4>Contas a Pagar </h4>
+        <div class="metric">R$ {{ pagar_total|floatformat:2 }}</div>
+    </div>
+    <div class="card">
+        <h4>Contas a Receber</h4>
+        <div class="metric">R$ {{ receber_total|floatformat:2 }}</div>
+    </div>
 </section>
 <br>
 <section class="panel">
-  <h3>Contas deste mês</h3>
+    <h3>Próximas Contas a Pagar (Mês Atual)</h3>
 
-  <div class="table-container">
-    <table class="responsive-table">
-      <colgroup>
-        <col style="width: 45%">
-        <col style="width: 20%">
-        <col style="width: 20%">
-        <col style="width: 15%">
-      </colgroup>
+    <div class="table-container">
+        <table class="responsive-table">
+            <colgroup>
+                <col style="width: 35%">
+                <col style="width: 20%">
+                <col style="width: 15%">
+                <col style="width: 15%">
+                <col style="width: 15%">
+            </colgroup>
 
-      <thead>
-        <tr>
-          <th>Descrição</th>
-          <th>Valor</th>
-          <th>Venc.</th>
-          <th>Status</th>
-        </tr>
-      </thead>
+            <thead>
+                <tr>
+                    <th>Descrição</th>
+                    <th>Tipo</th>
+                    <th>Valor</th>
+                    <th>Venc.</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
 
-      <tbody>
-        {% for p in pagar_preview %}
-        <tr>
-          <td>{{ p.desc }}</td>
-          <td>{{ p.value }}</td>
-          <td>{{ p.due }}</td>
-          <td>{{ p.status|capfirst }}</td>
-        </tr>
-        {% empty %}
-        <tr>
-          <td colspan="4" class="empty-row">Nenhuma conta</td>
-        </tr>
-        {% endfor %}
-      </tbody>
-    </table>
-  </div>
+            <tbody>
+                {% for p in pagar_preview %}
+                <tr>
+                    <td>{{ p.descricao }}</td>
+                    
+                    <td>({{ p.get_model_name }})</td>
+
+                    <td>
+                        {% if p.valor_original %}
+                            R$ {{ p.valor_original|floatformat:2 }}
+                        {% elif p.valor_total %}
+                            R$ {{ p.valor_total|floatformat:2 }}
+                        {% else %}
+                            -
+                        {% endif %}
+                    </td>
+
+                    <td>
+                        {% with model_name=p.get_model_name %}
+                            {% if model_name == 'GastoGeral' or model_name == 'GastoGasolina' %}
+                                {% if p.data_gasto %}
+                                    {{ p.data_gasto|date:"d/m/Y" }}
+                                {% else %}
+                                    N/A
+                                {% endif %}
+                            {% else %}
+                                {% if p.data_vencimento %}
+                                    {{ p.data_vencimento|date:"d/m/Y" }}
+                                {% else %}
+                                    N/A
+                                {% endif %}
+                            {% endif %}
+                        {% endwith %}
+                    </td>
+                    
+                    <td>
+                        {% if p.status %}
+                            {{ p.get_status_display|capfirst }}
+                        {% else %}
+                            N/A
+                        {% endif %}
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="5" class="empty-row">Nenhuma conta agendada para este mês.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
 </section>
 
 {% endblock %}

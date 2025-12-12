@@ -1,0 +1,31 @@
+{% extends "core/base.html" %}
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<section class="panel">
+    <div class="panel-header">
+        <h3>{{ title }}</h3>
+    </div>
+    
+    <div class="panel-body">
+        <p>Registrando pagamento para: <strong>{{ contrato.cliente }}</strong> (RT Total: R$ {{ contrato.valor_rt_total|floatformat:2 }})</p>
+        
+        <form method="post">
+            {% csrf_token %}
+            
+            {{ form.as_p }}
+            
+            {% if form.non_field_errors %}
+                <div class="alert alert-danger">
+                    {{ form.non_field_errors }}
+                </div>
+            {% endif %}
+
+            <div class="form-actions" style="margin-top: 20px;">
+                <button type="submit" class="btn btn-success">Salvar Pagamento</button>
+                <a href="{% url 'comissionamento:contrato_detail' pk=contrato.pk %}" class="btn btn-secondary">Cancelar</a>
+            </div>
+        </form>
+    </div>
+</section>
+{% endblock %}

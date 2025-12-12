@@ -10,7 +10,6 @@ class PeriodoAquisitivo(models.Model):
     data_inicio = models.DateField()
     data_fim = models.DateField()
     dias_direito = models.PositiveIntegerField(default=30)
-    observacoes = models.TextField(blank=True)  # novo
 
     def __str__(self):
         return f"{self.funcionario.nome} - {self.data_inicio:%d/%m/%Y} a {self.data_fim:%d/%m/%Y}"
@@ -18,7 +17,7 @@ class PeriodoAquisitivo(models.Model):
     def dias_gozados(self):
         """Soma total de dias já tirados nesse período (descontando faltas já aplicadas nas férias)."""
         total = 0
-        for f in self.ferias_registradas.all(): 
+        for f in self.ferias_registradas.all(): #type: ignore
             # dias efetivamente consumidos no saldo = dias_tirados - faltas_justificadas_descontadas
             total += max(0, (f.dias_tirados - (f.faltas_justificadas_descontadas or 0)))
         return total
@@ -31,13 +30,11 @@ class PeriodoAquisitivo(models.Model):
     @property
     def total_dias_tirados(self):
         """Total bruto de dias tirados (sem subtrair faltas)"""
-        return sum(f.dias_tirados for f in self.ferias_registradas.all())
+        return sum(f.dias_tirados for f in self.ferias_registradas.all()) #type: ignore
 
 
 class Ferias(models.Model):
     periodo = models.ForeignKey(PeriodoAquisitivo, on_delete=models.CASCADE, related_name='ferias_registradas')
-    data_inicio = models.DateField()
-    data_fim = models.DateField()
     dias_tirados = models.PositiveIntegerField()
     faltas_justificadas_descontadas = models.PositiveIntegerField(default=0)  # novo
     observacoes = models.TextField(blank=True)  # novo
@@ -49,7 +46,7 @@ class Ferias(models.Model):
     criado_em = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
-        return f"Férias de {self.periodo.funcionario.nome} ({self.data_inicio:%d/%m/%Y} - {self.data_fim:%d/%m/%Y})"
+        return f"Férias de {self.periodo.funcionario.nome} ({self.data_inicio:%d/%m/%Y} - {self.data_fim:%d/%m/%Y})" #type: ignore
 
     def clean(self):
         # validações adicionais (opcional: usar full_clean em views)
@@ -68,7 +65,7 @@ class Ferias(models.Model):
             old = Ferias.objects.get(pk=self.pk)
             # saldo antes deste registro = periodo.dias_direito - (total gozados sem este registro)
             outros_total = sum(max(0, f.dias_tirados - (f.faltas_justificadas_descontadas or 0))
-                               for f in self.periodo.ferias_registradas.exclude(pk=self.pk))
+                               for f in self.periodo.ferias_registradas.exclude(pk=self.pk)) #type: ignore
             saldo_disponivel = self.periodo.dias_direito - outros_total
         else:
             # saldo atual sem este registro
@@ -99,7 +96,7 @@ class PagamentoFerias(models.Model):
         Calcula automaticamente o valor de 1/3 de férias se não for informado manualmente.
         """
         if not self.valor_a_pagar and hasattr(self.funcionario, 'salario'):
-            salario = Decimal(self.funcionario.salario)
+            salario = Decimal(self.funcionario.salario) #type: ignore
             valor = salario / Decimal(3)
             # arredondamento contábil: 2 casas, com meio para cima
             self.valor_a_pagar = valor.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
@@ -107,3 +104,9 @@ class PagamentoFerias(models.Model):
 
     def __str__(self):
         return f"Pagamento 1/3 Férias - {self.funcionario} ({self.vencimento})"
+"""    
+
+class RecibosContabilidade(models.Model):
+    funcionario = models.ForeignKey(Funcionario, on_delete=models.CASCADE, related_name='recibo contabilidade')
+    recibo_de_ferias_contabilidade = models.DateField()
+    observacoes = models.TextField()"""

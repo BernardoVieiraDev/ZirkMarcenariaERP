@@ -1,0 +1,10 @@
+
+
+<h1>{{ title }}</h1>
+
+<form method="post">
+    {% csrf_token %}
+    <h2>1. Selecione o Tipo de Gasto</h2>
+    {{ tipo_form.as_p }}
+    <button type="submit">Próximo</button>
+</form>

@@ -1,0 +1,159 @@
+import xlsxwriter
+from decimal import Decimal
+from datetime import date
+
+class PrestacaoEmprestimoExcelService:
+    COR_PRIMARIA_AZUL = '#004F9F'
+    COR_FUNDO_SECAO = '#D9E1F2'
+    COR_FUNDO_LABEL = '#F0F0F0'
+
+    @classmethod
+    def _define_formats(cls, workbook: xlsxwriter.Workbook):
+        """Formatos padrão com TÍTULO."""
+        return {
+            'title': workbook.add_format({
+                'bold': True, 'font_size': 14, 'align': 'center', 'valign': 'vcenter',
+                'fg_color': cls.COR_PRIMARIA_AZUL, 'font_color': '#FFFFFF',
+                'font_name': 'Calibri'
+            }),
+            'header_table': workbook.add_format({
+                'bold': True, 'font_size': 11, 'align': 'center', 'valign': 'vcenter',
+                'fg_color': cls.COR_PRIMARIA_AZUL, 'font_color': '#FFFFFF',
+                'font_name': 'Calibri', 'border': 1
+            }),
+            'data_text': workbook.add_format({
+                'align': 'left', 'valign': 'vcenter', 'border': 1,
+                'font_name': 'Calibri', 'font_size': 10
+            }),
+            'data_center': workbook.add_format({
+                'align': 'center', 'valign': 'vcenter', 'border': 1,
+                'font_name': 'Calibri', 'font_size': 10
+            }),
+            'data_date': workbook.add_format({
+                'align': 'center', 'valign': 'vcenter', 'border': 1,
+                'font_name': 'Calibri', 'font_size': 10,
+                'num_format': 'dd/mm/yyyy'
+            }),
+            'data_money': workbook.add_format({
+                'align': 'right', 'valign': 'vcenter', 'border': 1,
+                'font_name': 'Calibri', 'font_size': 10,
+                'num_format': 'R$ #,##0.00'
+            }),
+            'total_label': workbook.add_format({
+                'bold': True, 'align': 'right', 'valign': 'vcenter',
+                'font_name': 'Calibri', 'font_size': 11, 'bg_color': cls.COR_FUNDO_SECAO,
+                'border': 1
+            }),
+            'total_money': workbook.add_format({
+                'bold': True, 'align': 'right', 'valign': 'vcenter',
+                'font_name': 'Calibri', 'font_size': 11, 'bg_color': cls.COR_FUNDO_SECAO,
+                'num_format': 'R$ #,##0.00', 'border': 1
+            })
+        }
+
+    @staticmethod
+    def gerar_relatorio_prestacoes(gastos, caminho_arquivo="RELATORIO_PRESTACOES.xlsx"):
+        try:
+            wb = xlsxwriter.Workbook(caminho_arquivo)
+            ws = wb.add_worksheet("Prestações")
+            fmt = PrestacaoEmprestimoExcelService._define_formats(wb)
+
+            # Cabeçalhos
+            headers = [
+                "Descrição", 
+                "Nº Parc.", 
+                "Vencimento", 
+                "Data Pagamento", 
+                "Valor (R$)", 
+                "Valor Pago (R$)", 
+                "Juros (R$)",
+                "Observações"
+            ]
+
+            # Configurar largura das colunas
+            ws.set_column('A:A', 30) # Descrição
+            ws.set_column('B:B', 10) # Nº Parcela
+            ws.set_column('C:C', 15) # Vencimento
+            ws.set_column('D:D', 15) # Pagamento
+            ws.set_column('E:E', 15) # Valor
+            ws.set_column('F:F', 15) # Pago
+            ws.set_column('G:G', 12) # Juros
+            ws.set_column('H:H', 35) # Obs
+
+            row = 0
+
+            # --- TÍTULO NO TOPO ---
+            ws.set_row(row, 25)
+            # Mescla de A (0) até H (7)
+            ws.merge_range(row, 0, row, 7, "RELATÓRIO DE PRESTAÇÕES DE EMPRÉSTIMOS", fmt['title'])
+            row += 2 
+
+            # Escrever Cabeçalho da Tabela
+            for col_num, header in enumerate(headers):
+                ws.write(row, col_num, header, fmt['header_table'])
+
+            row += 1 
+            total_valor = Decimal('0.00')
+            total_pago = Decimal('0.00')
+
+            # Iterar sobre os gastos
+            for item in gastos:
+                # 1. Dados Básicos
+                desc = getattr(item, 'descricao', '') or ''
+                parcela = getattr(item, 'prestacao', '') or '' # Campo específico
+                obs = getattr(item, 'observacoes', '') or ''
+                
+                # 2. Datas
+                dt_venc = getattr(item, 'data_vencimento', None)
+                dt_pag = getattr(item, 'data_pagamento', None)
+
+                # 3. Valores
+                valor = getattr(item, 'valor', Decimal('0.00')) or Decimal('0.00')
+                val_pago = getattr(item, 'valor_pago', None)
+                juros = getattr(item, 'juros', Decimal('0.00')) or Decimal('0.00')
+
+                # Escrever na planilha
+                ws.write(row, 0, desc, fmt['data_text'])
+                ws.write(row, 1, parcela, fmt['data_center']) # Parcela centralizada
+                
+                # Datas
+                if dt_venc:
+                    ws.write(row, 2, dt_venc, fmt['data_date'])
+                else:
+                    ws.write(row, 2, '-', fmt['data_text'])
+
+                if dt_pag:
+                    ws.write(row, 3, dt_pag, fmt['data_date'])
+                else:
+                    ws.write(row, 3, '-', fmt['data_text'])
+
+                # Valores
+                ws.write(row, 4, valor, fmt['data_money'])
+                
+                if val_pago is not None:
+                    ws.write(row, 5, val_pago, fmt['data_money'])
+                    total_pago += val_pago
+                else:
+                    ws.write(row, 5, '-', fmt['data_text'])
+
+                ws.write(row, 6, juros, fmt['data_money'])
+                ws.write(row, 7, obs, fmt['data_text'])
+
+                # Soma totais
+                total_valor += valor
+                row += 1
+
+            # --- LINHA DE TOTAL ---
+            row += 1
+            ws.merge_range(row, 0, row, 3, "TOTAIS:", fmt['total_label'])
+            ws.write(row, 4, total_valor, fmt['total_money'])
+            ws.write(row, 5, total_pago, fmt['total_money'])
+            
+            print(f"✅ Relatório de Prestações gerado: {caminho_arquivo}")
+
+        except Exception as e:
+            print(f"❌ Erro ao gerar relatório de prestações: {e}")
+            raise e
+        finally:
+            if 'wb' in locals():
+                wb.close()

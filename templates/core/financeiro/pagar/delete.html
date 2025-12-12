@@ -5,7 +5,7 @@
   <p>Deseja excluir: {{ object }}</p>
   <form method="post">{% csrf_token %}
     <div style="display:flex;justify-content:flex-end;gap:8px">
-      <a class="btn ghost" href="{% url 'pagar:pagar' %}">Cancelar</a>
+      <a class="btn ghost" href="{% url 'pagar:pagar_list' %}">Cancelar</a>
       <button class="btn" type="submit">Excluir</button>
     </div>
   </form>

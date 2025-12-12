@@ -4,8 +4,7 @@ from .models import LancamentoHoras
 class LancamentoHorasForm(forms.ModelForm):
     class Meta:
         model = LancamentoHoras
-        fields = ['funcionario', 'horas', 'motivo']
+        fields = ['funcionario', 'horas']
 
         widgets = {
-            'motivo': forms.TextInput(attrs={'placeholder': 'Ex: horas extras, desconto, etc.'})
         }

@@ -7,21 +7,18 @@ from .models import Ferias, PagamentoFerias, PeriodoAquisitivo
 class PeriodoAquisitivoForm(forms.ModelForm):
     class Meta:
         model = PeriodoAquisitivo
-        fields = ['funcionario', 'data_inicio', 'data_fim', 'dias_direito', 'observacoes']
+        fields = ['funcionario', 'data_inicio', 'data_fim', 'dias_direito']
         widgets = {
             'data_inicio': forms.DateInput(attrs={'type': 'date'}),
             'data_fim': forms.DateInput(attrs={'type': 'date'}),
-            'observacoes': forms.Textarea(attrs={'rows': 3}),
         }
 
 class FeriasForm(forms.ModelForm):
     class Meta:
         model = Ferias
-        fields = ['periodo', 'data_inicio', 'data_fim', 'dias_tirados',
+        fields = ['periodo',  'dias_tirados',
                   'faltas_justificadas_descontadas', 'ferias_no_recesso_final_ano', 'ferias_no_carnaval', 'observacoes']
         widgets = {
-            'data_inicio': forms.DateInput(attrs={'type': 'date'}),
-            'data_fim': forms.DateInput(attrs={'type': 'date'}),
             'observacoes': forms.Textarea(attrs={'rows': 3}),
         }
 

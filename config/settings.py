@@ -28,7 +28,8 @@ INSTALLED_APPS = [
     'apps.financeiro.receber.apps.ReceberConfig',
     'apps.ferias.apps.FeriasConfig',
     'apps.banco_horas.apps.BancoHorasConfig',
-
+    'apps.comissionamento.apps.ComissionamentoConfig',
+    'apps.relatorios.apps.RelatoriosConfig'
 ]
 
 MIDDLEWARE = [

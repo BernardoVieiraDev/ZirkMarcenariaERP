@@ -1,0 +1,51 @@
+{% extends "core/base.html" %}
+{% block title %}Gestão de Remuneração Técnica{% endblock %}
+
+{% block content %}
+<section class="panel">
+    <div class="panel-header">
+        <h3>Contratos de RT</h3>
+        </div>
+
+    <div class="alert alert-info">
+        <strong>TOTAL DE RT DEVÍDA (Saldos Pendentes):</strong> R$ {{ total_rt_devida|floatformat:2 }}
+    </div>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Arquiteta</th>
+                <th>Cliente/Projeto</th>
+                <th>Valor Serviço (R$)</th>
+                <th>RT Total Devida (R$)</th>
+                <th>Saldo Pendente (R$)</th>
+                <th>Ações</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for contrato in contratos %}
+            <tr>
+                <td>{{ contrato.arquiteta.nome }}</td>
+                <td>{{ contrato.cliente }}</td>
+                <td>R$ {{ contrato.valor_servico|floatformat:2 }}</td>
+                <td>R$ {{ contrato.valor_rt_total|floatformat:2 }}</td>
+                
+                <td>
+                    <strong style="color: {% if contrato.saldo_devedor > 0 %}red{% else %}green{% endif %};">
+                        R$ {{ contrato.saldo_devedor|floatformat:2 }}
+                    </strong>
+                </td>
+                
+                <td class="row-actions">
+                    <a class="btn btn-sm btn-accent" href="{% url 'comissionamento:contrato_detail' pk=contrato.pk %}">Ver Detalhes</a>
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="6">Nenhum contrato de RT encontrado.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</section>
+{% endblock %}

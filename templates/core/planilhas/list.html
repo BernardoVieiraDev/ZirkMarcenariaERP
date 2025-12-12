@@ -1,0 +1,50 @@
+{% extends "core/base.html" %}
+{% block title %}Contas a Pagar{% endblock %}
+
+{% block content %}
+
+<a href="{% url 'relatorios:exportar_todos_boletos' %}" class="btn btn-success">
+        <i class="fa fa-file-excel-o"></i> Exportar Relatório de Boletos
+    </a>   
+    
+    <a href="{% url 'relatorios:exportar_utilidades' %}" class="btn btn-success">
+        <i class="fa fa-file-excel-o"></i> Exportar Relatório de Utilidades
+    </a>   
+    <a href="{% url 'relatorios:exportar_cheques' %}" class="btn btn-warning">
+    <i class="fa fa-money"></i> Exportar Cheques
+</a>
+<a href="{% url 'relatorios:exportar_contabilidade' %}" class="btn btn-info">
+    <i class="fa fa-calculator"></i> Exportar Contabilidade
+</a>
+<a href="{% url 'relatorios:exportar_cartoes' %}" class="btn btn-primary">
+    <i class="fa fa-credit-card"></i> Exportar Cartões (PF)
+</a>
+<a href="{% url 'relatorios:exportar_bndes' %}" class="btn btn-secondary">
+    <i class="fa fa-handshake-o"></i> Exportar BNDES
+</a>
+<a href="{% url 'relatorios:exportar_gastos_gerais' %}" class="btn btn-default" style="background-color: #6c757d; color: white;">
+    <i class="fa fa-shopping-cart"></i> Exportar Gastos Gerais
+</a>
+<a href="{% url 'relatorios:exportar_veiculos' %}" class="btn btn-dark" style="background-color: #343a40; color: white;">
+    <i class="fa fa-car"></i> Exportar Consórcios/Carros
+</a>
+<a href="{% url 'relatorios:exportar_condominio' %}" class="btn btn-primary" style="background-color: #004F9F; color: white;">
+    <i class="fa fa-building-o"></i> Exportar Condomínio/Taxas
+</a>
+<a href="{% url 'relatorios:exportar_iptu' %}" class="btn btn-info" style="color: white;">
+    <i class="fa fa-home"></i> Exportar IPTU
+</a>
+<a href="{% url 'relatorios:exportar_gasolina' %}" class="btn">
+    <i class="fa fa-car"></i> Exportar Gasolina
+</a>
+<a href="{% url 'relatorios:exportar_comissoes' %}" class="btn btn-purple" style="background-color: #6f42c1; color: white;">
+    <i class="fa fa-users"></i> Exportar Comissões (RT)
+</a>
+<a href="{% url 'relatorios:exportar_prestacoes' %}" class="btn btn-warning" style="background-color: #ffc107; color: #212529;">
+    <i class="fa fa-university"></i> Exportar Empréstimos
+</a>
+<a href="{% url 'relatorios:exportar_folha' %}" class="btn btn-warning" style="background-color: #ffc107; color: #212529;">
+    <i class="fa fa-university"></i> Exportar Folha Pagamento
+</a>
+
+{% endblock %}

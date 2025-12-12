@@ -23,7 +23,6 @@ class LancamentoHoras(models.Model):
         related_name='lancamentos_horas'
     )
     horas = models.DecimalField(max_digits=6, decimal_places=2)
-    motivo = models.CharField(max_length=255, blank=True)
     data = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
