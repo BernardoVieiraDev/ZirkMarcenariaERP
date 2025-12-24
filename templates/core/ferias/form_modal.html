@@ -1,0 +1,44 @@
+<form method="POST" action="{{ request.path }}">
+    {% csrf_token %}
+    
+    <div class="modal-header">
+        <h3 class="modal-title">
+            {% if object %}Editar Pagamento{% else %}Novo Pagamento{% endif %}
+        </h3>
+        <button type="button" class="btn-close" onclick="closeActionModal()">✕</button>
+    </div>
+    
+    <div class="modal-body">
+        {% if form.non_field_errors %}
+            <div class="alert alert-danger">
+                {{ form.non_field_errors }}
+            </div>
+        {% endif %}
+
+        <div class="form-grid">
+            {% for field in form %}
+            <div class="form-group">
+                <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+                {{ field }}
+                
+                {% if field.help_text %}
+                    <div style="font-size: 12px; color: #64748b; margin-top: 4px;">
+                        {{ field.help_text }}
+                    </div>
+                {% endif %}
+
+                {% if field.errors %}
+                    <div style="color:red; font-size:11px; margin-top: 2px;">
+                        {{ field.errors.0 }}
+                    </div>
+                {% endif %}
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    
+    <div class="modal-footer">
+        <button type="button" class="rh-btn rh-btn-ghost" onclick="closeActionModal()">Cancelar</button>
+        <button type="submit" class="rh-btn rh-btn-primary">Salvar Alterações</button>
+    </div>
+</form>

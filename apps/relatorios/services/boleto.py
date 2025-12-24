@@ -1,3 +1,4 @@
+import io
 import xlsxwriter
 from decimal import Decimal
 from datetime import date
@@ -59,11 +60,21 @@ class BoletoExcelService:
         }
 
     @staticmethod
-    def gerar_relatorio_geral(boletos, caminho_arquivo="RELATORIO_BOLETOS.xlsx"):
+    def gerar_relatorio_geral(boletos, workbook=None):
+        # Controle para saber se devemos fechar o arquivo ao final (Modo Individual)
+        output = None
+        should_close = False
+
+        if workbook is None:
+            # 1. Cria o buffer em memória se não receber um workbook existente
+            output = io.BytesIO()
+            # 2. Inicializa o Workbook
+            workbook = xlsxwriter.Workbook(output, {'in_memory': True})
+            should_close = True
+        
         try:
-            wb = xlsxwriter.Workbook(caminho_arquivo)
-            ws = wb.add_worksheet("Boletos")
-            fmt = BoletoExcelService._define_formats(wb)
+            ws = workbook.add_worksheet("Boletos")
+            fmt = BoletoExcelService._define_formats(workbook)
 
             # Cabeçalhos das colunas
             headers = [
@@ -77,17 +88,17 @@ class BoletoExcelService:
             ]
 
             # Configurar largura das colunas
-            ws.set_column('A:A', 30) 
-            ws.set_column('B:B', 20) 
-            ws.set_column('C:C', 15) 
-            ws.set_column('D:D', 15) 
-            ws.set_column('E:E', 15) 
-            ws.set_column('F:F', 12) 
-            ws.set_column('G:G', 15) 
+            ws.set_column('A:A', 30) #type: ignore
+            ws.set_column('B:B', 20) #type: ignore
+            ws.set_column('C:C', 15) #type: ignore
+            ws.set_column('D:D', 15) #type: ignore
+            ws.set_column('E:E', 15) #type: ignore
+            ws.set_column('F:F', 12) #type: ignore
+            ws.set_column('G:G', 15) #type: ignore
 
             row = 0
 
-            # --- ADICIONADO: TÍTULO NO TOPO ---
+            # --- TÍTULO NO TOPO ---
             ws.set_row(row, 25) # Altura da linha maior
             # Mescla da coluna 0 (A) até a 6 (G)
             ws.merge_range(row, 0, row, 6, "RELATÓRIO DE BOLETOS", fmt['title'])
@@ -146,11 +157,15 @@ class BoletoExcelService:
             ws.write(row, 3, "", fmt['total_label']) 
             ws.write(row, 4, total_pago, fmt['total_money'])  # Total Pago
             
-            print(f"✅ Relatório de Boletos gerado: {caminho_arquivo}")
+            print(f"✅ Relatório de Boletos gerado em memória.")
 
         except Exception as e:
             print(f"❌ Erro ao gerar relatório: {e}")
             raise e
         finally:
-            if 'wb' in locals():
-                wb.close()
+            # Só fecha e retorna se foi criado dentro deste método (Modo Individual)
+            if should_close and workbook:
+                workbook.close()
+                if output:
+                    output.seek(0)
+                    return output

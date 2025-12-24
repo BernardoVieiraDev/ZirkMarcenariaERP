@@ -7,9 +7,17 @@ from .models import Receber
 
 # Create your views here.
 def receber_list(request):
-    qs = Receber.objects.all()
+    qs = Receber.objects.all().order_by('-data_vencimento') # Ordenação recomendada
     total = qs.aggregate(total=Sum('valor'))['total'] or 0
-    return render(request, 'core/financeiro/receber/list.html', {'list': qs, 'total': total})
+    
+    # --- NOVO: Formulário vazio para o Modal ---
+    form = ReceberForm()
+    
+    return render(request, 'core/financeiro/receber/list.html', {
+        'list': qs, 
+        'total': total, 
+        'form': form
+    })
 
 def receber_create(request):
     if request.method == 'POST':

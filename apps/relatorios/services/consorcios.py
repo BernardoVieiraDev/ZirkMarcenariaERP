@@ -1,3 +1,4 @@
+import io
 import xlsxwriter
 from decimal import Decimal
 from datetime import date
@@ -48,11 +49,21 @@ class GastoVeiculoConsorcioExcelService:
         }
 
     @staticmethod
-    def gerar_relatorio_veiculos(gastos, caminho_arquivo="RELATORIO_VEICULOS.xlsx"):
+    def gerar_relatorio_veiculos(gastos, workbook=None):
+        # Controle para saber se devemos fechar o arquivo ao final (Modo Individual)
+        output = None
+        should_close = False
+
+        if workbook is None:
+            # 1. Cria o buffer em memória se não receber um workbook existente
+            output = io.BytesIO()
+            # 2. Inicializa o Workbook
+            workbook = xlsxwriter.Workbook(output, {'in_memory': True})
+            should_close = True
+        
         try:
-            wb = xlsxwriter.Workbook(caminho_arquivo)
-            ws = wb.add_worksheet("Consórcios e Veículos")
-            fmt = GastoVeiculoConsorcioExcelService._define_formats(wb)
+            ws = workbook.add_worksheet("Consórcios e Veículos")
+            fmt = GastoVeiculoConsorcioExcelService._define_formats(workbook)
 
             # Cabeçalhos das colunas
             headers = [
@@ -68,15 +79,15 @@ class GastoVeiculoConsorcioExcelService:
             ]
 
             # Configurar largura das colunas
-            ws.set_column('A:A', 25) # Veículo
-            ws.set_column('B:B', 15) # Tipo
-            ws.set_column('C:C', 30) # Descrição
-            ws.set_column('D:D', 15) # Vencimento
-            ws.set_column('E:E', 15) # Pagamento
-            ws.set_column('F:F', 15) # Valor
-            ws.set_column('G:G', 15) # Valor Pago
-            ws.set_column('H:H', 12) # Juros
-            ws.set_column('I:I', 35) # Obs
+            ws.set_column('A:A', 25) # Veículo#type: ignore
+            ws.set_column('B:B', 15) # Tipo#type: ignore
+            ws.set_column('C:C', 30) # Descrição#type: ignore
+            ws.set_column('D:D', 15) # Vencimento#type: ignore
+            ws.set_column('E:E', 15) # Pagamento#type: ignore
+            ws.set_column('F:F', 15) # Valor#type: ignore
+            ws.set_column('G:G', 15) # Valor Pago#type: ignore
+            ws.set_column('H:H', 12) # Juros#type: ignore
+            ws.set_column('I:I', 35) # Obs#type: ignore
 
             row = 0
 
@@ -149,11 +160,15 @@ class GastoVeiculoConsorcioExcelService:
             ws.write(row, 5, total_valor, fmt['total_money'])
             ws.write(row, 6, total_pago, fmt['total_money'])
             
-            print(f"✅ Relatório de Veículos gerado: {caminho_arquivo}")
+            print(f"✅ Relatório de Veículos gerado em memória.")
 
         except Exception as e:
             print(f"❌ Erro ao gerar relatório de veículos: {e}")
             raise e
         finally:
-            if 'wb' in locals():
-                wb.close()
+            # Só fecha e retorna se foi criado dentro deste método (Modo Individual)
+            if should_close and workbook:
+                workbook.close()
+                if output:
+                    output.seek(0)
+                    return output

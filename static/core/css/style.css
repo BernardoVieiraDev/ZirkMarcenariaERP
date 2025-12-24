@@ -454,6 +454,49 @@ tbody tr:hover {
   color: var(--muted);
 }
 
+
+/* item normal */
+.nav-item-link {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px;
+  border-radius: 8px;
+  color: #e5e7eb;
+  transition: background 0.15s ease, transform 0.08s ease;
+}
+
+.nav-item-link:hover {
+  background: rgba(31, 111, 235, 0.08);
+  transform: translateY(-1px);
+}
+
+/* ITEM ATIVO */
+.nav-item-link.active {
+  background: linear-gradient(
+    90deg,
+    rgba(31, 111, 235, 0.18),
+    rgba(31, 111, 235, 0.05)
+  );
+  border-left: 4px solid #1f6feb;
+  padding-left: 6px;
+  color: #1f6feb;
+  font-weight: 600;
+}
+
+/* ícones também ficam azuis */
+.nav-item-link.active svg {
+  color: #1f6feb;
+}
+
+/* submenus */
+.nav-link.small.active {
+  color: #1f6feb !important;
+  font-weight: 600;
+}
+
+
+
 /* =====================
    RESPONSIVIDADE
 ===================== */

@@ -1,52 +1,133 @@
+<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
   <meta charset="utf-8" />
   <title>{% block title %}RH{% endblock %}</title>
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   {% load static %}
+
   <link rel="icon" href="{% static 'img/ZirkLogo.jpg' %}" type="image/jpeg">
+
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-  <link rel="stylesheet" href="{% static 'core/css/style.css' %}">
 
+  <link rel="stylesheet" href="{% static 'core/css/style.css' %}">
 </head>
+
 <body>
-  <div class="app">
-    <aside class="sidebar">
-      <div class="brand"><div class="logo">RH</div><div><h3>Zirk • RH</h3><div class="user-summary"></div></div></div>
-      <nav class="nav">
-        <a href="{% url 'dashboard' %}">Painel</a>
-        <a href="{% url 'funcionarios:funcionarios' %}">Funcionários</a>
-        <a href="{% url 'ferias:listar_funcionarios' %}">Gerenciar Férias</a>
-        <a href="{% url 'ferias:listar_pagamentos' %}">Pagamentos de Férias</a>
-        <a href="{% url 'pagar:pagar_list' %}" class="nav-item">Contas a Pagar</a>
-        <a href="{% url 'pagar:pagar_create' %}" class="nav-item sub-item">Lançar Novo Gasto</a>
-        <a href="{% url 'receber:receber' %}" class="nav-item">Contas a Receber</a>
-        <a href="{% url 'ferias:teste' %}">Teste</a>
-        <a href="{% url 'comissionamento:contratos_list' %}">Contratos de RT</a>
-        <a href="{% url 'comissionamento:arquiteta_create' %}">Adicionar arquiteto</a>
-        <a href="{% url 'comissionamento:contrato_create' %}">Adicionar contrato</a>
-        <a href="{% url 'banco_horas:banco_horas_list' %}">Banco hora</a>
-        <a href="{% url 'relatorios:listar_planilhas' %}">Planilhas</a>
-        
-      </nav>
-    </aside>
-    
-<!-- Barra de pesquisar ideia
-    <main class="content">
-      <div class="topbar">
-        <div class="search"><input placeholder="Pesquisar..." /></div>
-        <div class="flex">
-          <div class="small">Olá, Gestor</div>
+<div class="app">
+
+  <!-- SIDEBAR -->
+<aside class="sidebar">
+    <div class="brand">
+      <div class="logo">RH</div>
+      <div>
+        <h3>Zirk • RH</h3>
+        <div class="user-summary"></div>
+      </div>
+    </div>
+
+    <nav class="nav flex-column p-2">
+
+      {% with request.resolver_match.view_name as route %}
+
+      <a class="nav-link text-white nav-item-link {% if route == 'dashboard' %}active{% endif %}" 
+         href="{% url 'dashboard' %}">
+        <span class="nav-left">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M3 13h8V3H3v10zM13 21h8v-8h-8v8zM13 3v8h8V3h-8zM3 21h8v-6H3v6z"/>
+          </svg>
+          <span class="nav-text">Painel</span>
+        </span>
+      </a>
+
+      <div class="nav-item mt-2">
+        <a class="nav-link text-white nav-item-link {% if 'funcionarios' in route or 'ferias' in route or 'banco_horas' in route %}active{% endif %}"
+           data-bs-toggle="collapse"
+           href="#menuRH"
+           aria-expanded="{% if 'funcionarios' in route or 'ferias' in route or 'banco_horas' in route %}true{% else %}false{% endif %}">
+
+          <span class="nav-left">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12 12c2.7 0 5-2.3 5-5s-2.3-5-5-5-5 2.3-5 5 2.3 5 5 5zm0 2c-3.3 0-10 1.7-10 5v2h20v-2c0-3.3-6.7-5-10-5z"/></svg>
+            <span class="nav-text">Funcionários</span>
+          </span>
+          <span class="nav-right">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 9 6 6 6-6"></path></svg>
+          </span>
+        </a>
+
+        <div class="collapse ps-3 mt-1 {% if 'funcionarios' in route or 'ferias' in route or 'banco_horas' in route %}show{% endif %}" id="menuRH">
+          <a class="nav-link text-white-50 small {% if route == 'funcionarios:funcionarios' %}active{% endif %}" href="{% url 'funcionarios:funcionarios' %}">Funcionários</a>
+          <a class="nav-link text-white-50 small {% if route == 'ferias:listar_funcionarios' %}active{% endif %}" href="{% url 'ferias:listar_funcionarios' %}">Gestão de Férias</a>
+          <a class="nav-link text-white-50 small {% if route == 'ferias:listar_pagamentos' %}active{% endif %}" href="{% url 'ferias:listar_pagamentos' %}">Pagamentos Férias</a>
+          <a class="nav-link text-white-50 small {% if route == 'banco_horas:banco_horas_list' %}active{% endif %}" href="{% url 'banco_horas:banco_horas_list' %}">Banco de Horas</a>
         </div>
       </div>
--->
-      <div class="container">
-        {% block content %}{% endblock %}
+
+      <div class="nav-item mt-2">
+        <a class="nav-link text-white nav-item-link {% if 'receber' in route or 'pagar' in route %}active{% endif %}"
+           data-bs-toggle="collapse"
+           href="#menuFinanceiro"
+           aria-expanded="{% if 'receber' in route or 'pagar' in route %}true{% else %}false{% endif %}">
+
+          <span class="nav-left">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M2 7h20v2H2V7zm0 6h20v2H2v-2z"/></svg>
+            <span class="nav-text">Financeiro</span>
+          </span>
+          <span class="nav-right">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 9 6 6 6-6"></path></svg>
+          </span>
+        </a>
+
+        <div class="collapse ps-3 mt-1 {% if 'receber' in route or 'pagar' in route %}show{% endif %}" id="menuFinanceiro">
+          <a class="nav-link text-white-50 small {% if route == 'receber:receber' %}active{% endif %}" href="{% url 'receber:receber' %}">Contas a Receber</a>
+          <a class="nav-link text-white-50 small {% if route == 'pagar:pagar_list' %}active{% endif %}" href="{% url 'pagar:pagar_list' %}">Contas a Pagar</a>
+          <a class="nav-link text-white-50 small {% if route == 'pagar:pagar_create' %}active{% endif %}" href="{% url 'pagar:pagar_create' %}">+ Lançar Gasto</a>
+        </div>
       </div>
 
-    </main>
-  </div>
+      <div class="nav-item mt-2">
+        <a class="nav-link text-white nav-item-link {% if 'comissionamento' in route %}active{% endif %}"
+           data-bs-toggle="collapse"
+           href="#menuComercial"
+           aria-expanded="{% if 'comissionamento' in route %}true{% else %}false{% endif %}">
+
+          <span class="nav-left">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l2 4-2 4-2-4 2-4zm0 8v12m-6 0l6-6 6 6"/></svg>
+            <span class="nav-text">Arquitetos / RT</span>
+          </span>
+          <span class="nav-right">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 9 6 6 6-6"></path></svg>
+          </span>
+        </a>
+
+        <div class="collapse ps-3 mt-1 {% if 'comissionamento' in route %}show{% endif %}" id="menuComercial">
+          <a class="nav-link text-white-50 small {% if route == 'comissionamento:contratos_list' %}active{% endif %}" href="{% url 'comissionamento:contratos_list' %}">Contratos</a>
+          <a class="nav-link text-white-50 small {% if route == 'comissionamento:arquiteta_list' %}active{% endif %}" href="{% url 'comissionamento:arquiteta_list' %}">Arquitetos</a>
+          <a class="nav-link text-white-50 small {% if route == 'comissionamento:contrato_create' %}active{% endif %}" href="{% url 'comissionamento:contrato_create' %}">+ Novo Contrato</a>
+        </div>
+      </div>
+
+      <a class="nav-link text-white nav-item-link mt-2 {% if 'relatorios' in route %}active{% endif %}"
+         href="{% url 'relatorios:listar_planilhas' %}">
+        <span class="nav-left">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M3 3h18v18H3V3zm4 3v12h10V6H7z"/>
+          </svg>
+          <span class="nav-text">Planilhas</span>
+        </span>
+      </a>
+
+      {% endwith %} </nav>
+  </aside>
+
+  <!-- CONTEÚDO -->
+  <main class="content">
+    <div class="container">
+      {% block content %}{% endblock %}
+    </div>
+  </main>
+
+</div>
 </body>
 </html>
-

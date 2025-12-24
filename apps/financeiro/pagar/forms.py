@@ -28,7 +28,9 @@ GASTO_MODEL_CHOICES = [
     ('GastoVeiculoConsorcio', 'Consórcios e Carros (IPVA/Seguro)'),
     ('GastoImovel', 'IPTU e Condomínio (Alphaville)'),
     ('GastoGasolina', 'Gastos com Gasolina'),
-    ('FolhaPagamento', 'Folha de pagamento')
+    ('FolhaPagamento', 'Folha de pagamento'),
+    ('ComissaoArquiteto', 'Comissão Arquiteto'),
+
 ]
 
 class TipoGastoForm(forms.Form):
@@ -109,7 +111,7 @@ class BoletoForm(GastoBaseForm):
 class GastoUtilidadeForm(GastoBaseForm):
     class Meta:
         model = GastoUtilidade
-        fields = GastoBaseForm.Meta.fields + ['tipo_cliente']
+        fields = ['tipo_cliente']+ GastoBaseForm.Meta.fields 
         widgets = GastoBaseForm.Meta.widgets
         widgets['tipo_cliente'] = forms.Select(attrs={'class': 'form-select'})
 
@@ -120,7 +122,7 @@ class FaturaCartaoForm(GastoBaseForm):
         model = FaturaCartao
         # Manter a lógica de remoção da descrição:
         base_fields = GastoBaseForm.Meta.fields[:]
-        fields = base_fields + ['cartao']
+        fields = ['cartao'] + base_fields 
         widgets = GastoBaseForm.Meta.widgets
         widgets['cartao'] = forms.Select(attrs={'class': 'form-select'})
 # Campos: GastoBase + emprestimo, numero_parcela
@@ -136,7 +138,7 @@ class PrestacaoEmprestimoForm(GastoBaseForm):
 class GastoVeiculoConsorcioForm(GastoBaseForm):
     class Meta:
         model = GastoVeiculoConsorcio
-        fields = GastoBaseForm.Meta.fields + ['tipo_gasto', 'veiculo_referencia']
+        fields = ['tipo_gasto', 'veiculo_referencia']+GastoBaseForm.Meta.fields 
         widgets = GastoBaseForm.Meta.widgets
         widgets['tipo_gasto'] = forms.Select(attrs={'class': 'form-select'})
         widgets['veiculo_referencia'] = forms.TextInput(attrs={'class': 'form-control'})
@@ -192,7 +194,7 @@ class GastoGeralForm(forms.ModelForm):
         fields = '__all__'
         widgets = {
             'descricao': forms.TextInput(attrs={'class': 'form-control'}),
-            'data_gasto': forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
+            'data_gasto': forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}, format='%Y-%m-%d'),
             'valor_total': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
             'valor_dinheiro_pix': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
             'valor_cartao': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
@@ -216,7 +218,7 @@ class PagamentoFuncionarioForm(forms.ModelForm):
         fields = '__all__'
         widgets = {
             'funcionario': forms.Select(attrs={'class': 'form-select'}),
-            'mes_referencia': forms.DateInput(attrs={'type': 'month', 'class': 'form-control'}),
+            'mes_referencia': forms.DateInput(attrs={'type': 'month', 'class': 'form-control'}, format='%Y-%m-%d'),
             'salario_real': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
             'adiantamento': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
             'terco_ferias': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
@@ -232,7 +234,7 @@ class ComissaoArquitetoForm(forms.ModelForm):
         fields = '__all__'
         widgets = {
             'arquiteto': forms.Select(attrs={'class': 'form-select'}),
-            'data_pagamento': forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
+            'data_pagamento': forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}, format='%Y-%m-%d'),
             'valor_comissao': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
             'observacoes': forms.Textarea(attrs={'rows': 3, 'class': 'form-control'}),
         }
@@ -259,8 +261,8 @@ class FolhaPagamentoForm(forms.ModelForm):
             }),
             'data_referencia': forms.DateInput(attrs={
                 'type': 'date',
-                'class': 'form-control'
-            }),
+                'class': 'form-control',},
+                format='%Y-%m-%d'),
             'salario_real': forms.NumberInput(attrs={
                 'class': 'form-control money-mask', # Classe para máscaras de JS se tiver
                 'step': '0.01',

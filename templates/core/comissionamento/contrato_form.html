@@ -8,12 +8,10 @@
     </div>
     
     <div class="panel-body">
-        <p>Preencha os detalhes do contrato de RT. O **Saldo Devedor** será calculado automaticamente.</p>
+        <p>Preencha os detalhes do contrato de RT. O Saldo Devedor será calculado automaticamente.</p>
         
         <form method="post">
             {% csrf_token %}
-            
-            {{ form.as_p }}
             
             {% if form.non_field_errors %}
                 <div class="alert alert-danger">
@@ -21,8 +19,12 @@
                 </div>
             {% endif %}
 
+            {{ form.as_p }}
+            
             <div class="form-actions" style="margin-top: 20px;">
-                <button type="submit" class="btn btn-success">Salvar Contrato e Dívida</button>
+                <button type="submit" class="btn btn-success">
+                    {% if edit_mode %}Salvar Alterações{% else %}Cadastrar Contrato{% endif %}
+                </button>
                 <a href="{% url 'comissionamento:contratos_list' %}" class="btn btn-secondary">Cancelar</a>
             </div>
         </form>

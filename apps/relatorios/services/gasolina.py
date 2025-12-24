@@ -1,3 +1,4 @@
+import io
 import xlsxwriter
 from decimal import Decimal
 from datetime import date
@@ -48,11 +49,21 @@ class GastoGasolinaExcelService:
         }
 
     @staticmethod
-    def gerar_relatorio_gasolina(gastos, caminho_arquivo="RELATORIO_GASOLINA.xlsx"):
+    def gerar_relatorio_gasolina(gastos, workbook=None):
+        # Controle para saber se devemos fechar o arquivo ao final (Modo Individual)
+        output = None
+        should_close = False
+
+        if workbook is None:
+            # 1. Cria o buffer em memória se não receber um workbook existente
+            output = io.BytesIO()
+            # 2. Inicializa o Workbook
+            workbook = xlsxwriter.Workbook(output, {'in_memory': True})
+            should_close = True
+        
         try:
-            wb = xlsxwriter.Workbook(caminho_arquivo)
-            ws = wb.add_worksheet("Gasolina")
-            fmt = GastoGasolinaExcelService._define_formats(wb)
+            ws = workbook.add_worksheet("Gasolina")
+            fmt = GastoGasolinaExcelService._define_formats(workbook)
 
             # Cabeçalhos solicitados
             headers = [
@@ -63,10 +74,10 @@ class GastoGasolinaExcelService:
             ]
 
             # Configurar largura das colunas
-            ws.set_column('A:A', 25) # Carro
-            ws.set_column('B:B', 15) # Data
-            ws.set_column('C:C', 18) # Valor
-            ws.set_column('D:D', 40) # Descrição (mais larga)
+            ws.set_column('A:A', 25) # Carro#type: ignore
+            ws.set_column('B:B', 15) # Data#type: ignore
+            ws.set_column('C:C', 18) # Valor#type: ignore
+            ws.set_column('D:D', 40) # Descrição (mais larga)#type: ignore
 
             row = 0
 
@@ -113,11 +124,15 @@ class GastoGasolinaExcelService:
             ws.write(row, 2, total_valor, fmt['total_money'])
             ws.write(row, 3, "", fmt['total_label']) # Célula vazia para fechar a borda na descrição
             
-            print(f"✅ Relatório de Gasolina gerado: {caminho_arquivo}")
+            print(f"✅ Relatório de Gasolina gerado em memória.")
 
         except Exception as e:
             print(f"❌ Erro ao gerar relatório de gasolina: {e}")
             raise e
         finally:
-            if 'wb' in locals():
-                wb.close()
+            # Só fecha e retorna se foi criado dentro deste método (Modo Individual)
+            if should_close and workbook:
+                workbook.close()
+                if output:
+                    output.seek(0)
+                    return output

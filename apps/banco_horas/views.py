@@ -1,6 +1,5 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
-
 from apps.funcionarios.models import Funcionario
 from .models import BancoHoras, LancamentoHoras
 from .forms import LancamentoHorasForm
@@ -18,11 +17,11 @@ def registrar_horas(request):
             banco.save()
 
             messages.success(request, "Horas registradas com sucesso!")
-            return redirect('ferias:listar_funcionarios')
-    else:
-        form = LancamentoHorasForm()
-
-    return render(request, 'core/banco_horas/registrar_horas.html', {'form': form})
+            # Alterado para voltar para a lista de banco de horas
+            return redirect('banco_horas:banco_horas_list') 
+            
+    # Se der erro ou for GET direto (fallback), renderiza a página antiga ou redireciona
+    return redirect('banco_horas:banco_horas_list')
 
 
 def banco_horas_list(request):
@@ -30,18 +29,21 @@ def banco_horas_list(request):
     Lista todos os saldos de Banco de Horas dos funcionários.
     """
     # Garante que um BancoHoras exista para cada funcionário, se for o caso
-    funcionarios = Funcionario.objects.all().prefetch_related('banco_horas')
+    # (Opcional: criar objetos BancoHoras se não existirem, mas o prefetch abaixo funciona)
     
-    # Busca os saldos existentes (usando select_related para performance)
     bancos = BancoHoras.objects.select_related('funcionario').order_by('funcionario__nome')
+
+    # --- NOVO: Formulário para o Modal ---
+    form = LancamentoHorasForm()
 
     context = {
         'bancos': bancos,
+        'form': form, # Enviando o formulário
         'title': 'Saldos de Banco de Horas'
     }
     return render(request, 'core/banco_horas/banco_horas_list.html', context)
 
-# Criando um ModelForm simples para editar apenas o saldo
+# ... (Mantenha o resto do arquivo: BancoHorasEditForm e banco_horas_edit) ...
 class BancoHorasEditForm(forms.ModelForm):
     class Meta:
         model = BancoHoras
@@ -50,17 +52,16 @@ class BancoHorasEditForm(forms.ModelForm):
             'saldo': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
         }
 
+# Mantenha os imports existentes
+
 def banco_horas_edit(request, pk):
-    """
-    Permite editar o saldo do Banco de Horas manualmente (Ajuste).
-    """
     banco = get_object_or_404(BancoHoras, pk=pk)
     
     if request.method == 'POST':
         form = BancoHorasEditForm(request.POST, instance=banco)
         if form.is_valid():
             form.save()
-            messages.success(request, f"Saldo de Banco de Horas de {banco.funcionario.nome} ajustado com sucesso!")
+            messages.success(request, f"Saldo de {banco.funcionario.nome} ajustado com sucesso!")
             return redirect('banco_horas:banco_horas_list')
     else:
         form = BancoHorasEditForm(instance=banco)
@@ -68,6 +69,28 @@ def banco_horas_edit(request, pk):
     context = {
         'form': form,
         'banco': banco,
-        'title': f'Ajustar Saldo de {banco.funcionario.nome}'
+        'title': f'Ajustar Saldo'
     }
+
+    # SE FOR AJAX, RETORNA O MODAL
+    if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+        return render(request, 'core/banco_horas/form_modal.html', context)
+
+    # Fallback normal
     return render(request, 'core/banco_horas/banco_horas_edit.html', context)
+
+# ADICIONE ESTA NOVA VIEW
+def banco_horas_delete(request, pk):
+    banco = get_object_or_404(BancoHoras, pk=pk)
+    
+    if request.method == 'POST':
+        banco.delete()
+        messages.success(request, f"Banco de horas de {banco.funcionario.nome} removido.")
+        return redirect('banco_horas:banco_horas_list')
+
+    # SE FOR AJAX, RETORNA O MODAL
+    if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+        return render(request, 'core/banco_horas/delete_modal.html', {'object': banco})
+        
+    # Fallback (caso precise de uma página dedicada, crie o template delete.html depois)
+    return redirect('banco_horas:banco_horas_list')

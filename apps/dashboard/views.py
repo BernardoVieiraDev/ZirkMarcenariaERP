@@ -1,77 +1,107 @@
 from django.shortcuts import render
 from django.db.models import Sum, Q
 from decimal import Decimal
-from datetime import datetime
+from datetime import datetime, timedelta
 
-# 1. IMPORTS CORRIGIDOS: Importe todos os seus modelos de gastos
-from apps.financeiro.pagar.models import  (
-    StatusPagamento, Boleto, FaturaCartao, PrestacaoEmprestimo, GastoVeiculoConsorcio,
-    GastoContabilidade, GastoImovel, GastoUtilidade, GastoGeral,
-    # Você provavelmente tem Receber e Funcionario em outras apps
-) 
-# Assumindo que Receber e Funcionario vêm de onde estavam antes:
+# Importe os modelos
+from apps.financeiro.pagar.models import (
+    Boleto, FaturaCartao, PrestacaoEmprestimo, GastoVeiculoConsorcio,
+    GastoContabilidade, GastoImovel, GastoUtilidade, GastoGeral, Cheque, 
+    GastoGasolina, PagamentoFuncionario
+)
 from apps.financeiro.receber.models import Receber
 from apps.funcionarios.models import Funcionario
-
-# Mapeamento para buscar todos os modelos de Gasto
-MODELOS_GASTO_A_PAGAR = [
-    Boleto, FaturaCartao, PrestacaoEmprestimo, GastoVeiculoConsorcio, 
-    GastoContabilidade, GastoImovel, GastoUtilidade, 
-    # GastoGeral não herda GastoBase, mas tem 'valor_total'
-]
+from apps.comissionamento.models import ContratoRT
 
 def dashboard(request):
-    # Obter a data e hora atuais
     now = datetime.now()
-    current_month = now.month
-    current_year = now.year
+    today = now.date()
+    seven_days_later = today + timedelta(days=7)
     
+    # --- QUADROS SUPERIORES (Mantidos) ---
     cont_funcionarios = Funcionario.objects.count()
-
-    # --- LÓGICA DE AGREGAÇÃO DE CONTAS A PAGAR (CRÍTICO) ---
-    
     total_pagar_pendente = Decimal('0.00')
-    pagar_preview_list = []
+    
+    # --- LISTAS PARA OS QUADROS INFERIORES ---
+    atrasados_list = []
+    vencendo_list = []
+    ultimos_gastos_list = []
 
-    for ModelClass in MODELOS_GASTO_A_PAGAR:
-        # 1. Consulta para o TOTAL PENDENTE: Exclui status 'PAGO'
-        # Assumindo que todos os modelos herdam GastoBase, eles têm 'status' e 'valor'.
-        total_qs = ModelClass.objects.filter(
-            ~Q(status=StatusPagamento.PAGO) # Exclui os que já foram pagos
-        ).aggregate(total=Sum('valor'))['total'] or Decimal('0.00')
-        
+    # Modelos que possuem 'data_vencimento'
+    MODELOS_COM_VENCIMENTO = [
+        Boleto, FaturaCartao, PrestacaoEmprestimo, GastoVeiculoConsorcio, 
+        GastoContabilidade, GastoImovel, GastoUtilidade
+    ]
+
+    for ModelClass in MODELOS_COM_VENCIMENTO:
+        # 1. Total Pagar (Pendente Geral)
+        total_qs = ModelClass.objects.exclude(status='Pago').aggregate(total=Sum('valor'))['total'] or Decimal('0.00')
         total_pagar_pendente += total_qs
 
-        # 2. Consulta para o PREVIEW (Mês Atual):
-        # Filtra pelo mês/ano e pega os 5 primeiros
-        preview_qs = ModelClass.objects.filter(
-            data_vencimento__month=current_month, 
-            data_vencimento__year=current_year
-        ).order_by('data_vencimento')[:5]
-        
-        # Estendemos a lista de preview
-        pagar_preview_list.extend(list(preview_qs))
+        # 2. Lista: Gastos Atrasados (Vencidos e não pagos)
+        atrasados = ModelClass.objects.filter(
+            ~Q(status='Pago'), 
+            data_vencimento__lt=today
+        )
+        atrasados_list.extend(list(atrasados))
 
-    # Adiciona GastoGeral (modelo independente com campo 'valor_total')
-    # O GastoGeral não tem 'status' e 'data_vencimento' como GastoBase, então precisa de lógica adaptada:
-    gasto_geral_qs = GastoGeral.objects.all().aggregate(total=Sum('valor_total'))['total'] or Decimal('0.00')
-    total_pagar_pendente += gasto_geral_qs
+        # 3. Lista: Vencendo em 7 dias
+        vencendo = ModelClass.objects.filter(
+            ~Q(status='Pago'),
+            data_vencimento__gte=today,
+            data_vencimento__lte=seven_days_later
+        )
+        vencendo_list.extend(list(vencendo))
+
+        # 4. Coletar para "Últimos Gastos"
+        recentes = ModelClass.objects.all().order_by('-data_vencimento')[:5]
+        ultimos_gastos_list.extend(list(recentes))
+
+    # Adicionar GastoGeral ao total e últimos gastos
+    total_geral = GastoGeral.objects.exclude(status='Pago').aggregate(total=Sum('valor_total'))['total'] or Decimal('0.00')
+    total_pagar_pendente += total_geral
     
-    # Ordena a lista de preview final (pode ter mais de 5 itens agora, limite no template)
-    pagar_preview_list.sort(key=lambda x: x.data_vencimento if hasattr(x, 'data_vencimento') else datetime(9999,1,1))
+    recentes_geral = GastoGeral.objects.all().order_by('-data_gasto')[:5]
+    ultimos_gastos_list.extend(list(recentes_geral))
+
+    # --- ORDENAÇÃO E CORTE DAS LISTAS ---
     
-    # --- FIM DA LÓGICA DE AGREGAÇÃO ---
-    
-    # Lógica Receber (mantida)
-    # Recomenda-se corrigir o filtro do Receber para usar apenas o status, pois excluir isnull=False é estranho.
+    # Atrasados: Ordenar pelos mais antigos primeiro (urgência)
+    atrasados_list.sort(key=lambda x: x.data_vencimento)
+    atrasados_list = atrasados_list[:5] # Top 5
+
+    # Vencendo: Ordenar pelo vencimento mais próximo
+    vencendo_list.sort(key=lambda x: x.data_vencimento)
+    vencendo_list = vencendo_list[:5] # Top 5
+
+    # Últimos Gastos: Ordenar pelo mais recente
+    def get_sort_date(obj):
+        if hasattr(obj, 'data_vencimento'): return obj.data_vencimento
+        if hasattr(obj, 'data_gasto'): return obj.data_gasto
+        return datetime.min.date()
+
+    ultimos_gastos_list.sort(key=get_sort_date, reverse=True)
+    ultimos_gastos_list = ultimos_gastos_list[:5]
+
+    # Contratos RT Ativos (Lista)
+    contratos_list = ContratoRT.objects.filter(saldo_devedor__gt=0).order_by('arquiteta__nome')[:5]
+
+    # Total Receber
     receber_total = Receber.objects.exclude(status='Pago').aggregate(total=Sum('valor'))['total'] or Decimal('0.00')
     
     context = { 
+        # Quadros Superiores
         'cont_funcionarios': cont_funcionarios,
-        'pagar_total': total_pagar_pendente, # Novo Total Agregado
+        'pagar_total': total_pagar_pendente,
         'receber_total': receber_total,
-        'pagar_preview': pagar_preview_list, # Lista unificada
-        'receber_preview': Receber.objects.all()[:5],
+        
+        # Listas para os Quadros Inferiores
+        'atrasados_list': atrasados_list,
+        'vencendo_list': vencendo_list,
+        'contratos_list': contratos_list,
+        'ultimos_gastos': ultimos_gastos_list,
+        
+        'atrasados_count': len(atrasados_list), # Opcional se quiser mostrar o número no título
     }
     
     return render(request, 'core/dashboard.html', context)

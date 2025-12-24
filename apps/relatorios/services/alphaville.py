@@ -1,3 +1,4 @@
+import io
 import xlsxwriter
 from decimal import Decimal
 from datetime import date
@@ -48,11 +49,20 @@ class GastoImovelExcelService:
         }
 
     @staticmethod
-    def gerar_relatorio_condominio(gastos, caminho_arquivo="RELATORIO_CONDOMINIO.xlsx"):
+    def gerar_relatorio_condominio(gastos, workbook=None):
+        # Lógica para suportar Múltiplas Abas ou Individual
+        output = None
+        should_close = False
+
+        if workbook is None:
+            # Modo Individual: Cria novo arquivo em memória
+            output = io.BytesIO()
+            workbook = xlsxwriter.Workbook(output, {'in_memory': True})
+            should_close = True
+        
         try:
-            wb = xlsxwriter.Workbook(caminho_arquivo)
-            ws = wb.add_worksheet("Condomínios")
-            fmt = GastoImovelExcelService._define_formats(wb)
+            ws = wb = workbook.add_worksheet("Condomínios")
+            fmt = GastoImovelExcelService._define_formats(workbook)
 
             # Cabeçalhos
             headers = [
@@ -68,15 +78,15 @@ class GastoImovelExcelService:
             ]
 
             # Configurar largura das colunas
-            ws.set_column('A:A', 25) # Local
-            ws.set_column('B:B', 20) # Tipo
-            ws.set_column('C:C', 30) # Descrição
-            ws.set_column('D:D', 15) # Vencimento
-            ws.set_column('E:E', 15) # Pagamento
-            ws.set_column('F:F', 15) # Valor
-            ws.set_column('G:G', 15) # Pago
-            ws.set_column('H:H', 12) # Juros
-            ws.set_column('I:I', 35) # Obs
+            ws.set_column('A:A', 25) #  type: ignore
+            ws.set_column('B:B', 20) #  type: ignore
+            ws.set_column('C:C', 30) #  type: ignore
+            ws.set_column('D:D', 15) #  type: ignore
+            ws.set_column('E:E', 15) #  type: ignore
+            ws.set_column('F:F', 15) #  type: ignore
+            ws.set_column('G:G', 15) #  type: ignore
+            ws.set_column('H:H', 12) #  type: ignore
+            ws.set_column('I:I', 35) #  type: ignore
 
             row = 0
 
@@ -150,11 +160,15 @@ class GastoImovelExcelService:
             ws.write(row, 5, total_valor, fmt['total_money'])
             ws.write(row, 6, total_pago, fmt['total_money'])
             
-            print(f"✅ Relatório de Condomínios gerado: {caminho_arquivo}")
+            print(f"✅ Relatório de Condomínios gerado.")
 
         except Exception as e:
             print(f"❌ Erro ao gerar relatório de condomínios: {e}")
             raise e
         finally:
-            if 'wb' in locals():
-                wb.close()
+            # Se foi criado aqui (Modo Individual), fecha e retorna
+            if should_close and workbook:
+                workbook.close()
+                if output:
+                    output.seek(0)
+                    return output

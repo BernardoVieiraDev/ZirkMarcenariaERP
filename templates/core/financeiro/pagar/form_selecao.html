@@ -1,10 +1,181 @@
+{% extends "core/base.html" %}
+{% load static %}
 
+{% block content %}
+<style>
+    :root {
+        --bg: #f6f8fb; --card: #ffffff; --primary: #1976d2; --text-main: #0f172a; 
+        --text-muted: #64748b; --border: #e2e8f0; --radius: 12px;
+        --shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.01);
+    }
 
-<h1>{{ title }}</h1>
+    /* Centraliza o conteúdo na tela */
+    .selection-container {
+        min-height: 70vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 20px;
+        font-family: Inter, Roboto, sans-serif;
+    }
 
-<form method="post">
-    {% csrf_token %}
-    <h2>1. Selecione o Tipo de Gasto</h2>
-    {{ tipo_form.as_p }}
-    <button type="submit">Próximo</button>
-</form>
+    .selection-card {
+        background: var(--card);
+        width: 100%;
+        max-width: 480px;
+        padding: 40px;
+        border-radius: 16px;
+        box-shadow: var(--shadow);
+        border: 1px solid white;
+        text-align: center;
+        position: relative;
+    }
+
+    /* Badge de Passo */
+    .step-badge {
+        display: inline-block;
+        background: #eff6ff;
+        color: var(--primary);
+        font-size: 11px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        padding: 6px 12px;
+        border-radius: 20px;
+        margin-bottom: 16px;
+        border: 1px solid #dbeafe;
+    }
+
+    .card-title {
+        font-size: 24px;
+        font-weight: 700;
+        color: var(--text-main);
+        margin: 0 0 8px 0;
+    }
+
+    .card-subtitle {
+        color: var(--text-muted);
+        font-size: 14px;
+        margin-bottom: 32px;
+        line-height: 1.5;
+    }
+
+    /* Estilizando o Form do Django */
+    .form-group {
+        text-align: left;
+        margin-bottom: 24px;
+    }
+
+    /* Esconde o label padrão ou estiliza se necessário */
+    .form-group label {
+        display: block;
+        font-size: 13px;
+        font-weight: 600;
+        color: var(--text-muted);
+        margin-bottom: 8px;
+        text-transform: uppercase;
+    }
+
+    /* Select Customizado */
+    select {
+        width: 100%;
+        padding: 14px 16px;
+        font-size: 15px;
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        background-color: #f8fafc;
+        color: var(--text-main);
+        transition: all 0.2s ease;
+        appearance: none; /* Remove seta padrão em alguns browsers */
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%2364748b'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E");
+        background-repeat: no-repeat;
+        background-position: right 16px center;
+        background-size: 16px;
+        cursor: pointer;
+    }
+
+    select:focus {
+        outline: none;
+        border-color: var(--primary);
+        background-color: white;
+        box-shadow: 0 0 0 4px rgba(25, 118, 210, 0.1);
+    }
+
+    /* Botão Principal */
+    .btn-submit {
+        width: 100%;
+        background: linear-gradient(180deg, var(--primary), #0f66c3);
+        color: white;
+        border: none;
+        padding: 16px;
+        border-radius: var(--radius);
+        font-size: 16px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: transform 0.1s, filter 0.2s;
+        box-shadow: 0 4px 6px rgba(25, 118, 210, 0.2);
+    }
+
+    .btn-submit:hover {
+        filter: brightness(1.1);
+        transform: translateY(-1px);
+    }
+
+    .btn-submit:active {
+        transform: translateY(0);
+    }
+
+    .btn-back {
+        display: block;
+        margin-top: 20px;
+        color: var(--text-muted);
+        text-decoration: none;
+        font-size: 14px;
+        font-weight: 500;
+    }
+    .btn-back:hover { color: var(--text-main); }
+
+</style>
+
+<div class="selection-container">
+    <div class="selection-card">
+        <span class="step-badge">Passo 1 de 2</span>
+        
+        <h1 class="card-title">Nova Despesa</h1>
+        <p class="card-subtitle">
+            Selecione a categoria do gasto para carregar o formulário específico (Boleto, Pix, Folha, etc).
+        </p>
+
+        <form method="post">
+            {% csrf_token %}
+            
+            <div class="form-group">
+                <label for="{{ tipo_form.categoria.id_for_label }}">Categoria do Gasto</label>
+                {{ tipo_form.categoria }}
+                
+                {% if tipo_form.categoria.errors %}
+                    <div style="color: #e11d48; font-size: 12px; margin-top: 6px;">
+                        {{ tipo_form.categoria.errors }}
+                    </div>
+                {% endif %}
+            </div>
+
+            <button type="submit" class="btn-submit">
+                Continuar →
+            </button>
+        </form>
+
+        <a href="{% url 'pagar:pagar_list' %}" class="btn-back">Cancelar e voltar</a>
+    </div>
+</div>
+
+<script>
+    // Script simples para garantir que o select tenha a classe correta caso o Django não aplique
+    document.addEventListener("DOMContentLoaded", function() {
+        const selects = document.querySelectorAll('select');
+        selects.forEach(el => {
+            el.style.width = '100%'; // Força largura se o widget padrão do Django vier com style inline
+        });
+    });
+</script>
+{% endblock %}

@@ -19,6 +19,8 @@ urlpatterns = [
     path('pagamentos/', views.listar_pagamentos, name='listar_pagamentos'),
     path('pagamentos/registrar/', views.registrar_pagamento, name='registrar_pagamento'),
     path('pagamentos/deletar/<int:pk>/', views.deletar_pagamento, name='deletar_pagamento'),
+path('pagamentos/editar/<int:pk>/', views.editar_pagamento, name='editar_pagamento'),
+path('exportar-planilha/', views.exportar_planilha_geral, name='exportar_planilha_ferias'),
 
-    path('teste/', views.teste, name='teste'),
+
 ]

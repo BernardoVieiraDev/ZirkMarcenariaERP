@@ -190,7 +190,7 @@ class CadastroFuncionarioExcelService:
             endereco_val = end.endereco if end and getattr(end, "endereco", None) else ''
             ws.write(row, 1, endereco_val, fmt['data_text'])  # Coluna B
             ws.write(row, 2, 'Nº:', fmt['data_text'])            # Coluna C (deixa vazia ou use como quis            ws.write(row, 3, "Nº:", fmt['label'])
-            ws.write(row, 4, end.numero if end and getattr(end, "numero", None) else '', fmt['data'])
+            ws.write(row, 3, end.numero if end and getattr(end, "numero", None) else '', fmt['data'])
             row += 1
 
             ws.write(row, 0, "Bairro:", fmt['label'])

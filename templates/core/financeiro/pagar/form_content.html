@@ -1,0 +1,40 @@
+<form method="POST" action="{% url 'pagar:pagar_create' %}" id="formNovaConta">
+    {% csrf_token %}
+    
+    <input type="hidden" name="categoria" value="{{ tipo }}">
+    <input type="hidden" name="modal" value="true">
+
+    <div class="modal-body">
+        {% if form.non_field_errors %}
+            <div class="alert alert-danger" style="color: #b91c1c; background: #fee2e2; padding: 10px; border-radius: 8px; margin-bottom: 15px; font-size: 13px;">
+                {{ form.non_field_errors }}
+            </div>
+        {% endif %}
+
+        <div class="form-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+            {% for field in form %}
+                <div class="form-group" style="margin-bottom: 12px; {% if field.name == 'observacoes' %}grid-column: span 2;{% endif %}">
+                    <label for="{{ field.id_for_label }}" style="display: block; font-size: 13px; font-weight: 600; color: #475569; margin-bottom: 6px;">
+                        {{ field.label }}
+                    </label>
+                    {{ field }}
+                    {% if field.errors %}
+                        <div style="color: #b91c1c; font-size: 11px; margin-top: 4px;">
+                            {{ field.errors.0 }}
+                        </div>
+                    {% endif %}
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <div class="modal-footer">
+        <button type="button" class="rh-btn rh-btn-ghost" onclick="closeModal('modalDetalhe')">Cancelar</button>
+        <button type="submit" class="rh-btn rh-btn-primary">Salvar Conta</button>
+    </div>
+</form>
+
+<script>
+    // Reinicializa máscaras ou comportamentos específicos se houver (ex: Select2)
+    // Se seus inputs usam classes CSS do base.html, eles já serão estilizados.
+</script>

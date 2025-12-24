@@ -1,0 +1,15 @@
+<div class="panel-body">
+    <div class="alert alert-warning">
+        Você tem certeza que deseja excluir o pagamento de <strong>R$ {{ object.valor_pago|floatformat:"2g" }}</strong> realizado em {{ object.data_pagamento|date:"d/m/Y" }}?
+    </div>
+    
+    <p>O saldo devedor do contrato será recalculado automaticamente.</p>
+
+    <form method="post" action="{% url 'comissionamento:pagamento_delete' pk=object.pk %}">
+        {% csrf_token %}
+        <div class="form-actions" style="margin-top: 20px; display: flex; justify-content: flex-end; gap: 10px;">
+            <button type="button" class="btn btn-secondary" onclick="closeModal('modalGeneric')">Cancelar</button>
+            <button type="submit" class="btn btn-danger">Confirmar Exclusão</button>
+        </div>
+    </form>
+</div>

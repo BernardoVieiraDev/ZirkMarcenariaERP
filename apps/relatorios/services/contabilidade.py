@@ -1,3 +1,4 @@
+import io
 import xlsxwriter
 from decimal import Decimal
 from datetime import date
@@ -53,11 +54,21 @@ class GastoContabilidadeExcelService:
         }
 
     @staticmethod
-    def gerar_relatorio_contabilidade(gastos, caminho_arquivo="RELATORIO_CONTABILIDADE.xlsx"):
+    def gerar_relatorio_contabilidade(gastos, workbook=None):
+        # Controle para saber se devemos fechar o arquivo ao final (Modo Individual)
+        output = None
+        should_close = False
+
+        if workbook is None:
+            # 1. Cria o buffer em memória se não receber um workbook existente
+            output = io.BytesIO()
+            # 2. Inicializa o Workbook
+            workbook = xlsxwriter.Workbook(output, {'in_memory': True})
+            should_close = True
+        
         try:
-            wb = xlsxwriter.Workbook(caminho_arquivo)
-            ws = wb.add_worksheet("Contabilidade")
-            fmt = GastoContabilidadeExcelService._define_formats(wb)
+            ws = workbook.add_worksheet("Contabilidade")
+            fmt = GastoContabilidadeExcelService._define_formats(workbook)
 
             # Cabeçalhos das colunas
             headers = [
@@ -71,17 +82,17 @@ class GastoContabilidadeExcelService:
             ]
 
             # Configurar largura das colunas
-            ws.set_column('A:A', 20) # Tipo
-            ws.set_column('B:B', 30) # Descrição
-            ws.set_column('C:C', 30) # Observação
-            ws.set_column('D:D', 12) # Vencimento
-            ws.set_column('E:E', 15) # Dt Pagamento
-            ws.set_column('F:F', 15) # Valor
-            ws.set_column('G:G', 15) # Valor Pago
+            ws.set_column('A:A', 20) # Tipo#type: ignore
+            ws.set_column('B:B', 30) # Descrição#type: ignore
+            ws.set_column('C:C', 30) # Observação#type: ignore
+            ws.set_column('D:D', 12) # Vencimento#type: ignore
+            ws.set_column('E:E', 15) # Dt Pagamento#type: ignore
+            ws.set_column('F:F', 15) # Valor#type: ignore
+            ws.set_column('G:G', 15) # Valor Pago#type: ignore
 
             row = 0
 
-            # --- ADICIONADO: TÍTULO NO TOPO ---
+            # --- TÍTULO NO TOPO ---
             ws.set_row(row, 25) # Altura da linha maior
             # Mescla da coluna A (0) até a G (6)
             ws.merge_range(row, 0, row, 6, "RELATÓRIO DE CONTABILIDADE", fmt['title'])
@@ -145,11 +156,15 @@ class GastoContabilidadeExcelService:
             ws.write(row, 5, total_valor, fmt['total_money'])
             ws.write(row, 6, total_pago, fmt['total_money'])
             
-            print(f"✅ Relatório Contábil gerado: {caminho_arquivo}")
+            print(f"✅ Relatório Contábil gerado em memória.")
 
         except Exception as e:
             print(f"❌ Erro ao gerar relatório contábil: {e}")
             raise e
         finally:
-            if 'wb' in locals():
-                wb.close()
+            # Só fecha e retorna se foi criado dentro deste método (Modo Individual)
+            if should_close and workbook:
+                workbook.close()
+                if output:
+                    output.seek(0)
+                    return output

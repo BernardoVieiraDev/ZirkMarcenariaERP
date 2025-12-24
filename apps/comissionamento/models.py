@@ -1,6 +1,10 @@
+from decimal import Decimal
+
 from django.db import models
 from django.db.models import Sum
-from decimal import Decimal
+from django.db.models.signals import post_delete, post_save, pre_save
+from django.dispatch import receiver
+
 
 # --- Modelos de Entidade (Pode ser uma FK para seu app 'funcionarios' se já tiver Pessoa) ---
 class Arquiteta(models.Model):
@@ -76,8 +80,9 @@ class PagamentoRT(models.Model):
 # --- Lógica de Negócio (Signals) ---
 
 # Conecta esta função ao evento de salvar (post_save) e deletar (post_delete) o PagamentoRT
-from django.db.models.signals import post_save, post_delete
+from django.db.models.signals import post_delete, post_save
 from django.dispatch import receiver
+
 
 @receiver([post_save, post_delete], sender=PagamentoRT)
 def recalcula_saldo_rt(sender, instance, **kwargs):
@@ -92,5 +97,26 @@ def recalcula_saldo_rt(sender, instance, **kwargs):
     # Atualiza o saldo devedor
     saldo_novo = contrato.valor_rt_total - total_pago
     
-    # Evita recursão infinita se o ContratoRT tivesse um save() que chamasse este signal
+    # Atualiza via update para não disparar o save() do contrato recursivamente (embora o pre_save abaixo seja seguro)
     ContratoRT.objects.filter(pk=contrato.pk).update(saldo_devedor=saldo_novo)
+
+
+# --- ADICIONE ESTE NOVO SIGNAL ---
+@receiver(pre_save, sender=ContratoRT)
+def calcula_saldo_ao_salvar_contrato(sender, instance, **kwargs):
+    """
+    Calcula o saldo devedor ao CRIAR ou EDITAR um contrato.
+    Isso garante que, ao criar um contrato novo, o saldo seja igual ao valor total (pois pago é 0).
+    Também ajusta o saldo se você editar o 'valor_rt_total' no formulário.
+    """
+    total_pago = Decimal('0.00')
+    
+    # Se o contrato já existe (tem ID), buscamos pagamentos anteriores para abater
+    if instance.pk:
+        # Usamos o manager reverso 'pagamentort_set'
+        total_pago = instance.pagamentort_set.aggregate(
+            total=Sum('valor_pago')
+        )['total'] or Decimal('0.00')
+    
+    # Define o saldo correto antes de salvar no banco
+    instance.saldo_devedor = instance.valor_rt_total - total_pago

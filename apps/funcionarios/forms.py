@@ -10,8 +10,8 @@ class FuncionarioForm(forms.ModelForm):
             'nome_pai', 'nome_mae', 'numero_filhos'
         ]
         widgets = {
-            'data_nascimento': forms.DateInput(attrs={'type': 'date'}),
-        }
+            'data_nascimento': forms.DateInput(attrs={'type': 'date'}, format='%Y-%m-%d'  ),
+            }
 
 class EnderecoFuncionarioForm(forms.ModelForm):
     class Meta:
@@ -35,8 +35,12 @@ class DadosTrabalhistasForm(forms.ModelForm):
             'contrato_experiencia_dias', 'prorrogação_dias'
         ]
         widgets = {
-            'data_admissao_contabilidade': forms.DateInput(attrs={'type': 'date'}),
-            'data_admissao_marcenaria': forms.DateInput(attrs={'type': 'date'}),
+            'data_admissao_contabilidade': forms.DateInput(
+                attrs={'type': 'date'}, 
+                format='%Y-%m-%d'),
+            'data_admissao_marcenaria': forms.DateInput(
+                attrs={'type': 'date'},
+                format='%Y-%m-%d'),
 
         }
 

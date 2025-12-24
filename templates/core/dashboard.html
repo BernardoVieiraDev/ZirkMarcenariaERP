@@ -1,97 +1,475 @@
 {% extends "core/base.html" %}
-{% block title %}Painel{% endblock %}
+{% load static %}
+
+{% block title %}Dashboard{% endblock %}
 
 {% block content %}
+<style>
+    /* Reset e Fontes */
+    :root {
+        --font-sans: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+        
+        /* Cores Exatas do Tailwind (Index.html) */
+        --slate-50: #f8fafc;
+        --slate-100: #f1f5f9;
+        --slate-200: #e2e8f0;
+        --slate-400: #94a3b8;
+        --slate-500: #64748b;
+        --slate-900: #0f172a;
+        
+        --red-50: #fef2f2;
+        --red-200: #fecaca;
+        --red-600: #dc2626;
+        --red-700: #b91c1c;
+        
+        --amber-50: #fffbeb;
+        --amber-200: #fde68a;
+        --amber-600: #d97706;
+        --amber-700: #b45309;
+        
+        --emerald-50: #ecfdf5;
+        --emerald-200: #a7f3d0;
+        --emerald-700: #047857;
+        
+        --blue-50: #eff6ff;
+        --blue-500: #3b82f6;
+        
+        --white: #ffffff;
+    }
 
-<section class="cards">
-    <div class="card">
-        <h4>Funcionários ativos</h4>
-        <div class="metric">{{ cont_funcionarios }}</div>
+    .dash-container {
+        font-family: var(--font-sans);
+        color: var(--slate-900);
+        padding-bottom: 60px;
+        max-width: 1200px;
+        margin: 0 auto;
+    }
+
+    /* === HEADER (Mantido simples) === */
+    .dash-header { margin-bottom: 32px; }
+    .dash-title { font-size: 24px; font-weight: 700; color: var(--slate-900); margin: 0; letter-spacing: -0.025em; }
+    .dash-subtitle { font-size: 14px; color: var(--slate-500); margin-top: 4px; }
+
+    /* ==========================================================================
+       SEÇÃO 1: SEUS QUADROS ORIGINAIS (TOPO)
+       Mantendo o estilo que você já tinha para estes 3
+       ========================================================================== */
+    .top-stats-grid { 
+        display: grid; 
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); 
+        gap: 16px; 
+        margin-bottom: 32px; 
+    }
+
+    .top-card {
+        border-radius: 16px; /* rounded-2xl */
+        padding: 24px;
+        box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px -1px rgba(0, 0, 0, 0.1);
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        color: white;
+        transition: transform 0.2s;
+    }
+    .top-card:hover { transform: translateY(-2px); }
+    
+    .bg-blue-original { background-color: #1e3a5f; }
+    .bg-green-original { background-color: #10b981; }
+    .bg-orange-original { background-color: #f59e0b; }
+
+    .top-label { font-size: 14px; font-weight: 500; opacity: 0.9; margin-bottom: 8px; }
+    .top-value { font-size: 30px; font-weight: 700; letter-spacing: -1px; line-height: 1; }
+    .top-sub { font-size: 13px; margin-top: 6px; opacity: 0.8; }
+    .top-icon { width: 48px; height: 48px; background: rgba(255,255,255,0.2); border-radius: 12px; display: flex; align-items: center; justify-content: center; }
+
+
+    /* ==========================================================================
+       SEÇÃO 2: QUADROS NOVOS (DESIGN COPIADO DO INDEX.HTML)
+       ========================================================================== */
+    
+    /* Layout de Grid para os Cards Inferiores */
+    .grid-row-1 {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 16px;
+        margin-bottom: 24px;
+    }
+    
+    /* Grid Assimétrico para Lista Grande + Coluna Direita (Contratos + Acesso Rápido) */
+    .grid-row-2 {
+        display: grid;
+        grid-template-columns: 2fr 1fr; /* Esquerda maior */
+        gap: 24px;
+    }
+    
+    .right-column-stack {
+        display: flex;
+        flex-direction: column;
+        gap: 24px;
+    }
+
+    @media(max-width: 1024px) { 
+        .grid-row-1, .grid-row-2 { grid-template-columns: 1fr; } 
+    }
+
+    /* --- ESTILO 1: CARDS DE ALERTA (Vermelho e Amarelo) --- */
+    .alert-card {
+        border-radius: 12px; /* rounded-xl */
+        border-width: 1px;
+        border-style: solid;
+        box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px -1px rgba(0, 0, 0, 0.1); /* shadow */
+    }
+
+    /* Vermelho (Gastos Atrasados) */
+    .style-red {
+        background-color: rgba(254, 242, 242, 0.5); /* bg-red-50/50 */
+        border-color: var(--red-200);
+    }
+    .style-red .card-header { color: var(--red-700); }
+    .style-red .card-link { color: var(--red-600); }
+    .style-red .card-link:hover { color: var(--red-700); }
+    .style-red .item-value { color: var(--red-600); }
+
+    /* Amarelo (Vencendo em 7 dias) */
+    .style-amber {
+        background-color: rgba(255, 251, 235, 0.5); /* bg-amber-50/50 */
+        border-color: var(--amber-200);
+    }
+    .style-amber .card-header { color: var(--amber-700); }
+    .style-amber .card-link { color: var(--amber-600); }
+    .style-amber .card-link:hover { color: var(--amber-700); }
+    .style-amber .item-value { color: var(--amber-600); }
+
+    /* Conteúdo dos Cards de Alerta */
+    .alert-card-content { padding: 24px; }
+    .card-header {
+        font-size: 16px; font-weight: 600; letter-spacing: -0.025em;
+        display: flex; align-items: center; gap: 8px;
+        margin-bottom: 20px; /* pb-3 no original, ajustado */
+    }
+    .card-list-container {
+        display: flex; flex-direction: column; gap: 8px; /* space-y-2 */
+    }
+    
+    /* O "Item" branco dentro do card colorido */
+    .list-item-box {
+        background-color: var(--white);
+        border-radius: 8px; /* rounded-lg */
+        padding: 12px;
+        display: flex; justify-content: space-between; align-items: center;
+        /* Sem sombra explicita no código original para o item, mas bg-white destaca */
+    }
+
+    .item-title { font-size: 14px; font-weight: 500; color: var(--slate-900); margin: 0; }
+    .item-sub { font-size: 12px; color: var(--slate-500); margin: 0; }
+    .item-value { font-size: 14px; font-weight: 600; text-align: right; }
+    
+    .card-link {
+        display: flex; align-items: center; gap: 4px;
+        font-size: 14px; font-weight: 500;
+        margin-top: 12px; text-decoration: none; cursor: pointer;
+    }
+
+
+    /* --- ESTILO 2: CARDS BRANCOS PADRÃO (Últimos Gastos / Contratos) --- */
+    .standard-card {
+        background-color: var(--white);
+        border: 1px solid var(--slate-200); /* border-slate-100 no original, ajustado para visibilidade */
+        border-radius: 12px; /* rounded-xl */
+        box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px -1px rgba(0, 0, 0, 0.1);
+        overflow: hidden;
+        display: flex; flex-direction: column;
+    }
+
+    .std-header {
+        padding: 24px; padding-bottom: 0;
+        display: flex; justify-content: space-between; align-items: center;
+        margin-bottom: 16px;
+    }
+    .std-title { font-size: 16px; font-weight: 600; color: var(--slate-900); letter-spacing: -0.025em; }
+    .std-link { font-size: 14px; color: #1e3a5f; text-decoration: none; }
+    .std-link:hover { text-decoration: underline; }
+
+    .std-content { padding: 0 24px 24px 24px; }
+    .std-list { display: flex; flex-direction: column; gap: 12px; /* space-y-3 */ }
+
+    .std-item {
+        display: flex; justify-content: space-between; align-items: center;
+        padding-bottom: 12px;
+        border-bottom: 1px solid var(--slate-50);
+    }
+    .std-item:last-child { border-bottom: none; padding-bottom: 0; }
+
+    .std-item-left { display: flex; align-items: center; gap: 12px; }
+    
+    /* Ícone quadrado arredondado */
+    .std-icon-box {
+        width: 36px; height: 36px;
+        border-radius: 8px; /* rounded-lg */
+        display: flex; align-items: center; justify-content: center;
+    }
+    .icon-gray { background-color: var(--slate-100); color: var(--slate-500); }
+    .icon-blue { background-color: var(--blue-50); color: var(--blue-500); }
+
+    .std-item-text h4 { font-size: 14px; font-weight: 500; color: var(--slate-900); margin: 0; }
+    .std-item-text p { font-size: 12px; color: var(--slate-500); margin: 0; text-transform: capitalize; }
+
+    .std-item-right { text-align: right; }
+    .std-val { font-size: 14px; font-weight: 600; color: var(--slate-900); margin: 0; }
+    
+    /* Badges */
+    .badge {
+        display: inline-flex; align-items: center;
+        padding: 2px 6px; border-radius: 9999px;
+        font-size: 10px; font-weight: 500;
+        border: 1px solid;
+    }
+    .badge-pending { background-color: var(--amber-50); color: var(--amber-700); border-color: var(--amber-200); }
+    .badge-paid { background-color: var(--emerald-50); color: var(--emerald-700); border-color: var(--emerald-200); }
+    .badge-red { color: var(--red-600); } /* Apenas texto vermelho */
+    .text-muted-xs { font-size: 12px; color: var(--slate-400); }
+
+    /* === NOVA SEÇÃO: ACESSO RÁPIDO === */
+    .quick-actions-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 12px;
+        padding: 0 24px 24px 24px;
+    }
+    
+    .action-btn {
+        display: flex; flex-direction: column; align-items: center; justify-content: center;
+        padding: 16px;
+        background-color: var(--slate-50);
+        border: 1px solid var(--slate-200);
+        border-radius: 12px;
+        text-decoration: none;
+        color: var(--slate-500);
+        transition: all 0.2s;
+        text-align: center;
+        gap: 8px;
+    }
+    .action-btn:hover {
+        background-color: var(--white);
+        border-color: var(--blue-500);
+        color: var(--blue-500);
+        box-shadow: 0 4px 6px -1px rgba(59, 130, 246, 0.1);
+        transform: translateY(-2px);
+    }
+    .action-label { font-size: 12px; font-weight: 600; }
+
+</style>
+
+<div class="dash-container">
+    
+    <div class="dash-header">
+        <h1 class="dash-title">Dashboard</h1>
+        <p class="dash-subtitle">Visão geral financeira e recursos humanos</p>
     </div>
-    <div class="card">
-        <h4>Contas a Pagar </h4>
-        <div class="metric">R$ {{ pagar_total|floatformat:2 }}</div>
+
+    <div class="top-stats-grid">
+        <div class="top-card bg-blue-original">
+            <div>
+                <div class="top-label">Contas a Pagar (Pendente)</div>
+                <div class="top-value">R$ {{ pagar_total|floatformat:"2g" }}</div>
+                <div class="top-sub">Total acumulado</div>
+            </div>
+            <div class="top-icon">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1Z"/><path d="M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8"/><path d="M12 17.5v-11"/></svg>
+            </div>
+        </div>
+
+        <div class="top-card bg-green-original">
+            <div>
+                <div class="top-label">Contas a Receber</div>
+                <div class="top-value">R$ {{ receber_total|floatformat:"2g" }}</div>
+                <div class="top-sub">Previsão de entradas</div>
+            </div>
+            <div class="top-icon">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/></svg>
+            </div>
+        </div>
+
+        <div class="top-card bg-orange-original">
+            <div>
+                <div class="top-label">Funcionários Ativos</div>
+                <div class="top-value">{{ cont_funcionarios }}</div>
+                <div class="top-sub">Colaboradores registrados</div>
+            </div>
+            <div class="top-icon">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+            </div>
+        </div>
     </div>
-    <div class="card">
-        <h4>Contas a Receber</h4>
-        <div class="metric">R$ {{ receber_total|floatformat:2 }}</div>
+
+    <div class="grid-row-1">
+        
+        <div class="alert-card style-red">
+            <div class="alert-card-content">
+                <div class="card-header">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" x2="12" y1="8" y2="12"/><line x1="12" x2="12.01" y1="16" y2="16"/></svg>
+                    Gastos Atrasados ({{ atrasados_list|length }})
+                </div>
+                
+                <div class="card-list-container">
+                    {% for item in atrasados_list %}
+                    <div class="list-item-box">
+                        <div>
+                            <p class="item-title">{{ item.descricao|default:item.get_model_name|truncatechars:25 }}</p>
+                            <p class="item-sub">{{ item.get_model_name }}</p>
+                        </div>
+                        <div style="text-align: right;">
+                            <p class="item-value">R$ {{ item.get_valor_consolidado|floatformat:"2g" }}</p>
+                            <p class="item-sub">Venc: {{ item.data_vencimento|date:"d/m" }}</p>
+                        </div>
+                    </div>
+                    {% empty %}
+                    <div class="list-item-box" style="justify-content: center; color: #64748b;">
+                        Nenhuma conta atrasada! 🎉
+                    </div>
+                    {% endfor %}
+                </div>
+
+                <a href="{% url 'pagar:pagar_list' %}" class="card-link">
+                    Ver todos
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+                </a>
+            </div>
+        </div>
+
+        <div class="alert-card style-amber">
+            <div class="alert-card-content">
+                <div class="card-header">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                    Vencendo em 7 dias ({{ vencendo_list|length }})
+                </div>
+                
+                <div class="card-list-container">
+                    {% for item in vencendo_list %}
+                    <div class="list-item-box">
+                        <div>
+                            <p class="item-title">{{ item.descricao|default:item.get_model_name|truncatechars:25 }}</p>
+                            <p class="item-sub">{{ item.get_model_name }}</p>
+                        </div>
+                        <div style="text-align: right;">
+                            <p class="item-value">R$ {{ item.get_valor_consolidado|floatformat:"2g" }}</p>
+                            <p class="item-sub">Venc: {{ item.data_vencimento|date:"d/m" }}</p>
+                        </div>
+                    </div>
+                    {% empty %}
+                    <div class="list-item-box" style="justify-content: center; color: #64748b;">
+                        Nada vencendo esta semana.
+                    </div>
+                    {% endfor %}
+                </div>
+
+                <a href="{% url 'pagar:pagar_list' %}" class="card-link">
+                    Ver todos
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+                </a>
+            </div>
+        </div>
+
     </div>
-</section>
-<br>
-<section class="panel">
-    <h3>Próximas Contas a Pagar (Mês Atual)</h3>
 
-    <div class="table-container">
-        <table class="responsive-table">
-            <colgroup>
-                <col style="width: 35%">
-                <col style="width: 20%">
-                <col style="width: 15%">
-                <col style="width: 15%">
-                <col style="width: 15%">
-            </colgroup>
-
-            <thead>
-                <tr>
-                    <th>Descrição</th>
-                    <th>Tipo</th>
-                    <th>Valor</th>
-                    <th>Venc.</th>
-                    <th>Status</th>
-                </tr>
-            </thead>
-
-            <tbody>
-                {% for p in pagar_preview %}
-                <tr>
-                    <td>{{ p.descricao }}</td>
-                    
-                    <td>({{ p.get_model_name }})</td>
-
-                    <td>
-                        {% if p.valor_original %}
-                            R$ {{ p.valor_original|floatformat:2 }}
-                        {% elif p.valor_total %}
-                            R$ {{ p.valor_total|floatformat:2 }}
-                        {% else %}
-                            -
-                        {% endif %}
-                    </td>
-
-                    <td>
-                        {% with model_name=p.get_model_name %}
-                            {% if model_name == 'GastoGeral' or model_name == 'GastoGasolina' %}
-                                {% if p.data_gasto %}
-                                    {{ p.data_gasto|date:"d/m/Y" }}
-                                {% else %}
-                                    N/A
-                                {% endif %}
+    <div class="grid-row-2">
+        
+        <div class="standard-card">
+            <div class="std-header">
+                <div class="std-title">Últimos Gastos</div>
+                <a href="{% url 'pagar:pagar_list' %}" class="std-link">Ver todos</a>
+            </div>
+            <div class="std-content">
+                <div class="std-list">
+                    {% for item in ultimos_gastos %}
+                    <div class="std-item">
+                        <div class="std-item-left">
+                            <div class="std-icon-box icon-gray">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1Z"/><path d="M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8"/><path d="M12 17.5v-11"/></svg>
+                            </div>
+                            <div class="std-item-text">
+                                <h4>{{ item.descricao|default:item.get_model_name|truncatechars:30 }}</h4>
+                                <p>{{ item.get_model_name }}</p>
+                            </div>
+                        </div>
+                        <div class="std-item-right">
+                            <p class="std-val">R$ {{ item.get_valor_consolidado|floatformat:"2g" }}</p>
+                            {% if item.status == 'Pago' %}
+                                <span class="badge badge-paid">Pago</span>
                             {% else %}
-                                {% if p.data_vencimento %}
-                                    {{ p.data_vencimento|date:"d/m/Y" }}
-                                {% else %}
-                                    N/A
-                                {% endif %}
+                                <span class="badge badge-pending">Pendente</span>
                             {% endif %}
-                        {% endwith %}
-                    </td>
-                    
-                    <td>
-                        {% if p.status %}
-                            {{ p.get_status_display|capfirst }}
-                        {% else %}
-                            N/A
-                        {% endif %}
-                    </td>
-                </tr>
-                {% empty %}
-                <tr>
-                    <td colspan="5" class="empty-row">Nenhuma conta agendada para este mês.</td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    </div>
-</section>
+                        </div>
+                    </div>
+                    {% empty %}
+                    <div style="text-align: center; color: #94a3b8; padding: 20px;">Nenhum gasto recente.</div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
 
+        <div class="right-column-stack">
+            
+            <div class="standard-card">
+                <div class="std-header">
+                    <div class="std-title">Contratos RT Ativos</div>
+                    <a href="{% url 'comissionamento:contratos_list' %}" class="std-link">Ver todos</a>
+                </div>
+                <div class="std-content">
+                    <div class="std-list">
+                        {% for contrato in contratos_list %}
+                        <div class="std-item">
+                            <div class="std-item-left">
+                                <div class="std-icon-box icon-blue">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M10 9H8"/><path d="M16 13H8"/><path d="M16 17H8"/></svg>
+                                </div>
+                                <div class="std-item-text">
+                                    <h4>{{ contrato.arquiteta.nome }}</h4>
+                                    <p>{{ contrato.cliente }}</p>
+                                </div>
+                            </div>
+                            <div class="std-item-right">
+                                <p class="std-val text-red-600" style="color: #dc2626;">R$ {{ contrato.saldo_devedor|floatformat:"2g" }}</p>
+                                <p class="text-muted-xs">saldo devedor</p>
+                            </div>
+                        </div>
+                        {% empty %}
+                        <div style="text-align: center; color: #94a3b8; padding: 20px;">Nenhum contrato ativo.</div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+
+            <div class="standard-card">
+                <div class="std-header" style="border-bottom: none; padding-bottom: 0;">
+                    <div class="std-title">Acesso Rápido</div>
+                </div>
+                <div class="quick-actions-grid">
+                    <a href="{% url 'pagar:pagar_list' %}" class="action-btn">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
+                        <span class="action-label">Despesas</span>
+                    </a>
+                    
+                    <a href="{% url 'funcionarios:funcionarios' %}" class="action-btn">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                        <span class="action-label">Funcionarios</span>
+                    </a>
+
+                    <a href="{% url 'ferias:listar_funcionarios' %}" class="action-btn">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                        <span class="action-label">Férias</span>
+                    </a>
+
+                    <a href="{% url 'comissionamento:contratos_list' %}" class="action-btn">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+                        <span class="action-label"> RT</span>
+                    </a>
+                </div>
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
 {% endblock %}

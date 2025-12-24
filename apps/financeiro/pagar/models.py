@@ -1,6 +1,8 @@
 from decimal import Decimal
 from django.db import models
 from apps.funcionarios.models import Funcionario
+from apps.comissionamento.models import Arquiteta
+
 
 class StatusPagamento(models.TextChoices):
     PENDENTE = 'Pendente', 'Pendente'
@@ -216,7 +218,6 @@ class GastoVeiculoConsorcio(GastoBase):
 class Pessoa(models.Model):
     TIPO_CHOICES = [
         ('FUNC', 'Funcionário'),
-        ('ARQ', 'Arquiteto/Comissionado'),
     ]
     nome = models.CharField(max_length=150)
     tipo = models.CharField(max_length=4, choices=TIPO_CHOICES)
@@ -251,15 +252,13 @@ class PagamentoFuncionario(models.Model):
 # Modelo para as comissões de arquitetos
 class ComissaoArquiteto(models.Model):
     arquiteto = models.ForeignKey(
-        Pessoa, 
-        on_delete=models.PROTECT, 
-        limit_choices_to={'tipo': 'ARQ'}, 
-        verbose_name="Arquiteto"
+        Arquiteta,
+        on_delete=models.PROTECT,
+        verbose_name="Arquiteta"
     )
-    data_pagamento = models.DateField(verbose_name="Data do Pagamento")
-    valor_comissao = models.DecimalField(max_digits=10, decimal_places=2, verbose_name="Valor da Comissão")
+    data_pagamento = models.DateField()
+    valor_comissao = models.DecimalField(max_digits=10, decimal_places=2)
     observacoes = models.TextField(null=True, blank=True)
-
     class Meta:
         verbose_name = "Comissão de Arquiteto"
         verbose_name_plural = "Comissões de Arquitetos"
@@ -330,10 +329,10 @@ class GastoGeral(models.Model):
     data_gasto = models.DateField(verbose_name="Data do Gasto")
     
     # Valores de Pagamento
-    valor_total = models.DecimalField(max_digits=10, decimal_places=2, verbose_name="Valor Total")
-    valor_dinheiro_pix = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal('0.00'), verbose_name="Valor em Pix/Dinheiro")
-    valor_cartao = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal('0.00'), verbose_name="Valor em Cartão")
-    forma_principal_pagamento = models.CharField(max_length=10, choices=FORMA_PAGAMENTO_CHOICES, verbose_name="Forma Principal")
+    valor_total = models.DecimalField(max_digits=10, decimal_places=2, verbose_name="Valor Total", null=True, blank=True)
+    valor_dinheiro_pix = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal('0.00'), verbose_name="Valor em Pix/Dinheiro", null=True, blank=True)
+    valor_cartao = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal('0.00'), verbose_name="Valor em Cartão", null=True, blank=True)
+    forma_principal_pagamento = models.CharField(max_length=10, choices=FORMA_PAGAMENTO_CHOICES, verbose_name="Forma de Pagamento", null=True, blank=True)
 
     # Campos Adicionais
     motorista = models.CharField(max_length=100, null=True, blank=True)
@@ -437,3 +436,5 @@ class FolhaPagamento(models.Model):
             # Se a lógica for Saldo a Pagar, teria que subtrair.
         )
 
+    def get_model_name(self):
+        return self.__class__.__name__

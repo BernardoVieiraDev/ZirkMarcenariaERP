@@ -1,3 +1,4 @@
+import io
 import xlsxwriter
 from decimal import Decimal
 from datetime import date
@@ -53,25 +54,35 @@ class GastoUtilidadeExcelService:
         }
 
     @staticmethod
-    def gerar_relatorio_utilidades(gastos, caminho_arquivo="RELATORIO_UTILIDADES.xlsx"):
+    def gerar_relatorio_utilidades(gastos, workbook=None):
+        # Controle para saber se devemos fechar o arquivo ao final (Modo Individual)
+        output = None
+        should_close = False
+
+        if workbook is None:
+            # 1. Cria o buffer em memória se não receber um workbook existente
+            output = io.BytesIO()
+            # 2. Inicializa o Workbook
+            workbook = xlsxwriter.Workbook(output, {'in_memory': True})
+            should_close = True
+        
         try:
-            wb = xlsxwriter.Workbook(caminho_arquivo)
-            ws = wb.add_worksheet("Utilidades")
-            fmt = GastoUtilidadeExcelService._define_formats(wb)
+            ws = workbook.add_worksheet("Utilidades")
+            fmt = GastoUtilidadeExcelService._define_formats(workbook)
 
             # Cabeçalhos solicitados
             headers = [
                 "Cliente / Tipo", 
                 "Vencimento", 
-                "Data Pagamento",
+                "Data Pagamento", 
                 "Valor (R$)"
             ]
 
             # Configurar largura das colunas
-            ws.set_column('A:A', 35) 
-            ws.set_column('B:B', 15) 
-            ws.set_column('C:C', 15) 
-            ws.set_column('D:D', 18) 
+            ws.set_column('A:A', 35) #type: ignore
+            ws.set_column('B:B', 15) #type: ignore
+            ws.set_column('C:C', 15) #type: ignore
+            ws.set_column('D:D', 18) #type: ignore
 
             row = 0
 
@@ -124,11 +135,16 @@ class GastoUtilidadeExcelService:
             ws.merge_range(row, 0, row, 2, "TOTAL GERAL:", fmt['total_label'])
             ws.write(row, 3, total_valor, fmt['total_money'])
             
-            print(f"✅ Relatório de Utilidades gerado: {caminho_arquivo}")
+            print(f"✅ Relatório de Utilidades gerado em memória.")
 
         except Exception as e:
             print(f"❌ Erro ao gerar relatório utilidades: {e}")
             raise e
         finally:
-            if 'wb' in locals():
-                wb.close()
+            # Só fecha e retorna se foi criado dentro deste método (Modo Individual)
+            if should_close and workbook:
+                workbook.close()
+                if output:
+                    output.seek(0)
+                    return output
+                

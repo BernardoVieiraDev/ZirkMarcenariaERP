@@ -1,0 +1,26 @@
+<form method="POST" action="{{ request.path }}">
+    {% csrf_token %}
+    
+    <div class="modal-header">
+        <h3 class="modal-title" style="color: #e11d48;">Confirmar Exclusão</h3>
+        <button type="button" class="btn-close" onclick="closeActionModal()">✕</button>
+    </div>
+    
+    <div class="modal-body">
+        <p style="font-size: 15px; color: #475569; margin-bottom: 20px;">
+            Tem certeza que deseja excluir o pagamento de férias de <strong>{{ object.funcionario }}</strong>?
+        </p>
+        <p style="font-size: 13px; color: #94a3b8;">
+            Valor: R$ {{ object.valor_a_pagar|default:"0,00" }}<br>
+            Vencimento: {{ object.vencimento|date:"d/m/Y" }}
+        </p>
+        <div style="background: #fff1f2; padding: 12px; border-radius: 8px; border: 1px solid #fecaca; color: #9f1239; font-size: 13px;">
+            ⚠️ Esta ação não pode ser desfeita.
+        </div>
+    </div>
+    
+    <div class="modal-footer">
+        <button type="button" class="rh-btn rh-btn-ghost" onclick="closeActionModal()">Cancelar</button>
+        <button type="submit" class="rh-btn rh-btn-danger">Confirmar Exclusão</button>
+    </div>
+</form>

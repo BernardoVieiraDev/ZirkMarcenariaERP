@@ -1,3 +1,4 @@
+import io
 import xlsxwriter
 from decimal import Decimal
 from datetime import date
@@ -48,13 +49,23 @@ class BNDESExcelService:
         }
 
     @staticmethod
-    def gerar_relatorio_bndes(gastos, caminho_arquivo="RELATORIO_BNDES.xlsx"):
-        try:
-            wb = xlsxwriter.Workbook(caminho_arquivo)
-            ws = wb.add_worksheet("BNDES")
-            fmt = BNDESExcelService._define_formats(wb)
+    def gerar_relatorio_bndes(gastos, workbook=None):
+        # Controle para saber se devemos fechar o arquivo ao final (Modo Individual)
+        output = None
+        should_close = False
 
-            # Cabeçalhos das colunas (Sem coluna "Cartão", pois é redundante)
+        if workbook is None:
+            # 1. Cria o buffer em memória se não receber um workbook existente
+            output = io.BytesIO()
+            # 2. Inicializa o Workbook
+            workbook = xlsxwriter.Workbook(output, {'in_memory': True})
+            should_close = True
+        
+        try:
+            ws = workbook.add_worksheet("BNDES")
+            fmt = BNDESExcelService._define_formats(workbook)
+
+            # Cabeçalhos das colunas
             headers = [
                 "Descrição", 
                 "Vencimento", 
@@ -66,13 +77,13 @@ class BNDESExcelService:
             ]
 
             # Configurar largura das colunas
-            ws.set_column('A:A', 30) # Descrição
-            ws.set_column('B:B', 15) # Vencimento
-            ws.set_column('C:C', 15) # Pagamento
-            ws.set_column('D:D', 15) # Valor
-            ws.set_column('E:E', 15) # Pago
-            ws.set_column('F:F', 12) # Juros
-            ws.set_column('G:G', 35) # Obs
+            ws.set_column('A:A', 30) # Descrição#type: ignore
+            ws.set_column('B:B', 15) # Vencimento#type: ignore
+            ws.set_column('C:C', 15) # Pagamento#type: ignore
+            ws.set_column('D:D', 15) # Valor#type: ignore
+            ws.set_column('E:E', 15) # Pago#type: ignore
+            ws.set_column('F:F', 12) # Juros#type: ignore
+            ws.set_column('G:G', 35) # Obs#type: ignore
 
             row = 0
 
@@ -139,11 +150,15 @@ class BNDESExcelService:
             ws.write(row, 3, total_valor, fmt['total_money'])
             ws.write(row, 4, total_pago, fmt['total_money'])
             
-            print(f"✅ Relatório BNDES gerado: {caminho_arquivo}")
+            print(f"✅ Relatório BNDES gerado em memória.")
 
         except Exception as e:
             print(f"❌ Erro ao gerar relatório BNDES: {e}")
             raise e
         finally:
-            if 'wb' in locals():
-                wb.close()
+            # Só fecha e retorna se foi criado dentro deste método (Modo Individual)
+            if should_close and workbook:
+                workbook.close()
+                if output:
+                    output.seek(0)
+                    return output

@@ -1,0 +1,338 @@
+{% extends "core/base.html" %}
+{% load static %}
+
+{% block title %}Arquitetas Parceiras{% endblock %}
+
+{% block content %}
+<style>
+    :root {
+        --bg: #f8fafc; --card: #ffffff; 
+        --primary: #1976d2; 
+        --text-main: #1e293b; 
+        --text-muted: #64748b; 
+        --border: #e2e8f0; --radius: 12px;
+        --danger-text: #b91c1c;
+        /* Cores de Alerta */
+        --success: #166534; --success-bg: #dcfce7;
+        --danger: #991b1b; --danger-bg: #fee2e2;
+    }
+    
+    .rh-container { max-width: 1200px; margin: 0 auto; padding: 24px 0; font-family: Inter, system-ui, sans-serif; color: var(--text-main); }
+    
+    .font-semibold { font-weight: 600; }
+
+    /* === HEADER === */
+    .page-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; flex-wrap: wrap; gap: 16px; }
+    
+    .header-title h1 { font-size: 26px; font-weight: 700; color: #1e293b; margin: 0; letter-spacing: -0.5px; }
+    .header-title p { font-size: 14px; color: var(--text-muted); margin: 4px 0 0 0; }
+
+    /* Botão Novo */
+    .btn-new {
+        background: linear-gradient(180deg, var(--primary), #1565c0);
+        color: white; padding: 10px 20px; border-radius: 8px; text-decoration: none;
+        font-weight: 600; font-size: 14px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        display: inline-flex; align-items: center; gap: 8px; transition: transform 0.1s;
+        border: none; cursor: pointer;
+    }
+    .btn-new:hover { transform: translateY(-1px); filter: brightness(1.1); }
+
+    /* === MENSAGENS / ALERTAS === */
+    .alert-box { 
+        padding: 12px 16px; border-radius: 8px; margin-bottom: 20px; font-size: 14px; 
+        border: 1px solid transparent; display: flex; align-items: center; justify-content: space-between;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+    }
+    .alert-success { background: var(--success-bg); color: var(--success); border-color: #bbf7d0; }
+    .alert-error { background: var(--danger-bg); color: var(--danger); border-color: #fecaca; }
+    .alert-warning { background: #ffedd5; color: #9a3412; border-color: #fed7aa; }
+    .alert-info { background: #eff6ff; color: #1e40af; border-color: #dbeafe; }
+
+    /* === PAINEL DA TABELA === */
+    .content-panel {
+        background: white; border: 1px solid var(--border); border-radius: var(--radius);
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.02); overflow: visible;
+    }
+
+    .toolbar { padding: 16px; border-bottom: 1px solid var(--border); background: #fff; display: flex; align-items: center; justify-content: space-between; }
+    .search-input { width: 100%; max-width: 350px; padding: 10px 16px; border-radius: 8px; border: 1px solid var(--border); font-size: 14px; }
+    
+    .count-badge { background: #f1f5f9; padding: 4px 10px; border-radius: 20px; font-size: 12px; color: #64748b; font-weight: 600; }
+
+    /* Tabela */
+    .table-responsive { overflow-x: auto; min-height: 400px; }
+    .rh-table { width: 100%; border-collapse: collapse; text-align: left; }
+    
+    .rh-table thead th { 
+        background: #f8fafc; padding: 14px 20px; 
+        font-size: 12px; font-weight: 600; text-transform: uppercase; 
+        color: var(--text-muted); border-bottom: 1px solid var(--border); 
+    }
+    
+    .rh-table tbody td { 
+        padding: 16px 20px; font-size: 14px; vertical-align: middle; 
+        border-bottom: 1px solid #f1f5f9; color: var(--text-main); position: relative;
+    }
+    .rh-table tbody tr:hover { background: #f8fafc; }
+
+    /* Avatar */
+    .col-profile { display: flex; align-items: center; gap: 12px; }
+    .avatar-circle { 
+        width: 40px; height: 40px; border-radius: 50%; 
+        background: #eff6ff; color: var(--primary); 
+        display: flex; align-items: center; justify-content: center; 
+        font-weight: 700; font-size: 14px; border: 1px solid #dbeafe; flex-shrink: 0; 
+    }
+    
+    .profile-info div:first-child { font-weight: 600; color: var(--text-main); }
+    .profile-info div:last-child { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+
+    /* Dados Bancários */
+    .bank-info { display: flex; flex-direction: column; gap: 2px; }
+    .bank-name { font-weight: 600; color: var(--text-main); font-size: 13px; }
+    .bank-details { font-size: 12px; color: var(--text-muted); }
+
+    /* === MENU DE AÇÕES === */
+    .action-menu { position: relative; display: inline-block; }
+    
+    .dots-btn {
+        background: transparent; border: none; cursor: pointer; padding: 8px; border-radius: 50%;
+        color: var(--text-muted); transition: background 0.2s; display: flex; align-items: center; justify-content: center;
+    }
+    .dots-btn:hover { background: #f1f5f9; color: var(--primary); }
+    
+    .dropdown-content {
+        display: none; position: absolute; right: 0; top: 100%; margin-top: 4px;
+        background-color: white; min-width: 150px;
+        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+        border-radius: 8px; border: 1px solid var(--border); z-index: 100;
+        overflow: hidden; animation: fadeIn 0.1s ease-out;
+    }
+    .dropdown-content.show { display: block; }
+    
+    .dropdown-content a {
+        color: var(--text-main); padding: 10px 16px; text-decoration: none;
+        display: flex; align-items: center; gap: 10px; font-size: 13px; width: 100%;
+        transition: background 0.1s;
+    }
+    .dropdown-content a:hover { background-color: #f8fafc; color: var(--primary); }
+    .dropdown-content a.delete-item:hover { background-color: #fef2f2; color: var(--danger-text); }
+    
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(-5px); } to { opacity: 1; transform: translateY(0); } }
+    .empty-msg { text-align: center; padding: 40px; color: var(--text-muted); font-style: italic; }
+
+    /* === CSS MODAL === */
+    .modal-overlay {
+        display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.75); 
+        z-index: 10000; overflow-y: auto; padding: 20px;
+        align-items: flex-start; justify-content: center; backdrop-filter: blur(3px);
+    }
+    .modal-overlay.open { display: flex; }
+    
+    .modal-window {
+        background: white; width: 100%; max-width: 600px; margin: 30px auto; 
+        border-radius: 12px; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+        display: flex; flex-direction: column; position: relative;
+    }
+    
+    .modal-header { padding: 20px 24px; border-bottom: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center; }
+    .modal-title { font-size: 18px; font-weight: 700; color: #1e293b; margin: 0; }
+    .btn-close { background: transparent; border: none; cursor: pointer; font-size: 24px; color: #94a3b8; padding: 4px; line-height: 1; }
+    .btn-close:hover { color: #0f172a; }
+    .modal-body { padding: 24px; }
+    .form-group { margin-bottom: 16px; }
+    .form-group label { display: block; font-size: 13px; font-weight: 600; color: #475569; margin-bottom: 6px; }
+    .form-group input, .form-group select, .form-group textarea { 
+        width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #cbd5e1; font-size: 14px; 
+    }
+    .form-group input:focus, .form-group select:focus { border-color: var(--primary); outline: none; }
+    .modal-footer { padding: 16px 24px; border-top: 1px solid #e2e8f0; background: #f8fafc; border-radius: 0 0 12px 12px; display: flex; justify-content: flex-end; gap: 12px; }
+    .btn-ghost { background: white; border: 1px solid #cbd5e1; color: #475569; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: 600; }
+    .btn-ghost:hover { background: #f1f5f9; color: #1e293b; }
+    .rh-btn-primary { background: linear-gradient(180deg, var(--primary), #1565c0); color: white; padding: 10px 20px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 14px; border: none; cursor: pointer; }
+</style>
+
+<div class="rh-container">
+    
+    <header class="page-header">
+        <div class="header-title">
+            <h1>Arquitetas Parceiras</h1>
+            <p>Cadastro de profissionais e dados bancários para RT</p>
+        </div>
+        <div>
+            <button onclick="openModal()" class="btn-new">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                Nova Arquiteta
+            </button>
+        </div>
+    </header>
+
+    {# --- BLOCO DE MENSAGENS COM TIMER (AUTO REMOVE) --- #}
+    {% if messages %}
+        <div id="messages-container">
+            {% for message in messages %}
+                <div class="alert-box alert-{{ message.tags }}">
+                    <span>{{ message }}</span>
+                    <button onclick="this.parentElement.remove()" style="background:none;border:none;cursor:pointer;color:inherit;font-weight:bold;">✕</button>
+                </div>
+            {% endfor %}
+        </div>
+        <script>
+            // Script para remover as mensagens automaticamente após 5 segundos
+            setTimeout(function() {
+                const msgs = document.querySelectorAll('.alert-box');
+                msgs.forEach(m => {
+                    m.style.transition = 'opacity 0.5s ease';
+                    m.style.opacity = '0';
+                    setTimeout(() => m.remove(), 500);
+                });
+            }, 5000); // 5000ms = 5 segundos
+        </script>
+    {% endif %}
+    {# -------------------------------------------------- #}
+
+    <div class="content-panel">
+        <div class="toolbar">
+            <input id="searchInput" class="search-input" type="search" placeholder="Buscar por nome, CPF ou banco..." onkeyup="filterTable()">
+            <span class="count-badge">{{ arquitetas.count }} Registros</span>
+        </div>
+
+        <div class="table-responsive">
+            <table class="rh-table">
+                <thead>
+                    <tr>
+                        <th width="40%">Arquiteta</th>
+                        <th width="20%">CPF</th>
+                        <th width="30%">Dados Bancários</th>
+                        <th width="10%" style="text-align: right;">Ações</th>
+                    </tr>
+                </thead>
+                <tbody id="tableBody">
+                    {% for arquiteta in arquitetas %}
+                    <tr class="search-row">
+                        <td>
+                            <div class="col-profile">
+                                <div class="avatar-circle">
+                                    {{ arquiteta.nome|slice:":2"|upper }}
+                                </div>
+                                <div class="profile-info">
+                                    <div class="search-name">{{ arquiteta.nome }}</div>
+                                    <div style="font-size: 11px;">Parceiro Cadastrado</div>
+                                </div>
+                            </div>
+                        </td>
+                        <td style="color: var(--text-main);">
+                            {{ arquiteta.cpf|default:"-" }}
+                        </td>
+                        <td>
+                            <div class="bank-info search-bank">
+                                <span class="bank-name">{{ arquiteta.banco|default:"Banco não informado" }}</span>
+                                <span class="bank-details" style="color: var(--text-muted);">
+                                    Ag: {{ arquiteta.agencia|default:"-" }} | CC: {{ arquiteta.conta|default:"-" }}
+                                </span>
+                            </div>
+                        </td>
+                        <td style="text-align: right;">
+                            <div class="action-menu">
+                                <button class="dots-btn" onclick="toggleMenu('menu-{{ arquiteta.pk }}')">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="1"/><circle cx="12" cy="5" r="1"/><circle cx="12" cy="19" r="1"/></svg>
+                                </button>
+                                
+                                <div id="menu-{{ arquiteta.pk }}" class="dropdown-content">
+                                    <a href="{% url 'comissionamento:arquiteta_edit' pk=arquiteta.pk %}">
+                                        ✏️ Editar
+                                    </a>
+                                    <a href="{% url 'comissionamento:arquiteta_delete' pk=arquiteta.pk %}" class="delete-item">
+                                        🗑️ Excluir
+                                    </a>
+                                </div>
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="4" class="empty-msg">Nenhuma arquiteta cadastrada.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<div id="modalArquiteta" class="modal-overlay">
+    <div class="modal-window">
+        <form method="POST" action="{% url 'comissionamento:arquiteta_create' %}">
+            {% csrf_token %}
+            <div class="modal-header">
+                <h3 class="modal-title">Nova Arquiteta</h3>
+                <button type="button" class="btn-close" onclick="closeModal()">✕</button>
+            </div>
+            
+            <div class="modal-body">
+                <div style="display: grid; gap: 16px;">
+                    {% for field in form %}
+                    <div class="form-group">
+                        <label>{{ field.label }}</label>
+                        {{ field }}
+                        {% if field.errors %}
+                            <div style="color:var(--danger-text); font-size:11px; margin-top:2px;">{{ field.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            
+            <div class="modal-footer">
+                <button type="button" class="btn-ghost" onclick="closeModal()">Cancelar</button>
+                <button type="submit" class="rh-btn-primary">Salvar Cadastro</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    // Controle do Modal
+    function openModal() {
+        document.getElementById('modalArquiteta').classList.add('open');
+        document.body.style.overflow = 'hidden';
+    }
+
+    function closeModal() {
+        document.getElementById('modalArquiteta').classList.remove('open');
+        document.body.style.overflow = '';
+    }
+
+    document.getElementById('modalArquiteta').addEventListener('click', function(e) {
+        if (e.target === this) closeModal();
+    });
+
+    // Filtro da tabela
+    function filterTable() {
+        const query = document.getElementById('searchInput').value.toLowerCase();
+        const rows = document.querySelectorAll('.search-row');
+        
+        rows.forEach(row => {
+            const text = row.innerText.toLowerCase();
+            row.style.display = text.includes(query) ? '' : 'none';
+        });
+    }
+
+    // Toggle do menu 3 pontinhos
+    function toggleMenu(menuId) {
+        document.querySelectorAll('.dropdown-content').forEach(menu => {
+            if (menu.id !== menuId) menu.classList.remove('show');
+        });
+        const menu = document.getElementById(menuId);
+        if (menu) menu.classList.toggle('show');
+    }
+
+    window.onclick = function(event) {
+        if (!event.target.closest('.dots-btn')) {
+            document.querySelectorAll('.dropdown-content').forEach(menu => {
+                menu.classList.remove('show');
+            });
+        }
+    }
+</script>
+{% endblock %}

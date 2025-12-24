@@ -1,4 +1,3 @@
-import os
 from datetime import date, datetime
 from decimal import Decimal
 
@@ -11,11 +10,11 @@ from .forms import (BoletoForm, ChequeForm, FaturaCartaoForm,
                     GastoContabilidadeForm, GastoGasolinaForm, GastoGeralForm,
                     GastoImovelForm, GastoUtilidadeForm,
                     GastoVeiculoConsorcioForm, PrestacaoEmprestimoForm,
-                    TipoGastoForm, FolhaPagamentoForm)
+                    TipoGastoForm, FolhaPagamentoForm, ComissaoArquitetoForm)
 from .models import (Boleto, Cheque, FaturaCartao, GastoBase,
                      GastoContabilidade, GastoGasolina, GastoGeral,
                      GastoImovel, GastoUtilidade, GastoVeiculoConsorcio,
-                     PrestacaoEmprestimo, FolhaPagamento)
+                     PrestacaoEmprestimo, FolhaPagamento, ComissaoArquiteto)
 
 # ----------------------------------------------------
 # MAPA DE MODELOS
@@ -32,7 +31,8 @@ MODEL_FORM_MAP = {
     'GastoGeral': {'model': GastoGeral, 'form': GastoGeralForm, 'title': 'Novo Gasto Geral'},
     'GastoGasolina': {'model': GastoGasolina, 'form': GastoGasolinaForm, 'title': 'Novo Gasto com Gasolina'},
     'Cheque': {'model': Cheque, 'form': ChequeForm, 'title': 'Novo Gasto com Cheque'},
-    'FolhaPagamento': {'model': FolhaPagamento, 'form': FolhaPagamentoForm, 'title': 'Folha pagamento'}
+    'FolhaPagamento': {'model': FolhaPagamento, 'form': FolhaPagamentoForm, 'title': 'Folha pagamento'},
+    'ComissaoArquiteto': {'model': ComissaoArquiteto, 'form': ComissaoArquitetoForm, 'title': 'Comissão ARquitetos'}
 }
 
 # ----------------------------------------------------
@@ -63,29 +63,37 @@ def sort_key(obj):
 # VIEW - LISTAGEM
 # ----------------------------------------------------
 
-def pagar_list(request):
-    all_qs = []
+# No arquivo apps/financeiro/pagar/views.py
 
+def pagar_list(request):
+    combined = []
     for data in MODEL_FORM_MAP.values():
         ModelClass = data['model']
-        if issubclass(ModelClass, GastoBase) or ModelClass in [GastoGeral, Cheque]:
-            all_qs.append(ModelClass.objects.all())
-
-    combined = []
-    for qs in all_qs:
+        qs = ModelClass.objects.all()
         combined.extend(qs)
 
     combined.sort(key=sort_key, reverse=True)
 
-    total = sum(
-        obj.get_valor_consolidado() or Decimal('0')
-        for obj in combined
+    total_pendente = sum(
+        item.get_valor_consolidado() for item in combined 
+        if item.status != 'Pago' and item.status != 'PG'
     )
+    
+    total_pago = sum(
+        item.get_valor_consolidado() for item in combined 
+        if item.status == 'Pago' or item.status == 'PG'
+    )
+    
+    # --- NOVO: Form para o Modal de Seleção ---
+    form_selecao = TipoGastoForm()
 
     return render(request, 'core/financeiro/pagar/list.html', {
         'list': combined,
-        'total': total,
+        'total': total_pendente, # Usado no resumo
+        'total_pendente': total_pendente,
+        'total_pago': total_pago,
         'tipos_disponiveis': MODEL_FORM_MAP.keys(),
+        'form_selecao': form_selecao, # Adicionado ao contexto
     })
 
 # ----------------------------------------------------
@@ -93,6 +101,12 @@ def pagar_list(request):
 # ----------------------------------------------------
 
 def pagar_create(request):
+    # Verifica se a requisição veio do Modal (parametro GET ou POST)
+    is_modal = request.GET.get('modal') == 'true' or request.POST.get('modal') == 'true'
+    
+    # Define qual template renderizar
+    template_name = 'core/financeiro/pagar/form_content.html' if is_modal else 'core/financeiro/pagar/form_detalhe.html'
+    
     title = 'Nova Conta a Pagar'
 
     # 1) POST — tentativa de salvar gasto
@@ -109,13 +123,14 @@ def pagar_create(request):
                 form.save()
                 return redirect('pagar:pagar_list')
 
-            return render(request, 'core/financeiro/pagar/form_detalhe.html', {
+            # Se der erro, retorna o template (parcial se for modal, completo se não)
+            return render(request, template_name, {
                 'form': form,
                 'title': title,
-                'tipo': tipo,   # <<< ESSENCIAL
+                'tipo': tipo,
             })
 
-        # 2) POST sem tipo → validar Form de Seleção
+        # 2) POST sem tipo (Seleção inicial via POST convencional - fallback)
         tipo_form = TipoGastoForm(request.POST)
         if tipo_form.is_valid():
             tipo = tipo_form.cleaned_data['categoria']
@@ -126,19 +141,19 @@ def pagar_create(request):
             'title': title,
         })
 
-    # 3) GET → usuário escolheu tipo por ?tipo=XYZ
+    # 3) GET → usuário escolheu tipo por ?tipo=XYZ (Chamada AJAX do Modal cai aqui)
     tipo = request.GET.get('tipo')
 
     if tipo and tipo in MODEL_FORM_MAP:
         FormClass = MODEL_FORM_MAP[tipo]['form']
         form = FormClass()
-        return render(request, 'core/financeiro/pagar/form_detalhe.html', {
+        return render(request, template_name, {
             'form': form,
             'title': MODEL_FORM_MAP[tipo]['title'],
-            'tipo': tipo,  # <<< ESSENCIAL
+            'tipo': tipo, 
         })
 
-    # 4) GET → Tela de seleção
+    # 4) GET → Tela de seleção (Fallback)
     return render(request, 'core/financeiro/pagar/form_selecao.html', {
         'tipo_form': TipoGastoForm(),
         'title': 'Nova Conta a Pagar - Seleção',

@@ -1,52 +1,280 @@
 {% extends "core/base.html" %}
+{% load static %}
+
 {% block title %}Detalhe RT: {{ contrato.cliente }}{% endblock %}
 
 {% block content %}
-<section class="panel">
-    <div class="panel-header">
-        <h3>Contrato: {{ contrato.cliente }} ({{ contrato.arquiteta.nome }})</h3>
-        <div class="controls">
-<a class="btn" href="{% url 'comissionamento:pagamento_create' contrato_pk=contrato.pk %}">
-    + Registrar Pagamento
-</a>
-
-            <a class="btn btn-secondary" href="{% url 'comissionamento:contratos_list' %}">Voltar à Lista</a>
-        </div>
-    </div>
-
-    <div class="alert alert-info row">
-        <div class="col-md-4"><strong>RT Total Devida:</strong> R$ {{ contrato.valor_rt_total|floatformat:2 }}</div>
-        <div class="col-md-4"><strong>Total Pago:</strong> R$ {{ total_pago|floatformat:2 }}</div>
-        <div class="col-md-4">
-            <strong>SALDO DEVEDOR:</strong> 
-            <strong style="color: {% if contrato.saldo_devedor > 0 %} red{% else %}green{% endif %};">
-                R$ {{ contrato.saldo_devedor|floatformat:2 }}
-            </strong>
-        </div>
-    </div>
+<style>
+    /* ... (Estilos anteriores) ... */
+    :root {
+        --bg: #f8fafc; --card: #ffffff; 
+        --primary: #1976d2; 
+        --text-main: #1e293b; 
+        --text-muted: #64748b; 
+        --border: #e2e8f0; --radius: 12px;
+        --success: #166534; --success-bg: #dcfce7;
+        --danger: #991b1b; --danger-bg: #fee2e2;
+        --warning: #b45309; --warning-bg: #ffedd5;
+    }
     
-    <h4>Histórico de Parcelas Pagas</h4>
-    <table>
-        <thead>
-            <tr>
-                <th>Data do Pagamento</th>
-                <th>Valor Pago (R$)</th>
-                <th>Observações</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for pagamento in pagamentos %}
-            <tr>
-                <td>{{ pagamento.data_pagamento|date:"d/m/Y" }}</td>
-                <td>R$ {{ pagamento.valor_pago|floatformat:2 }}</td>
-                <td>{{ pagamento.observacoes|default:"N/A" }}</td>
-            </tr>
-            {% empty %}
-            <tr>
-                <td colspan="3">Nenhum pagamento registrado para este contrato.</td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
-</section>
+    .rh-container { max-width: 1200px; margin: 0 auto; padding: 24px 0; font-family: Inter, system-ui, sans-serif; color: var(--text-main); }
+    
+    .page-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; flex-wrap: wrap; gap: 16px; }
+    .header-title h1 { font-size: 26px; font-weight: 700; color: #1e293b; margin: 0; letter-spacing: -0.5px; }
+    .header-title p { font-size: 14px; color: var(--text-muted); margin: 4px 0 0 0; }
+
+    .btn-group { display: flex; gap: 8px; align-items: center; }
+
+    .rh-btn-primary {
+        background: linear-gradient(180deg, var(--primary), #1565c0);
+        color: white; padding: 10px 20px; border-radius: 8px; text-decoration: none; 
+        font-weight: 600; font-size: 14px; border: none; cursor: pointer;
+        display: inline-flex; align-items: center; gap: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        transition: transform 0.1s;
+    }
+    .rh-btn-primary:hover { transform: translateY(-1px); filter: brightness(1.1); color: white; }
+
+    .btn-ghost { 
+        background: white; border: 1px solid #cbd5e1; color: #475569; 
+        padding: 9px 16px; border-radius: 8px; cursor: pointer; font-weight: 600; text-decoration: none; font-size: 14px;
+        display: inline-flex; align-items: center; gap: 6px;
+    }
+    .btn-ghost:hover { background: #f1f5f9; color: #1e293b; }
+
+    .btn-danger-ghost {
+        background: white; border: 1px solid #fecaca; color: #ef4444; 
+        padding: 9px 16px; border-radius: 8px; cursor: pointer; font-weight: 600; text-decoration: none; font-size: 14px;
+    }
+    .btn-danger-ghost:hover { background: #fef2f2; color: #dc2626; }
+    
+    /* Botões pequenos da tabela */
+    .btn-icon { background: none; border: none; cursor: pointer; color: var(--text-muted); padding: 4px; transition: color 0.2s; }
+    .btn-icon:hover { color: var(--primary); }
+    .btn-icon.delete:hover { color: var(--danger); }
+
+    .summary-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 20px; margin-bottom: 30px; }
+    .summary-card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+    .card-blue { border-left: 4px solid var(--primary); }
+    .card-green { border-left: 4px solid var(--success); }
+    .card-orange { border-left: 4px solid #f59e0b; }
+    .summary-card h3 { font-size: 13px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; margin: 0 0 8px 0; }
+    .summary-card .value { font-size: 24px; font-weight: 700; color: var(--text-main); }
+
+    .content-panel { background: white; border: 1px solid var(--border); border-radius: var(--radius); box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.02); overflow: hidden; }
+    .panel-header-simple { padding: 16px 20px; border-bottom: 1px solid var(--border); background: #fff; font-weight: 600; color: var(--text-main); font-size: 15px; display: flex; align-items: center; gap: 8px; }
+
+    .table-responsive { overflow-x: auto; }
+    .rh-table { width: 100%; border-collapse: collapse; text-align: left; }
+    .rh-table thead th { background: #f8fafc; padding: 14px 20px; font-size: 12px; font-weight: 600; text-transform: uppercase; color: var(--text-muted); border-bottom: 1px solid var(--border); }
+    .rh-table tbody td { padding: 16px 20px; font-size: 14px; vertical-align: middle; border-bottom: 1px solid #f1f5f9; color: var(--text-main); }
+    .rh-table tbody tr:hover { background: #f8fafc; }
+    .empty-msg { text-align: center; padding: 40px; color: var(--text-muted); font-style: italic; }
+
+    /* Modal CSS */
+    .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.75); z-index: 10000; overflow-y: auto; padding: 20px; align-items: flex-start; justify-content: center; backdrop-filter: blur(3px); }
+    .modal-overlay.open { display: flex; }
+    .modal-window { background: white; width: 100%; max-width: 600px; margin: 30px auto; border-radius: 12px; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25); display: flex; flex-direction: column; }
+    .modal-header { padding: 20px 24px; border-bottom: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center; }
+    .modal-title { font-size: 18px; font-weight: 700; color: #1e293b; margin: 0; }
+    .btn-close { background: transparent; border: none; cursor: pointer; font-size: 24px; color: #94a3b8; padding: 4px; line-height: 1; }
+    .modal-body { padding: 24px; }
+    .modal-loader { text-align: center; padding: 40px; color: var(--text-muted); }
+</style>
+
+<div class="rh-container">
+    
+    <header class="page-header">
+        <div class="header-title">
+            <div style="display: flex; align-items: center; gap: 10px;">
+                <a href="{% url 'comissionamento:contratos_list' %}" style="color: var(--text-muted); text-decoration: none; display: flex;">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
+                </a>
+                <h1>{{ contrato.cliente }}</h1>
+            </div>
+            <p>Arquiteta Responsável: <strong>{{ contrato.arquiteta.nome }}</strong></p>
+        </div>
+        
+        <div class="btn-group">
+            <button onclick="openRemoteModal('{% url 'comissionamento:contrato_edit' pk=contrato.pk %}')" class="btn-ghost">
+                ✏️ Editar
+            </button>
+            <button onclick="openRemoteModal('{% url 'comissionamento:contrato_delete' pk=contrato.pk %}')" class="btn-danger-ghost">
+                🗑️ Excluir
+            </button>
+            <button onclick="openRemoteModal('{% url 'comissionamento:pagamento_create' contrato_pk=contrato.pk %}')" class="rh-btn-primary">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                Registrar Pagamento
+            </button>
+        </div>
+    </header>
+
+    {% if messages %}
+    <div style="margin-bottom: 20px;" id="message-container">
+        {% for message in messages %}
+            <div class="alert alert-{{ message.tags }}" style="padding: 10px; border-radius: 8px; background: {% if message.tags == 'success' %}#dcfce7; color: #166534;{% else %}#fee2e2; color: #991b1b;{% endif %}">
+                {{ message }}
+            </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <div class="summary-grid">
+        <div class="summary-card card-blue">
+            <h3>RT Total Devida</h3>
+            <div class="value">R$ {{ contrato.valor_rt_total|floatformat:"2g" }}</div>
+            <div style="font-size:12px; color:#64748b; margin-top:4px">Valor do contrato</div>
+        </div>
+
+        <div class="summary-card card-green">
+            <h3>Total Pago</h3>
+            <div class="value" style="color: var(--success);">R$ {{ total_pago|floatformat:"2g" }}</div>
+            <div style="font-size:12px; color:#64748b; margin-top:4px">Valor já quitado</div>
+        </div>
+
+        <div class="summary-card card-orange">
+            <h3>Saldo Devedor</h3>
+            <div class="value" style="color: {% if contrato.saldo_devedor > 0 %}#f59e0b{% else %}var(--success){% endif %};">
+                R$ {{ contrato.saldo_devedor|floatformat:"2g" }}
+            </div>
+            <div style="font-size:12px; color:#64748b; margin-top:4px">
+                {% if contrato.saldo_devedor > 0 %}Restante a pagar{% else %}Quitado{% endif %}
+            </div>
+        </div>
+    </div>
+
+    <div class="content-panel">
+        <div class="panel-header-simple">
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></svg>
+            Histórico de Parcelas Pagas
+        </div>
+
+        <div class="table-responsive">
+            <table class="rh-table">
+                <thead>
+                    <tr>
+                        <th width="20%">Data do Pagamento</th>
+                        <th width="25%">Valor Pago (R$)</th>
+                        <th>Observações</th>
+                        <th width="10%" style="text-align: right;">Ações</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for pagamento in pagamentos %}
+                    <tr>
+                        <td style="color: var(--text-main); font-weight: 500;">
+                            {{ pagamento.data_pagamento|date:"d/m/Y" }}
+                        </td>
+                        <td>
+                            <span style="font-weight: 600; color: var(--success);">
+                                R$ {{ pagamento.valor_pago|floatformat:"2g" }}
+                            </span>
+                        </td>
+                        <td style="color: var(--text-muted);">
+                            {{ pagamento.observacoes|default:"-" }}
+                        </td>
+                        <td style="text-align: right;">
+                            <button class="btn-icon" title="Editar" onclick="openRemoteModal('{% url 'comissionamento:pagamento_edit' pk=pagamento.pk %}')">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+                            </button>
+                            <button class="btn-icon delete" title="Excluir" onclick="openRemoteModal('{% url 'comissionamento:pagamento_delete' pk=pagamento.pk %}')">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                            </button>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="4" class="empty-msg">
+                            Nenhum pagamento registrado para este contrato.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<div id="modalGeneric" class="modal-overlay">
+    <div class="modal-window" id="modalGenericContent">
+        <div class="modal-loader">Carregando...</div>
+    </div>
+</div>
+
+<script>
+    function closeModal(modalId) {
+        document.getElementById(modalId).classList.remove('open');
+        document.body.style.overflow = '';
+    }
+
+    function openRemoteModal(url) {
+        const modal = document.getElementById('modalGeneric');
+        const content = document.getElementById('modalGenericContent');
+        
+        content.innerHTML = '<div class="modal-loader">Carregando...</div>';
+        modal.classList.add('open');
+        document.body.style.overflow = 'hidden';
+
+        fetch(url)
+            .then(response => response.text())
+            .then(html => {
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(html, 'text/html');
+                
+                // Tenta extrair apenas o conteúdo útil (form ou painel)
+                let mainContent = doc.querySelector('.panel-body') || doc.querySelector('form') || doc.body;
+                
+                if (mainContent) {
+                    content.innerHTML = `
+                        <div class="modal-header">
+                            <h3 class="modal-title">Ação</h3>
+                            <button type="button" class="btn-close" onclick="closeModal('modalGeneric')">✕</button>
+                        </div>
+                        <div class="modal-body">
+                            ${mainContent.innerHTML}
+                        </div>
+                    `;
+                    // Remove headers internos duplicados
+                    const internalHeaders = content.querySelectorAll('.panel-header, h3:not(.modal-title)');
+                    internalHeaders.forEach(h => h.style.display = 'none');
+                } else {
+                    content.innerHTML = '<div class="modal-body">Erro ao carregar conteúdo.</div>';
+                }
+            })
+            .catch(err => {
+                console.error(err);
+                content.innerHTML = '<div class="modal-body">Erro de conexão.</div>';
+            });
+    }
+
+    document.querySelectorAll('.modal-overlay').forEach(modal => {
+        modal.addEventListener('click', function(e) {
+            if (e.target === this) closeModal(this.id);
+        });
+    });
+
+    // --- NOVA FUNCIONALIDADE: REMOVER MENSAGENS APÓS 5 SEGUNDOS ---
+    document.addEventListener("DOMContentLoaded", function() {
+        // Aguarda 5 segundos (5000ms)
+        setTimeout(function() {
+            // Seleciona todas as mensagens de alerta dentro do container
+            const alerts = document.querySelectorAll('.alert');
+            
+            alerts.forEach(function(alert) {
+                // Aplica transição suave
+                alert.style.transition = "opacity 0.5s ease";
+                alert.style.opacity = "0";
+                
+                // Remove o elemento do DOM após a transição terminar (0.5s)
+                setTimeout(function() {
+                    alert.style.display = "none";
+                    // Opcional: remover o elemento pai se ficar vazio
+                    const container = document.getElementById('message-container');
+                    if (container && container.children.length === 0) {
+                        container.style.display = 'none';
+                    }
+                }, 500);
+            });
+        }, 5000);
+    });
+</script>
 {% endblock %}

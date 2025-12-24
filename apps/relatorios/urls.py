@@ -21,4 +21,5 @@ urlpatterns = [
     path('exportar_comissoes/', views.exportar_comissoes, name='exportar_comissoes'),
     path('exportar_prestacoes/', views.exportar_prestacoes, name='exportar_prestacoes'),
 path('exportar_folha/', views.exportar_folha, name='exportar_folha'),
+path('exportar_multiplas/', views.exportar_multiplas_planilhas, name='exportar_multiplas_planilhas'),
 ]

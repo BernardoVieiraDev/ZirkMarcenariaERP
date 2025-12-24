@@ -8,9 +8,20 @@
     </div>
     
     <div class="panel-body">
+        
+        {# --- Exibição de Mensagens (Padrão do Projeto) --- #}
+        {% if messages %}
+            {% for message in messages %}
+                <div class="alert alert-{{ message.tags }}">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        {% endif %}
+
         <p>Registrando pagamento para: <strong>{{ contrato.cliente }}</strong> (RT Total: R$ {{ contrato.valor_rt_total|floatformat:2 }})</p>
         
-        <form method="post">
+        {# CORREÇÃO AQUI: Adicionado o atributo action com lógica para Criar ou Editar #}
+        <form method="post" action="{% if form.instance.pk %}{% url 'comissionamento:pagamento_edit' pk=form.instance.pk %}{% else %}{% url 'comissionamento:pagamento_create' contrato_pk=contrato.pk %}{% endif %}">
             {% csrf_token %}
             
             {{ form.as_p }}
@@ -23,6 +34,7 @@
 
             <div class="form-actions" style="margin-top: 20px;">
                 <button type="submit" class="btn btn-success">Salvar Pagamento</button>
+                {# O botão cancelar volta para o detalhe do contrato #}
                 <a href="{% url 'comissionamento:contrato_detail' pk=contrato.pk %}" class="btn btn-secondary">Cancelar</a>
             </div>
         </form>

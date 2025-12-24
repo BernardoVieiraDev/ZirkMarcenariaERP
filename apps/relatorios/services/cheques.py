@@ -1,3 +1,4 @@
+import io
 import xlsxwriter
 from decimal import Decimal
 from datetime import date
@@ -56,11 +57,21 @@ class ChequeExcelService:
         }
 
     @staticmethod
-    def gerar_relatorio_cheques(cheques, caminho_arquivo="RELATORIO_CHEQUES.xlsx"):
+    def gerar_relatorio_cheques(cheques, workbook=None):
+        # Controle para saber se devemos fechar o arquivo ao final (Modo Individual)
+        output = None
+        should_close = False
+
+        if workbook is None:
+            # 1. Cria o buffer em memória se não receber um workbook existente
+            output = io.BytesIO()
+            # 2. Inicializa o Workbook
+            workbook = xlsxwriter.Workbook(output, {'in_memory': True})
+            should_close = True
+        
         try:
-            wb = xlsxwriter.Workbook(caminho_arquivo)
-            ws = wb.add_worksheet("Cheques")
-            fmt = ChequeExcelService._define_formats(wb)
+            ws = workbook.add_worksheet("Cheques")
+            fmt = ChequeExcelService._define_formats(workbook)
 
             # Cabeçalhos
             headers = [
@@ -73,12 +84,12 @@ class ChequeExcelService:
             ]
 
             # Configurar largura das colunas
-            ws.set_column('A:A', 15) 
-            ws.set_column('B:B', 35) 
-            ws.set_column('C:C', 15) 
-            ws.set_column('D:D', 15) 
-            ws.set_column('E:E', 15) 
-            ws.set_column('F:F', 18) 
+            ws.set_column('A:A', 15) #type: ignore
+            ws.set_column('B:B', 35) #type: ignore
+            ws.set_column('C:C', 15) #type: ignore
+            ws.set_column('D:D', 15) #type: ignore
+            ws.set_column('E:E', 15) #type: ignore
+            ws.set_column('F:F', 18) #type: ignore
 
             row = 0
 
@@ -130,11 +141,15 @@ class ChequeExcelService:
             ws.merge_range(row, 0, row, 4, "TOTAL EM CHEQUES:", fmt['total_label'])
             ws.write(row, 5, total_valor, fmt['total_money'])
             
-            print(f"✅ Relatório de Cheques gerado: {caminho_arquivo}")
+            print(f"✅ Relatório de Cheques gerado em memória.")
 
         except Exception as e:
             print(f"❌ Erro ao gerar relatório de cheques: {e}")
             raise e
         finally:
-            if 'wb' in locals():
-                wb.close()
+            # Só fecha e retorna se foi criado dentro deste método (Modo Individual)
+            if should_close and workbook:
+                workbook.close()
+                if output:
+                    output.seek(0)
+                    return output

@@ -8,6 +8,6 @@ class ReceberForm(forms.ModelForm):
         fields = ['forma_de_recebimento','data_vencimento','cliente','categoria','valor',
                   'valor_estoque','observacoes','data_pagamento']
 
-        widgets = {'data_vencimento': forms.DateInput(attrs={'type':'date'}),
-                   'data_pagamento': forms.DateInput(attrs={'type': 'date'})}
+        widgets = {'data_vencimento': forms.DateInput(attrs={'type':'date'}, format='%Y-%m-%d'),
+                   'data_pagamento': forms.DateInput(attrs={'type': 'date'}, format='%Y-%m-%d')}
 

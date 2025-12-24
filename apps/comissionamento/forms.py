@@ -1,7 +1,7 @@
 # comissionamento/forms.py
 
 from django import forms
-from .models import Arquiteta, ContratoRT
+from .models import Arquiteta, ContratoRT, PagamentoRT
 
 class ArquitetaForm(forms.ModelForm):
     class Meta:
@@ -36,8 +36,20 @@ class ContratoRTForm(forms.ModelForm):
         widgets = {
             'arquiteta': forms.Select(attrs={'class': 'form-select'}),
             'cliente': forms.TextInput(attrs={'class': 'form-control'}),
-            'data_contrato': forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
+            'data_contrato': forms.DateInput(
+                attrs={'type': 'date', 'class': 'form-control'},
+                format='%Y-%m-%d'),
             'valor_servico': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
             'valor_rt_total': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
             'percentual_rt': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
+        }
+
+class PagamentoRTForm(forms.ModelForm):
+    class Meta:
+        model = PagamentoRT
+        fields = ['data_pagamento', 'valor_pago', 'observacoes']
+        widgets = {
+            'data_pagamento': forms.DateInput(attrs={'type': 'date', 'class': 'form-control',},  format='%Y-%m-%d'),
+            'valor_pago': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
+            'observacoes': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
         }
