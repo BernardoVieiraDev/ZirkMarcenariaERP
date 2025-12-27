@@ -1,31 +1,67 @@
-{% extends "core/base.html" %}
-{% block title %}{{ title }}{% endblock %}
+{% load static %}
 
-{% block content %}
-<section class="panel">
-    <div class="panel-header">
-        <h3>{{ title }}</h3>
+<form method="POST" action="{{ request.path }}" enctype="multipart/form-data" style="margin:0; width: 100%; display: flex; flex-direction: column;">
+    {% csrf_token %}
+
+    <style>
+        .modal-body input, 
+        .modal-body select, 
+        .modal-body textarea {
+            width: 100%;
+            padding: 10px;
+            border-radius: 8px;
+            border: 1px solid #cbd5e1;
+            font-size: 14px;
+            box-sizing: border-box;
+        }
+        .modal-body input:focus, 
+        .modal-body select:focus,
+        .modal-body textarea:focus {
+            border-color: #1976d2;
+            outline: none;
+        }
+        .form-label {
+            display: block; 
+            font-size: 13px; 
+            font-weight: 600; 
+            color: #475569; 
+            margin-bottom: 6px;
+        }
+        .error-msg {
+            color: #b91c1c; 
+            font-size: 11px; 
+            margin-top: 4px;
+        }
+    </style>
+
+    <div class="modal-header" style="padding: 20px 24px; border-bottom: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center; background: white; border-radius: 12px 12px 0 0;">
+        <h3 class="modal-title" style="font-size: 18px; font-weight: 700; color: #1e293b; margin: 0;">{{ title }}</h3>
+        <button type="button" class="btn-close" onclick="closeModal('modalGeneric')" style="background: transparent; border: none; cursor: pointer; font-size: 20px; color: #94a3b8;">✕</button>
     </div>
-    
-    <div class="panel-body">
-        <p>Preencha os dados cadastrais e bancários da arquiteta para registro.</p>
+
+    <div class="modal-body" style="padding: 24px; background: white; flex: 1;">
         
-        <form method="post">
-            {% csrf_token %}
-            
-            {{ form.as_p }}
-            
-            {% if form.non_field_errors %}
-                <div class="alert alert-danger">
-                    {{ form.non_field_errors }}
-                </div>
-            {% endif %}
+        <div class="form-section-title" style="margin-bottom: 20px; font-size: 14px; font-weight: 600; color: #1e293b; border-bottom: 1px solid #e2e8f0; padding-bottom: 8px;">
+            Dados Cadastrais e Bancários
+        </div>
 
-            <div class="form-actions" style="margin-top: 20px;">
-                <button type="submit" class="btn btn-success">Salvar Arquiteta</button>
-                <a href="{% url 'comissionamento:contratos_list' %}" class="btn btn-secondary">Cancelar</a>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+            {% for field in form %}
+            {# Ajuste para campos que devem ocupar a linha inteira, se houver #}
+            <div class="form-group" style="{% if field.name == 'nome' or field.name == 'chave_pix' %}grid-column: span 2;{% endif %} margin-bottom: 5px;">
+                <label class="form-label">{{ field.label }}</label>
+                {{ field }}
+                {% if field.errors %}
+                    <div class="error-msg">{{ field.errors.0 }}</div>
+                {% endif %}
             </div>
-        </form>
+            {% endfor %}
+        </div>
+
     </div>
-</section>
-{% endblock %}
+
+    <div class="modal-footer" style="padding: 16px 24px; border-top: 1px solid #e2e8f0; background: #f8fafc; border-radius: 0 0 12px 12px; display: flex; justify-content: flex-end; gap: 12px;">
+        <button type="button" class="btn-ghost" onclick="closeModal('modalGeneric')" style="background: white; border: 1px solid #cbd5e1; color: #475569; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: 600;">Cancelar</button>
+        <button type="submit" class="rh-btn-primary" style="background: linear-gradient(180deg, #1976d2, #1565c0); color: white; padding: 10px 20px; border-radius: 8px; border: none; font-weight: 600; cursor: pointer;">Salvar Arquiteta</button>
+    </div>
+</form>

@@ -1,17 +1,12 @@
 from django.db import models
+from django.contrib.auth.models import User
+from fernet_fields import EncryptedCharField
 
-class Receber(models.Model):
-    forma_de_recebimento = models.CharField('Forma de recebimento', max_length=255, null=True)
-    data_vencimento = models.DateField('Data vencimento', null=True, blank=True)
-    cliente = models.CharField('Cliente', max_length=255, null=True)
-    categoria =  models.CharField('Categoria', max_length=255, null=True)
-    valor = models.DecimalField('Valor a ser recebido', max_digits=12, decimal_places=2, null=True)
-    valor_estoque = models.DecimalField('Valor em estoque', max_digits=12, decimal_places=2, null=True)
-    observacoes = models.CharField('Observações', max_length=255, blank=True)
-    data_pagamento = models.DateField('Data pagamento', null=True, blank=True)
-    status = models.CharField('Status', max_length=30, default='Agendado')
-
+class PerfilUsuario(models.Model):
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='perfil')
+    
+    # REMOVIDO O unique=True
+    cpf = EncryptedCharField("CPF", max_length=14, help_text="Formato: 000.000.000-00")
 
     def __str__(self):
-        return f"{self.cliente} - {self.valor}"
-
+        return f"Perfil de {self.user.username}"

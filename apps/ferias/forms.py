@@ -1,6 +1,6 @@
 from django import forms
 from django.core.exceptions import ValidationError
-from .models import Ferias, PeriodoAquisitivo, PagamentoFerias
+from .models import Ferias, PeriodoAquisitivo, PagamentoFerias, RecibosContabilidade
 
 class FeriasForm(forms.ModelForm):
     class Meta:
@@ -100,3 +100,18 @@ class PagamentoFeriasForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.fields['valor_a_pagar'].required = False
+
+
+class RecibosContabilidadeForm(forms.ModelForm):
+    class Meta:
+        model = RecibosContabilidade
+        fields = ['funcionario', 'recibo_de_ferias_contabilidade', 'observacoes']
+        widgets = {
+            'funcionario': forms.Select(attrs={'class': 'form-select'}),
+            'recibo_de_ferias_contabilidade': forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
+            'observacoes': forms.Textarea(attrs={'class': 'form-control', 'rows': 2}),
+        }
+        labels = {
+            'recibo_de_ferias_contabilidade': 'Data do Recibo (Contábil)',
+            'observacoes': 'Observações'
+        }

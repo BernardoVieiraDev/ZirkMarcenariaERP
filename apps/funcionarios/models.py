@@ -58,11 +58,16 @@ class EnderecoFuncionario(models.Model):
     uf = models.CharField(max_length=2)
     cep = models.CharField(max_length=10)
 
+
+class TipoDocumentoPis(models.TextChoices):
+    PIS = "PIS", "PIS"
+    PASEP = "PASEP", "PASEP"
+
 # Documentos
 class DocumentosFuncionario(models.Model):
     funcionario = models.OneToOneField(Funcionario, on_delete=models.CASCADE, related_name="documentos")
 
-    pis_pasep = models.CharField(max_length=20, blank=True, null=True)
+    pis_pasep = models.CharField(max_length=20, blank=True, null=True, verbose_name="PIS/PASEP")
     rg = models.CharField(max_length=20, blank=True, null=True)
     rg_orgao_expedidor = models.CharField(max_length=20, blank=True, null=True)
     cpf = models.CharField(max_length=14, unique=True)
@@ -71,6 +76,32 @@ class DocumentosFuncionario(models.Model):
     ctps_uf = models.CharField(max_length=2, blank=True, null=True)
     titulo_eleitor = models.CharField(max_length=20, blank=True, null=True)
     certificado_reservista = models.CharField(max_length=20, blank=True, null=True)
+
+    tipo_pis_pasep = models.CharField(
+            max_length=5,
+            choices=TipoDocumentoPis.choices,
+            default=TipoDocumentoPis.PIS,
+            blank=True, 
+            null=True,
+            verbose_name="Tipo (PIS/PASEP)"
+        )
+
+    rg = models.CharField(max_length=20, blank=True, null=True)
+
+
+    @property
+    def cpf_formatado(self):
+        """Retorna o CPF formatado como 000.000.000-00"""
+        if not self.cpf:
+            return None
+        
+        # Garante que só temos números
+        numeros = ''.join(filter(str.isdigit, self.cpf))
+        
+        if len(numeros) == 11:
+            return f"{numeros[:3]}.{numeros[3:6]}.{numeros[6:9]}-{numeros[9:]}"
+        
+        return self.cpf # Retorna original se não tiver 11 dígitos
 
 # Dados trabalhistas
 class DadosTrabalhistas(models.Model):

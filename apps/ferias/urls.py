@@ -22,5 +22,8 @@ urlpatterns = [
 path('pagamentos/editar/<int:pk>/', views.editar_pagamento, name='editar_pagamento'),
 path('exportar-planilha/', views.exportar_planilha_geral, name='exportar_planilha_ferias'),
 
-
+path('recibos/', views.listar_recibos, name='listar_recibos'),
+    path('recibos/registrar/', views.registrar_recibo, name='registrar_recibo'),
+    path('recibos/editar/<int:pk>/', views.editar_recibo, name='editar_recibo'),
+    path('recibos/deletar/<int:pk>/', views.deletar_recibo, name='deletar_recibo'),
 ]

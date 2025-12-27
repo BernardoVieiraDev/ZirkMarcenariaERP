@@ -1,10 +1,9 @@
-import os
+import io  # <--- Importação adicionada
 import xlsxwriter
 from decimal import Decimal
 from datetime import date
 
 from .models import Funcionario, EnderecoFuncionario, DocumentosFuncionario, DadosTrabalhistas
-
 
 class CadastroFuncionarioExcelService:
     COR_PRIMARIA_AZUL = '#004F9F'
@@ -15,6 +14,7 @@ class CadastroFuncionarioExcelService:
     @classmethod
     def _define_formats(cls, workbook: xlsxwriter.Workbook):
         """Define e retorna um dicionário de formatos reutilizáveis."""
+        # ... (O código dos formatos permanece igual) ...
         fmt_title = workbook.add_format({
             'bold': True,
             'font_size': 14,
@@ -54,7 +54,6 @@ class CadastroFuncionarioExcelService:
             'font_name': 'Calibri'
         })
 
-        # formato base para células de dados
         fmt_data = workbook.add_format({
             'align': 'left',
             'valign': 'vcenter',
@@ -63,7 +62,6 @@ class CadastroFuncionarioExcelService:
             'font_size': 10,
         })
 
-        # formato texto (mantém zeros à esquerda)
         fmt_data_text = workbook.add_format({
             'align': 'left',
             'valign': 'vcenter',
@@ -73,7 +71,6 @@ class CadastroFuncionarioExcelService:
             'num_format': '@'
         })
 
-        # formato monetário
         fmt_money = workbook.add_format({
             'align': 'left',
             'valign': 'vcenter',
@@ -83,7 +80,6 @@ class CadastroFuncionarioExcelService:
             'num_format': 'R$ #,##0.00'
         })
 
-        # formato simples (sem borda) — **definido explicitamente**
         fmt_simple = workbook.add_format({
             'font_name': 'Calibri',
             'font_size': 10,
@@ -103,12 +99,14 @@ class CadastroFuncionarioExcelService:
         }
 
     @staticmethod
-    def gerar_modelo(funcionario=None, caminho_arquivo="CADASTRO_ADMISSAO_MODELO.xlsx"):
+    def gerar_modelo(funcionario=None):
         """
-        Gera o arquivo Excel. Se 'funcionario' for passado, preenche com os dados disponíveis.
+        Gera o arquivo Excel em memória e retorna o buffer.
         """
+        output = io.BytesIO() # Cria o buffer
         try:
-            wb = xlsxwriter.Workbook(caminho_arquivo)
+            # Inicializa com in_memory=True
+            wb = xlsxwriter.Workbook(output, {'in_memory': True})
             ws = wb.add_worksheet("CADASTRO FUNCIONÁRIO")
             fmt = CadastroFuncionarioExcelService._define_formats(wb)
 
@@ -118,19 +116,13 @@ class CadastroFuncionarioExcelService:
             ws.set_column('C:C', 22) #type: ignore
             ws.set_column('D:D', 35) #type: ignore
             ws.set_column('E:E', 10) #type: ignore
-            ws.hide_gridlines(2)
+            ws.hide_gridlines(2) 
 
             # extrai dados de forma segura
             f = funcionario
             end = getattr(f, "endereco", None) if f else None
             docs = getattr(f, "documentos", None) if f else None
             trab = getattr(f, "dados_trabalhistas", None) if f else None
-
-            # logs de depuração (remova em produção)
-            print(">>> Gerando Excel para funcionário:", getattr(f, "pk", None))
-            print(">>> Endereço:", end)
-            print(">>> Documentos:", docs)
-            print(">>> Dados trabalhistas:", trab)
 
             row = 0
 
@@ -188,8 +180,8 @@ class CadastroFuncionarioExcelService:
             ws.merge_range(row, 0, row, 3, "II. ENDEREÇO COMPLETO", fmt['header']); row += 1
             ws.write(row, 0, "Endereço:", fmt['label'])
             endereco_val = end.endereco if end and getattr(end, "endereco", None) else ''
-            ws.write(row, 1, endereco_val, fmt['data_text'])  # Coluna B
-            ws.write(row, 2, 'Nº:', fmt['data_text'])            # Coluna C (deixa vazia ou use como quis            ws.write(row, 3, "Nº:", fmt['label'])
+            ws.write(row, 1, endereco_val, fmt['data_text'])
+            ws.write(row, 2, "Nº:", fmt['label'])
             ws.write(row, 3, end.numero if end and getattr(end, "numero", None) else '', fmt['data'])
             row += 1
 
@@ -209,7 +201,20 @@ class CadastroFuncionarioExcelService:
             ws.merge_range(row, 0, row, 3, "III. DOCUMENTOS E REGISTROS", fmt['header']); row += 1
             ws.write(row, 0, "N.º PIS/PASEP:", fmt['label'])
             ws.write(row, 1, docs.pis_pasep if docs and getattr(docs, "pis_pasep", None) else '', fmt['data_text'])
-            ws.merge_range(row, 2, row, 3, "( ) PIS   ( ) PASEP", fmt['simple'])
+            
+            # --- LÓGICA PARA MARCAR O X ---
+            texto_selecao = "( ) PIS   ( ) PASEP" # Padrão vazio
+            
+            if docs:
+                tipo = getattr(docs, "tipo_pis_pasep", None)
+                if tipo == 'PIS':
+                    texto_selecao = "(X) PIS   ( ) PASEP"
+                elif tipo == 'PASEP':
+                    texto_selecao = "( ) PIS   (X) PASEP"
+            
+            ws.merge_range(row, 2, row, 3, texto_selecao, fmt['simple'])
+            # ------------------------------
+            
             row += 1
 
             ws.write(row, 0, "CTPS Nº:", fmt['label'])
@@ -286,16 +291,14 @@ class CadastroFuncionarioExcelService:
 
             ws.merge_range(row, 0, row, 3, "Horário de trabalho:", fmt['header'])
             row += 1
-            ws.write(row, 0, "Segunda a Sexta:", fmt['label'])
+            ws.write(row, 0, "Horário :", fmt['label'])
             ws.write(row, 1, trab.horario_trabalho if trab and getattr(trab, "horario_trabalho", None) else '', fmt['data'])
             row += 1
 
-            print(f"✅ Planilha gerada com sucesso: {caminho_arquivo}")
+            wb.close() # Fecha o workbook
+            output.seek(0) # Retorna o ponteiro para o início
+            return output # Retorna o buffer
 
         except Exception as e:
-            # mostra o erro no terminal/console do servidor
             print(f"❌ Erro ao gerar planilha: {e}")
-        finally:
-            # garante fechamento do workbook
-            if 'wb' in locals():
-                wb.close()
+            raise e

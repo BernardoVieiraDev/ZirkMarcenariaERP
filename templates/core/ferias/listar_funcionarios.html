@@ -168,6 +168,11 @@
             <a href="{% url 'ferias:listar_pagamentos' %}" class="rh-btn rh-btn-ghost">
                 Ver Pagamentos
             </a>
+
+            <a href="{% url 'ferias:listar_recibos' %}" class="rh-btn rh-btn-ghost">
+                    Ver Recibos
+                </a>
+
             <button onclick="openCreateModal('modalPeriodo', '{% url 'ferias:registrar_periodo' %}', 'Novo Período Aquisitivo')" class="rh-btn rh-btn-primary">
                 + Período Aquisitivo
             </button>

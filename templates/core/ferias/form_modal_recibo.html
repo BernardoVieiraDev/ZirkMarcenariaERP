@@ -1,0 +1,13 @@
+<form method="POST" action="{{ action_url }}">
+    {% csrf_token %}
+    {% for field in form %}
+    <div class="form-group">
+        <label>{{ field.label }}</label>
+        {{ field }}
+    </div>
+    {% endfor %}
+    <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:20px;">
+        <button type="button" onclick="closeModal('modalAcoes')" style="background:transparent; border:1px solid #ccc; padding:8px 16px; border-radius:8px; cursor:pointer;">Cancelar</button>
+        <button type="submit" style="background:#1976d2; color:white; border:none; padding:8px 16px; border-radius:8px; cursor:pointer;">Salvar Alterações</button>
+    </div>
+</form>

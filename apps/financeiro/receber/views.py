@@ -1,16 +1,13 @@
 from django.db.models import Sum
 from django.shortcuts import get_object_or_404, redirect, render
-
 from .forms import ReceberForm
 from .models import Receber
 
-
-# Create your views here.
 def receber_list(request):
-    qs = Receber.objects.all().order_by('-data_vencimento') # Ordenação recomendada
+    qs = Receber.objects.all().order_by('status', 'data_vencimento') # Ordena por status e data
     total = qs.aggregate(total=Sum('valor'))['total'] or 0
     
-    # --- NOVO: Formulário vazio para o Modal ---
+    # Formulário vazio para o modal de criação (se usado na listagem)
     form = ReceberForm()
     
     return render(request, 'core/financeiro/receber/list.html', {
@@ -27,7 +24,11 @@ def receber_create(request):
             return redirect('receber:receber')
     else:
         form = ReceberForm()
-    return render(request, 'core/financeiro/receber/form.html', {'form': form, 'title': 'Nova Conta a Receber'})
+    
+    return render(request, 'core/financeiro/receber/form.html', {
+        'form': form, 
+        'title': 'Nova Receita'
+    })
 
 def receber_edit(request, pk):
     obj = get_object_or_404(Receber, pk=pk)
@@ -38,12 +39,16 @@ def receber_edit(request, pk):
             return redirect('receber:receber')
     else:
         form = ReceberForm(instance=obj)
-    return render(request, 'core/financeiro/receber/form.html', {'form': form, 'title': 'Editar Conta a Receber'})
+        
+    return render(request, 'core/financeiro/receber/form.html', {
+        'form': form, 
+        'title': 'Editar Receita'
+    })
 
 def receber_delete(request, pk):
     obj = get_object_or_404(Receber, pk=pk)
     if request.method == 'POST':
         obj.delete()
         return redirect('receber:receber')
+        
     return render(request, 'core/financeiro/receber/delete.html', {'object': obj})
-

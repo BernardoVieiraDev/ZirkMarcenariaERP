@@ -1,0 +1,173 @@
+{% load static %}
+
+<form method="POST" action="{{ request.path }}" style="margin:0; width: 100%; display: flex; flex-direction: column;">
+    {% csrf_token %}
+
+    <style>
+        /* Estilo limpo baseado no exemplo */
+        .modal-body {
+            font-family: 'Inter', sans-serif;
+        }
+        .modal-body input, 
+        .modal-body select, 
+        .modal-body textarea {
+            width: 100%;
+            padding: 10px;
+            border-radius: 8px;
+            border: 1px solid #cbd5e1;
+            font-size: 14px;
+            box-sizing: border-box;
+            background-color: #fff;
+            transition: border-color 0.2s;
+        }
+        .modal-body input:focus, 
+        .modal-body select:focus,
+        .modal-body textarea:focus {
+            border-color: #c62828; /* Cor vermelha da identidade visual Zirk/RH */
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(198, 40, 40, 0.1);
+        }
+        .form-label {
+            display: block; 
+            font-size: 13px; 
+            font-weight: 600; 
+            color: #475569; 
+            margin-bottom: 6px;
+        }
+        .section-header {
+            margin: 24px 0 16px 0; 
+            font-size: 14px; 
+            font-weight: 700; 
+            color: #1e293b; 
+            border-bottom: 1px solid #e2e8f0; 
+            padding-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .section-header:first-child { margin-top: 0; }
+        
+        /* Badges para identificar seções */
+        .badge-section { padding: 4px 8px; border-radius: 4px; font-size: 11px; text-transform: uppercase; }
+        .bg-proventos { background-color: #dcfce7; color: #166534; }
+        .bg-descontos { background-color: #fee2e2; color: #991b1b; }
+        
+        /* Ajuste específico para Radio Buttons */
+        .radio-group { display: flex; gap: 15px; padding-top: 8px; }
+        .radio-item { display: flex; align-items: center; gap: 6px; font-size: 14px; cursor: pointer; }
+        .radio-item input { width: auto; margin: 0; cursor: pointer; }
+    </style>
+
+    <div class="modal-header" style="padding: 20px 24px; border-bottom: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center; background: white; border-radius: 12px 12px 0 0;">
+        <h3 class="modal-title" style="font-size: 18px; font-weight: 700; color: #1e293b; margin: 0;">
+            {% if form.instance.pk %}Editar{% else %}Nova{% endif %} Rescisão
+        </h3>
+        <button type="button" class="btn-close" onclick="closeActionModal()" style="background: transparent; border: none; cursor: pointer; font-size: 20px; color: #94a3b8;">✕</button>
+    </div>
+
+    <div class="modal-body" style="padding: 24px; background: white; flex: 1; overflow-y: auto; max-height: 70vh;">
+        
+        <div class="section-header">
+            <i class="fas fa-user-circle" style="color: #64748b;"></i> 1. Dados da Demissão
+        </div>
+        <div style="display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 16px; margin-bottom: 10px;">
+            <div>
+                <label class="form-label">Funcionário</label>
+                {{ form.funcionario }}
+            </div>
+            <div>
+                <label class="form-label">Data Demissão</label>
+                {{ form.data_demissao }}
+            </div>
+            <div>
+                <label class="form-label">Motivo</label>
+                {{ form.motivo }}
+            </div>
+        </div>
+
+        <div class="section-header">
+            <span class="badge-section bg-proventos">Proventos (+)</span>
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px;">
+            <div>
+                <label class="form-label">Dias Trab. (R$)</label>
+                {{ form.val_dias_trabalhados }}
+            </div>
+            <div>
+                <label class="form-label">Férias (R$)</label>
+                {{ form.val_ferias }}
+            </div>
+            <div>
+                <label class="form-label">1/3 Férias (R$)</label>
+                {{ form.val_terco_ferias }}
+            </div>
+            <div>
+                <label class="form-label">13º Salário (R$)</label>
+                {{ form.val_13_salario }}
+            </div>
+            <div style="grid-column: span 2;">
+                <label class="form-label">Remunerados (R$)</label>
+                {{ form.val_remunerados }}
+            </div>
+        </div>
+
+        <div class="section-header">
+            <span class="badge-section bg-descontos">Descontos (-)</span>
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+            <div>
+                <label class="form-label">Adiantamento (R$)</label>
+                {{ form.val_adiantamento }}
+            </div>
+            <div>
+                <label class="form-label">Atrasos (R$)</label>
+                {{ form.val_atrasos }}
+            </div>
+            <div>
+                <label class="form-label">Multa Art. 480 (R$)</label>
+                {{ form.val_multa_480 }}
+            </div>
+            <div>
+                <label class="form-label">Faltas (R$)</label>
+                {{ form.val_faltas }}
+            </div>
+            <div style="grid-column: span 2;">
+                <label class="form-label">Detalhe das Faltas <span style="font-weight:400; color:#94a3b8;">(Ex: dias 04, 25...)</span></label>
+                {{ form.desc_faltas }}
+            </div>
+        </div>
+
+        <div class="section-header">
+            <i class="fas fa-plus-circle" style="color: #64748b;"></i> 4. Outros (Opcional)
+        </div>
+        <div style="display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 16px; align-items: start;">
+            <div>
+                <label class="form-label">Descrição</label>
+                {{ form.outro_nome }}
+            </div>
+            <div>
+                <label class="form-label">Valor (R$)</label>
+                {{ form.outro_valor }}
+            </div>
+            <div>
+                <label class="form-label">Tipo</label>
+                <div class="radio-group">
+                    {% for radio in form.outro_tipo %}
+                        <label class="radio-item" for="{{ radio.id_for_label }}">
+                            {{ radio.tag }}
+                            {{ radio.choice_label }}
+                        </label>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <div class="modal-footer" style="padding: 16px 24px; border-top: 1px solid #e2e8f0; background: #f8fafc; border-radius: 0 0 12px 12px; display: flex; justify-content: flex-end; gap: 12px;">
+        <button type="button" class="btn-ghost" onclick="closeActionModal()" style="background: white; border: 1px solid #cbd5e1; color: #475569; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: 600;">Cancelar</button>
+        <button type="submit" class="rh-btn-primary" style="background: linear-gradient(180deg, #c62828, #b91c1c); color: white; padding: 10px 20px; border-radius: 8px; border: none; font-weight: 600; cursor: pointer; box-shadow: 0 2px 4px rgba(198, 40, 40, 0.2);">
+            Salvar Rescisão
+        </button>
+    </div>
+</form>

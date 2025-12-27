@@ -1,14 +1,29 @@
-{% extends "core/base.html" %}
-{% block content %}
-<section class="panel">
-  <h3>Confirmar exclusão</h3>
-  <p>Deseja excluir: {{ object }}</p>
-  <form method="post">{% csrf_token %}
-    <div style="display:flex;justify-content:flex-end;gap:8px">
-      <a class="btn ghost" href="{% url 'pagar:pagar_list' %}">Cancelar</a>
-      <button class="btn" type="submit">Excluir</button>
-    </div>
-  </form>
-</section>
-{% endblock %}
+{% load static %}
 
+<form method="POST" action="{{ request.path }}" style="margin:0; width: 100%; display: flex; flex-direction: column;">
+    {% csrf_token %}
+    
+    <div class="modal-header" style="padding: 20px 24px; border-bottom: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center; background: white; border-radius: 12px 12px 0 0;">
+        <h3 class="modal-title" style="font-size: 18px; font-weight: 700; color: #1e293b; margin: 0;">Confirmar Exclusão</h3>
+        <button type="button" class="btn-close" onclick="closeModal('modalGeneric')" style="background: transparent; border: none; cursor: pointer; font-size: 20px; color: #94a3b8;">✕</button>
+    </div>
+    
+    <div class="modal-body" style="padding: 24px; background: white; flex: 1;">
+        <p style="font-size: 15px; color: #475569; margin-bottom: 20px;">
+            Tem certeza que deseja excluir esta despesa: <br>
+            <strong style="color: #1e293b;">{{ object }}</strong>?
+        </p>
+        
+        <div style="padding: 16px; background: #fef2f2; border: 1px solid #fee2e2; border-radius: 8px; color: #b91c1c; font-size: 13px; display: flex; gap: 12px; align-items: flex-start;">
+            <span style="font-size: 18px;">⚠️</span>
+            <div>
+                <strong>Atenção:</strong> Esta ação é irreversível. O registro financeiro será removido permanentemente.
+            </div>
+        </div>
+    </div>
+    
+    <div class="modal-footer" style="padding: 16px 24px; border-top: 1px solid #e2e8f0; background: #f8fafc; border-radius: 0 0 12px 12px; display: flex; justify-content: flex-end; gap: 12px;">
+        <button type="button" class="btn-ghost" onclick="closeModal('modalGeneric')" style="background: white; border: 1px solid #cbd5e1; color: #475569; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: 600;">Cancelar</button>
+        <button type="submit" class="rh-btn-primary" style="background: #ef4444; color: white; border: 1px solid #dc2626; padding: 10px 20px; border-radius: 8px; font-weight: 600; cursor: pointer;">Confirmar Exclusão</button>
+    </div>
+</form>

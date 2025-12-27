@@ -1,25 +1,22 @@
 {% extends "core/base.html" %}
 {% load static %}
 
-{% block title %}Contas a Pagar{% endblock %}
+{% block title %}Painel Financeiro{% endblock %}
 
 {% block content %}
 <style>
     :root {
         --bg: #f8fafc; --card: #ffffff; 
         --primary: #1976d2; 
-        --text-main: #1e293b; /* Preto Padrão */
+        --text-main: #1e293b; 
         --text-muted: #64748b; 
         --border: #e2e8f0; --radius: 12px;
         --success-bg: #dcfce7; --success-text: #166534;
         --warning-bg: #fef9c3; --warning-text: #854d0e;
-        --info-bg: #e0f2fe; --info-text: #075985;
         --danger-text: #b91c1c;
     }
     
     .rh-container { max-width: 1200px; margin: 0 auto; padding: 24px 0; font-family: Inter, system-ui, sans-serif; color: var(--text-main); }
-    
-    /* Padrão de Fonte para Valores em Lista */
     .font-semibold { font-weight: 600; }
 
     /* === HEADER === */
@@ -35,18 +32,50 @@
     }
     .btn-new:hover { transform: translateY(-1px); filter: brightness(1.1); }
 
-    /* === CARDS DE RESUMO (KPIs) === */
-    .summary-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 20px; margin-bottom: 30px; }
+    /* === CARDS DE RESUMO === */
+    .summary-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 20px; margin-bottom: 20px; }
     
     .summary-card {
         background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px;
-        box-shadow: 0 1px 3px rgba(0,0,0,0.05); position: relative; overflow: hidden;    }
-    .summary-card.green 
-    .summary-card.blue 
+        box-shadow: 0 1px 3px rgba(0,0,0,0.05); position: relative; overflow: hidden;
+    }
+    .summary-card.green { border-left: 4px solid #166534; }
+    .summary-card.blue { border-left: 4px solid var(--primary); }
+    .summary-card.default { border-left: 4px solid #f59e0b; }
     
     .summary-card h3 { font-size: 13px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; margin: 0 0 8px 0; }
     .summary-card .value { font-size: 24px; font-weight: 700; color: var(--text-main); }
-    .summary-icon { position: absolute; right: 20px; top: 20px; opacity: 0.1; font-size: 40px; color: currentColor; }
+
+    /* === CONTROLES DE VISIBILIDADE DISCRETOS === */
+    .view-toggles {
+        display: flex; gap: 16px; margin-bottom: 30px; align-items: center; font-size: 13px; color: var(--text-muted);
+        padding: 10px 0; border-bottom: 1px solid #f1f5f9;
+    }
+    .toggle-label { font-weight: 600; text-transform: uppercase; margin-right: 4px; }
+    .toggle-item { display: flex; align-items: center; gap: 6px; cursor: pointer; user-select: none; }
+    .toggle-item input { accent-color: var(--primary); cursor: pointer; }
+    .toggle-item:hover { color: var(--primary); }
+
+    /* === TOOLBAR DE FILTROS === */
+    .toolbar-global { 
+        display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 24px; background: white; padding: 16px; 
+        border-radius: var(--radius); border: 1px solid var(--border); align-items: center;
+    }
+    .search-input { 
+        flex: 1; min-width: 250px; padding: 10px 16px; border-radius: 8px; border: 1px solid var(--border); font-size: 14px; 
+    }
+    .filter-select {
+        padding: 10px 12px; border-radius: 8px; border: 1px solid var(--border); font-size: 14px; color: var(--text-main);
+        background-color: white; cursor: pointer; min-width: 160px;
+    }
+
+    /* === SEÇÕES DASHBOARD === */
+    .dashboard-section { margin-bottom: 40px; animation: fadeIn 0.3s ease-in-out; }
+    .dashboard-section.hidden { display: none; }
+    
+    .section-header { display: flex; align-items: center; margin-bottom: 16px; gap: 12px; }
+    .section-title { font-size: 18px; font-weight: 700; color: #334155; display: flex; align-items: center; gap: 10px; margin: 0; }
+    .badge-count { background: #e2e8f0; color: #475569; padding: 4px 10px; border-radius: 12px; font-size: 12px; font-weight: 600; }
 
     /* === PAINEL DA TABELA === */
     .content-panel {
@@ -54,21 +83,8 @@
         box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.02); overflow: visible;
     }
 
-    /* Toolbar de Filtros (Expandida) */
-    .toolbar { 
-        padding: 16px; border-bottom: 1px solid var(--border); background: #fff;
-        display: flex; gap: 12px; flex-wrap: wrap;
-    }
-    .search-input { 
-        flex: 1; min-width: 250px; padding: 10px 16px; border-radius: 8px; border: 1px solid var(--border); font-size: 14px; 
-    }
-    .filter-select {
-        padding: 10px 12px; border-radius: 8px; border: 1px solid var(--border); font-size: 14px; color: var(--text-main);
-        background-color: white; cursor: pointer; min-width: 140px;
-    }
-
     /* Tabela */
-    .table-responsive { overflow-x: auto; min-height: 400px; }
+    .table-responsive { overflow-x: auto; }
     .rh-table { width: 100%; border-collapse: collapse; text-align: left; }
     .rh-table thead th { 
         background: #f8fafc; padding: 14px 20px; font-size: 12px; font-weight: 600; text-transform: uppercase; 
@@ -79,25 +95,37 @@
         color: var(--text-main); position: relative;
     }
     .rh-table tbody tr:hover { background: #f8fafc; }
+    .rh-table tbody tr:last-child td { border-bottom: none; }
 
     /* Badges */
     .status-badge { display: inline-flex; align-items: center; padding: 2px 10px; border-radius: 12px; font-size: 11px; font-weight: 600; gap: 4px; }
     .st-pago { background: var(--success-bg); color: var(--success-text); border: 1px solid #bbf7d0; }
     .st-pendente { background: var(--warning-bg); color: var(--warning-text); border: 1px solid #fde68a; }
-    .cat-badge { font-size: 11px; background: #f1f5f9; padding: 3px 8px; border-radius: 4px; color: #64748b; border: 1px solid #e2e8f0; }
+
+    .cat-badge { 
+        font-size: 11px; background: #f1f5f9; padding: 3px 8px; border-radius: 4px; color: #64748b; border: 1px solid #e2e8f0;
+        white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 120px; display: inline-block; vertical-align: middle;
+    }
 
     /* === MENU DE AÇÕES === */
     .action-menu { position: relative; display: inline-block; }
     .dots-btn { background: transparent; border: none; cursor: pointer; padding: 8px; border-radius: 50%; color: var(--text-muted); transition: background 0.2s; display: flex; align-items: center; justify-content: center; }
     .dots-btn:hover { background: #f1f5f9; color: var(--primary); }
-    .dropdown-content { display: none; position: absolute; right: 0; top: 100%; margin-top: 4px; background-color: white; min-width: 150px; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1); border-radius: 8px; border: 1px solid #e2e8f0; z-index: 9999; overflow: hidden; animation: fadeIn 0.1s ease-out; }
+    
+    .dropdown-content { display: none; position: absolute; right: 0; top: 100%; margin-top: 4px; background-color: white; min-width: 140px; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1); border-radius: 8px; border: 1px solid #e2e8f0; z-index: 999; overflow: hidden; animation: fadeIn 0.1s ease-out; }
     .dropdown-content.show { display: block; }
-    .dropdown-content a { color: var(--text-main); padding: 10px 16px; text-decoration: none; display: flex; align-items: center; gap: 10px; font-size: 13px; width: 100%; transition: background 0.1s; }
-    .dropdown-content a:hover { background-color: #f8fafc; color: var(--primary); }
-    .dropdown-content a.delete-item:hover { background-color: #fef2f2; color: var(--danger-text); }
+    
+    .dropdown-content button { 
+        color: var(--text-main); padding: 10px 16px; text-decoration: none; 
+        display: flex; align-items: center; gap: 10px; font-size: 13px; width: 100%; 
+        transition: background 0.1s; background: none; border: none; cursor: pointer; text-align: left;
+    }
+    .dropdown-content button:hover { background-color: #f8fafc; color: var(--primary); }
+    .dropdown-content .delete-item:hover { background-color: #fef2f2; color: var(--danger-text); }
+    
     @keyframes fadeIn { from { opacity: 0; transform: translateY(-5px); } to { opacity: 1; transform: translateY(0); } }
 
-    /* === MODAL === */
+    /* === MODAIS === */
     .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.75); z-index: 10000; overflow-y: auto; padding: 20px; align-items: flex-start; justify-content: center; backdrop-filter: blur(3px); }
     .modal-overlay.open { display: flex; }
     .modal-window { background: white; width: 100%; max-width: 800px; margin: 30px auto; border-radius: 12px; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25); display: flex; flex-direction: column; position: relative; }
@@ -119,112 +147,329 @@
     
     <header class="page-header">
         <div class="header-title">
-            <h1>Contas a Pagar</h1>
-            <p>Gerenciamento de despesas e obrigações</p>
+            <h1>Financeiro Zirk</h1>
+            <p>Visão geral unificada</p>
         </div>
         <div>
             <button onclick="openModal('modalSelecao')" class="btn-new">
                 <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
-                Nova Conta
+                Nova Despesa
             </button>
         </div>
     </header>
 
     <div class="summary-grid">
-        <div class="summary-card">
-            <h3>Total Pendente</h3>
+        <div class="summary-card default">
+            <h3>Total Pendente (Global)</h3>
             <div class="value">R$ {{ total_pendente|floatformat:"2g" }}</div>
-            <div style="font-size:12px; color:#64748b; margin-top:4px">Valor em aberto</div>
+            <div style="font-size:12px; color:#64748b; margin-top:4px">Soma de todas categorias</div>
         </div>
         <div class="summary-card green">
-            <h3>Total Pago</h3>
+            <h3>Total Pago (Global)</h3>
             <div class="value">R$ {{ total_pago|floatformat:"2g" }}</div>
             <div style="font-size:12px; color:#64748b; margin-top:4px">Baixado no período</div>
         </div>
         <div class="summary-card blue">
             <h3>Total Registros</h3>
-            <div class="value">{{ list|length }}</div>
-            <div style="font-size:12px; color:#64748b; margin-top:4px">Quantidade de contas</div>
+            <div class="value">{{ total_registros }}</div>
+            <div style="font-size:12px; color:#64748b; margin-top:4px">Quantidade total</div>
         </div>
     </div>
 
-    <div class="content-panel">
+    <div class="view-toggles">
+        <span class="toggle-label">Exibir:</span>
+        <label class="toggle-item">
+            <input type="checkbox" checked onclick="toggleDashboard('dash-contas', this)"> Contas a Pagar
+        </label>
+        <label class="toggle-item">
+            <input type="checkbox" onclick="toggleDashboard('dash-operacional', this)"> Gastos Operacionais
+        </label>
+        <label class="toggle-item">
+            <input type="checkbox" onclick="toggleDashboard('dash-folha', this)"> Folha de Pagamento
+        </label>
+        <label class="toggle-item">
+            <input type="checkbox" onclick="toggleDashboard('dash-comissao', this)"> Comissões
+        </label>
+    </div>
+
+    <div class="toolbar-global">
+        <input id="searchInput" class="search-input" type="search" placeholder="Buscar por descrição ou fornecedor..." onkeyup="applyFilters()">
         
-        <div class="toolbar">
-            <input id="searchInput" class="search-input" type="search" placeholder="Buscar por descrição ou fornecedor..." onkeyup="applyFilters()">
-            
-            <select id="filterStatus" class="filter-select" onchange="applyFilters()">
-                <option value="">Todos os Status</option>
-                <option value="Pendente">Pendente</option>
-                <option value="Pago">Pago</option>
-            </select>
+        <select id="filterStatus" class="filter-select" onchange="applyFilters()">
+            <option value="">Todos os Status</option>
+            <option value="Pendente">Pendente</option>
+            <option value="Pago">Pago</option>
+        </select>
 
-            <select id="filterTipo" class="filter-select" onchange="applyFilters()">
-                <option value="">Todos os Tipos</option>
-                {% for tipo in tipos_disponiveis %}
-                    <option value="{{ tipo }}">{{ tipo }}</option>
-                {% endfor %}
-            </select>
+        <select id="filterTipo" class="filter-select" onchange="applyFilters()">
+            <option value="">Todas as Categorias</option>
+            {% for tipo in tipos_disponiveis %}
+                <option value="{{ tipo }}">{{ tipo }}</option>
+            {% endfor %}
+        </select>
+    </div>
+
+    <div id="dash-contas" class="dashboard-section">
+        <div class="section-header">
+            <h2 class="section-title">Contas a Pagar <span class="badge-count">{{ list_contas|length }}</span></h2>
         </div>
-
-        <div class="table-responsive">
-            <table class="rh-table">
-                <thead>
-                    <tr>
-                        <th width="35%">Descrição / Fornecedor</th>
-                        <th width="15%">Vencimento</th>
-                        <th width="15%">Valor</th>
-                        <th width="15%">Status</th>
-                        <th width="10%">Categoria</th>
-                        <th width="10%" style="text-align: right;"></th>
-                    </tr>
-                </thead>
-                <tbody id="tableBody">
-                    {% for conta in list %}
-                    <tr class="conta-row" 
-                        data-status="{% if conta.status == 'PG' or conta.status == 'Pago' %}Pago{% else %}Pendente{% endif %}" 
-                        data-tipo="{{ conta.get_model_name }}">
-                        
-                        <td>
-                            <div style="font-weight: 600; color: var(--text-main)" class="search-desc">{{ conta.descricao|default:conta.get_model_name }}</div>
-                            <div style="font-size:12px; color:#64748b" class="search-forn">{{ conta.get_model_name }}</div>
-                        </td>
-                        <td>
-                            <div style="color: var(--text-main)">{{ conta.get_data_consolidada|date:"d/m/Y" }}</div>
-                        </td>
-                        <td>
-                            <div class="font-semibold" style="color: var(--text-main)">
-                                R$ {{ conta.get_valor_consolidado|floatformat:"2g" }}
-                            </div>
-                        </td>
-                        <td>
-                            {% if conta.status == 'PG' or conta.status == 'Pago' %}
-                                <span class="status-badge st-pago">Pago</span>
-                            {% else %}
-                                <span class="status-badge st-pendente">Pendente</span>
-                            {% endif %}
-                        </td>
-                        <td>
-                            <span class="cat-badge">{{ conta.get_model_name }}</span>
-                        </td>
-                        <td style="text-align: right;">
-                            <div class="action-menu">
-                                <button class="dots-btn" onclick="toggleMenu('menu-{{ conta.pk }}')">
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="1"/><circle cx="12" cy="5" r="1"/><circle cx="12" cy="19" r="1"/></svg>
-                                </button>
-                                
-                                <div id="menu-{{ conta.pk }}" class="dropdown-content">
-                                    <a href="{% url 'pagar:pagar_edit' conta.pk %}">Editar</a>
-                                    <a href="{% url 'pagar:pagar_delete' conta.pk %}" class="delete-item">Excluir</a>
+        <div class="content-panel">
+            <div class="table-responsive">
+                <table class="rh-table">
+                    <thead>
+                        <tr>
+                            <th width="35%">Descrição/Fornecedor</th>
+                            <th width="15%">Vencimento</th>
+                            <th width="15%">Valor</th>
+                            <th width="15%">Status</th>
+                            <th width="10%">Categoria</th>
+                            <th width="10%" style="text-align: right;"></th>
+                        </tr>
+                    </thead>
+                    <tbody class="data-table-body">
+                        {% for conta in list_contas %}
+                        <tr class="conta-row" 
+                            data-search="{{ conta.descricao|default:conta.get_model_name|lower }} {{ conta.get_model_name|lower }}"
+                            data-status="{% if conta.status == 'PG' or conta.status == 'Pago' %}Pago{% else %}Pendente{% endif %}"
+                            data-tipo="{{ conta.get_model_name }}">
+                            
+                            <td>
+                                <div style="font-weight: 600; color: var(--text-main)">{{ conta.descricao|default:conta.get_model_name }}</div>
+                                <div style="font-size:12px; color:#64748b">{{ conta.get_model_name }}</div>
+                            </td>
+                            <td>
+                                <div style="color: var(--text-main)">{{ conta.get_data_consolidada|date:"d/m/Y" }}</div>
+                            </td>
+                            <td>
+                                <div class="font-semibold" style="color: var(--text-main)">
+                                    R$ {{ conta.get_valor_consolidado|floatformat:"2g" }}
                                 </div>
-                            </div>
-                        </td>
-                    </tr>
-                    {% empty %}
-                    <tr><td colspan="6" class="empty-msg">Nenhuma conta encontrada.</td></tr>
-                    {% endfor %}
-                </tbody>
-            </table>
+                            </td>
+                            <td>
+                                {% if conta.status == 'PG' or conta.status == 'Pago' %}
+                                    <span class="status-badge st-pago">Pago</span>
+                                {% else %}
+                                    <span class="status-badge st-pendente">Pendente</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <span class="cat-badge">{{ conta.get_model_name }}</span>
+                            </td>
+                            <td style="text-align: right;">
+                                <div class="action-menu">
+                                    <button class="dots-btn" onclick="toggleMenu('menu-{{ conta.pk }}')">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="1"/><circle cx="12" cy="5" r="1"/><circle cx="12" cy="19" r="1"/></svg>
+                                    </button>
+                                    <div id="menu-{{ conta.pk }}" class="dropdown-content">
+                                        <button onclick="openRemoteModal('{% url 'pagar:pagar_edit' conta.pk %}')">Editar</button>
+                                        <button onclick="openRemoteModal('{% url 'pagar:pagar_delete' conta.pk %}')" class="delete-item">Excluir</button>
+                                    </div>
+                                </div>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr class="no-data"><td colspan="6" class="empty-msg">Nenhuma conta a pagar registrada.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div id="dash-operacional" class="dashboard-section hidden">
+        <div class="section-header">
+            <h2 class="section-title">Gastos Operacionais (Pago no Ato) <span class="badge-count">{{ list_operacional|length }}</span></h2>
+        </div>
+        <div class="content-panel">
+            <div class="table-responsive">
+                <table class="rh-table">
+                    <thead>
+                        <tr>
+                            <th width="35%">Descrição do Item</th>
+                            <th width="15%">Data do Gasto</th>
+                            <th width="15%">Valor Total</th>
+                            <th width="15%">Status</th>
+                            <th width="10%">Tipo</th>
+                            <th width="10%" style="text-align: right;"></th>
+                        </tr>
+                    </thead>
+                    <tbody class="data-table-body">
+                        {% for conta in list_operacional %}
+                        <tr class="conta-row"
+                            data-search="{{ conta.descricao|default:conta.get_model_name|lower }} {{ conta.get_model_name|lower }}"
+                            data-status="Pago"
+                            data-tipo="{{ conta.get_model_name }}">
+                            
+                            <td>
+                                <div style="font-weight: 600; color: var(--text-main)">{{ conta.descricao|default:conta.get_model_name }}</div>
+                                <div style="font-size:12px; color:#64748b">{{ conta.get_model_name }}</div>
+                            </td>
+                            <td>
+                                <div style="color: var(--text-main)">{{ conta.get_data_consolidada|date:"d/m/Y" }}</div>
+                            </td>
+                            <td>
+                                <div class="font-semibold" style="color: var(--text-main)">
+                                    R$ {{ conta.get_valor_consolidado|floatformat:"2g" }}
+                                </div>
+                            </td>
+                            <td>
+                                <span class="status-badge st-pago">Pago</span>
+                            </td>
+                            <td>
+                                <span class="cat-badge">{{ conta.get_model_name }}</span>
+                            </td>
+                            <td style="text-align: right;">
+                                <div class="action-menu">
+                                    <button class="dots-btn" onclick="toggleMenu('menu-{{ conta.pk }}')">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="1"/><circle cx="12" cy="5" r="1"/><circle cx="12" cy="19" r="1"/></svg>
+                                    </button>
+                                    <div id="menu-{{ conta.pk }}" class="dropdown-content">
+                                        <button onclick="openRemoteModal('{% url 'pagar:pagar_edit' conta.pk %}')">Editar</button>
+                                        <button onclick="openRemoteModal('{% url 'pagar:pagar_delete' conta.pk %}')" class="delete-item">Excluir</button>
+                                    </div>
+                                </div>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr class="no-data"><td colspan="6" class="empty-msg">Nenhum gasto operacional registrado.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div id="dash-folha" class="dashboard-section hidden">
+        <div class="section-header">
+            <h2 class="section-title">Folha de Pagamento <span class="badge-count">{{ list_folha|length }}</span></h2>
+        </div>
+        <div class="content-panel">
+            <div class="table-responsive">
+                <table class="rh-table">
+                    <thead>
+                        <tr>
+                            <th width="35%">Funcionário</th>
+                            <th width="15%">Mês Ref.</th>
+                            <th width="15%">Valor Total</th>
+                            <th width="15%">Status</th>
+                            <th width="10%">Categoria</th>
+                            <th width="10%" style="text-align: right;"></th>
+                        </tr>
+                    </thead>
+                    <tbody class="data-table-body">
+                        {% for conta in list_folha %}
+                        <tr class="conta-row"
+                            data-search="{{ conta.funcionario.nome|lower }} folha pagamento"
+                            data-status="{% if conta.status == 'PG' or conta.status == 'Pago' %}Pago{% else %}Pendente{% endif %}"
+                            data-tipo="FolhaPagamento">
+                            
+                            <td>
+                                <div style="font-weight: 600; color: var(--text-main)">{{ conta.funcionario.nome }}</div>
+                                <div style="font-size:12px; color:#64748b">Folha Mensal</div>
+                            </td>
+                            <td>
+                                <div style="color: var(--text-main)">{{ conta.get_data_consolidada|date:"m/Y" }}</div>
+                            </td>
+                            <td>
+                                <div class="font-semibold" style="color: var(--text-main)">
+                                    R$ {{ conta.get_valor_consolidado|floatformat:"2g" }}
+                                </div>
+                            </td>
+                            <td>
+                                {% if conta.status == 'PG' or conta.status == 'Pago' %}
+                                    <span class="status-badge st-pago">Pago</span>
+                                {% else %}
+                                    <span class="status-badge st-pendente">Pendente</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <span class="cat-badge">Folha</span>
+                            </td>
+                            <td style="text-align: right;">
+                                <div class="action-menu">
+                                    <button class="dots-btn" onclick="toggleMenu('menu-{{ conta.pk }}')">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="1"/><circle cx="12" cy="5" r="1"/><circle cx="12" cy="19" r="1"/></svg>
+                                    </button>
+                                    <div id="menu-{{ conta.pk }}" class="dropdown-content">
+                                        <button onclick="openRemoteModal('{% url 'pagar:pagar_edit' conta.pk %}')">Editar</button>
+                                        <button onclick="openRemoteModal('{% url 'pagar:pagar_delete' conta.pk %}')" class="delete-item">Excluir</button>
+                                    </div>
+                                </div>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr class="no-data"><td colspan="6" class="empty-msg">Nenhum registro de folha.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div id="dash-comissao" class="dashboard-section hidden">
+        <div class="section-header">
+            <h2 class="section-title">Comissões e Variáveis <span class="badge-count">{{ list_comissao|length }}</span></h2>
+        </div>
+        <div class="content-panel">
+            <div class="table-responsive">
+                <table class="rh-table">
+                    <thead>
+                        <tr>
+                            <th width="35%">Arquiteta/Beneficiário</th>
+                            <th width="15%">Data Pagto.</th>
+                            <th width="15%">Valor Comissão</th>
+                            <th width="15%">Status</th>
+                            <th width="10%">Categoria</th>
+                            <th width="10%" style="text-align: right;"></th>
+                        </tr>
+                    </thead>
+                    <tbody class="data-table-body">
+                        {% for conta in list_comissao %}
+                        <tr class="conta-row"
+                            data-search="{{ conta.arquiteto.nome|lower }} comissão"
+                            data-status="{% if conta.status == 'PG' or conta.status == 'Pago' %}Pago{% else %}Pendente{% endif %}"
+                            data-tipo="ComissaoArquiteto">
+                            
+                            <td>
+                                <div style="font-weight: 600; color: var(--text-main)">{{ conta.arquiteto.nome }}</div>
+                                <div style="font-size:12px; color:#64748b">Comissão</div>
+                            </td>
+                            <td>
+                                <div style="color: var(--text-main)">{{ conta.get_data_consolidada|date:"d/m/Y" }}</div>
+                            </td>
+                            <td>
+                                <div class="font-semibold" style="color: var(--text-main)">
+                                    R$ {{ conta.get_valor_consolidado|floatformat:"2g" }}
+                                </div>
+                            </td>
+                            <td>
+                                {% if conta.status == 'PG' or conta.status == 'Pago' %}
+                                    <span class="status-badge st-pago">Pago</span>
+                                {% else %}
+                                    <span class="status-badge st-pendente">Pendente</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <span class="cat-badge">Comissão</span>
+                            </td>
+                            <td style="text-align: right;">
+                                <div class="action-menu">
+                                    <button class="dots-btn" onclick="toggleMenu('menu-{{ conta.pk }}')">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="1"/><circle cx="12" cy="5" r="1"/><circle cx="12" cy="19" r="1"/></svg>
+                                    </button>
+                                    <div id="menu-{{ conta.pk }}" class="dropdown-content">
+                                        <button onclick="openRemoteModal('{% url 'pagar:pagar_edit' conta.pk %}')">Editar</button>
+                                        <button onclick="openRemoteModal('{% url 'pagar:pagar_delete' conta.pk %}')" class="delete-item">Excluir</button>
+                                    </div>
+                                </div>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr class="no-data"><td colspan="6" class="empty-msg">Nenhuma comissão registrada.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
         </div>
     </div>
 </div>
@@ -258,21 +503,28 @@
     </div>
 </div>
 
+<div id="modalGeneric" class="modal-overlay">
+    <div class="modal-window" id="modalGenericContent">
+        <div class="loading-spinner">Carregando...</div>
+    </div>
+</div>
+
 <script>
-    // --- LÓGICA DE FILTROS (NOVA) ---
+    // --- LÓGICA DE FILTROS GLOBAL ---
     function applyFilters() {
         const query = document.getElementById('searchInput').value.toLowerCase();
         const status = document.getElementById('filterStatus').value;
         const tipo = document.getElementById('filterTipo').value;
+        
+        // Seleciona todas as linhas de dados (excluindo mensagens de vazio)
         const rows = document.querySelectorAll('.conta-row');
 
         rows.forEach(row => {
-            const desc = row.querySelector('.search-desc').textContent.toLowerCase();
-            const forn = row.querySelector('.search-forn').textContent.toLowerCase();
+            const rowSearch = row.getAttribute('data-search') || '';
             const rowStatus = row.getAttribute('data-status');
             const rowTipo = row.getAttribute('data-tipo');
 
-            const matchText = desc.includes(query) || forn.includes(query);
+            const matchText = rowSearch.includes(query);
             const matchStatus = status === "" || rowStatus === status;
             const matchTipo = tipo === "" || rowTipo === tipo;
 
@@ -282,21 +534,54 @@
                 row.style.display = 'none';
             }
         });
+
+        // Opcional: Mostrar mensagem se tabela ficar vazia após filtro
+        document.querySelectorAll('.data-table-body').forEach(tbody => {
+            const visibleRows = Array.from(tbody.querySelectorAll('.conta-row')).filter(r => r.style.display !== 'none');
+            const noDataMsg = tbody.querySelector('.no-data');
+            
+            if (visibleRows.length === 0) {
+                if(!noDataMsg) {
+                    const tr = document.createElement('tr');
+                    tr.className = 'no-data';
+                    tr.innerHTML = '<td colspan="6" class="empty-msg">Nenhum registro encontrado com os filtros atuais.</td>';
+                    tbody.appendChild(tr);
+                } else {
+                    noDataMsg.style.display = '';
+                }
+            } else {
+                if(noDataMsg) noDataMsg.style.display = 'none';
+            }
+        });
     }
 
-    // --- Funções de Modal e Menu (Mantidas) ---
+    // --- LÓGICA DE TOGGLE (ESCONDER/MOSTRAR) ---
+    function toggleDashboard(id, checkbox) {
+        const el = document.getElementById(id);
+        if (checkbox.checked) {
+            el.classList.remove('hidden');
+        } else {
+            el.classList.add('hidden');
+        }
+    }
+
+    // --- Controle de Modais ---
     function openModal(id) {
         document.getElementById(id).classList.add('open');
         document.body.style.overflow = 'hidden';
     }
+    
     function closeModal(id) {
+        if(!id) return; 
         document.getElementById(id).classList.remove('open');
         document.body.style.overflow = '';
     }
+
     document.querySelectorAll('.modal-overlay').forEach(m => {
         m.addEventListener('click', e => { if(e.target === m) closeModal(m.id); });
     });
 
+    // --- Lógica do Menu Dropdown ---
     function toggleMenu(menuId) {
         document.querySelectorAll('.dropdown-content').forEach(menu => {
             if (menu.id !== menuId) menu.classList.remove('show');
@@ -310,8 +595,11 @@
         }
     }
 
+    // --- Lógica de Criação (Passo a Passo) ---
     function avancarParaDetalhe() {
-        const select = document.getElementById('categoria-selector');
+        const select = document.getElementById('categoria-selector') || document.querySelector('select[name="categoria"]');
+        if (!select) return; 
+        
         const categoria = select.value;
         const textoCategoria = select.options[select.selectedIndex].text;
 
@@ -325,9 +613,49 @@
         container.innerHTML = '<div class="loading-spinner">Carregando formulário...</div>';
 
         fetch(`{% url 'pagar:pagar_create' %}?tipo=${categoria}&modal=true`)
-            .then(res => { if(!res.ok) throw new Error('Erro'); return res.text(); })
+            .then(res => res.text())
             .then(html => { container.innerHTML = html; })
             .catch(err => { container.innerHTML = '<div style="padding:20px; color:red; text-align:center">Erro ao carregar.</div>'; });
+    }
+
+    // --- Lógica do Modal Remoto (Para Edit/Delete) ---
+    function openRemoteModal(url) {
+        const modal = document.getElementById('modalGeneric');
+        const content = document.getElementById('modalGenericContent');
+        
+        content.innerHTML = '<div style="text-align:center; padding:40px; color:#64748b;">Carregando...</div>';
+        modal.classList.add('open');
+        document.body.style.overflow = 'hidden';
+
+        fetch(url)
+            .then(response => response.text())
+            .then(html => {
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(html, 'text/html');
+                let newContent = doc.querySelector('form');
+                
+                if (newContent) {
+                    content.innerHTML = newContent.outerHTML;
+                    const scripts = content.getElementsByTagName("script");
+                    for (let i = 0; i < scripts.length; i++) {
+                        eval(scripts[i].innerText);
+                    }
+                } else {
+                    content.innerHTML = `
+                        <div class="modal-header">
+                            <h3 class="modal-title">Ação</h3>
+                            <button type="button" class="btn-close" onclick="closeModal('modalGeneric')">✕</button>
+                        </div>
+                        <div class="modal-body">
+                            ${doc.body.innerHTML}
+                        </div>
+                    `;
+                }
+            })
+            .catch(err => {
+                console.error(err);
+                content.innerHTML = '<div style="padding:20px; color:red">Erro de conexão.</div>';
+            });
     }
 </script>
 {% endblock %}

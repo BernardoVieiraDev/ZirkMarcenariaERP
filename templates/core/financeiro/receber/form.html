@@ -1,24 +1,67 @@
-{% extends "core/base.html" %}
-{% block content %}
+{% load static %}
 
-<div class="form-wrapper">
-  <h1>{{ title }}</h1>
-
-  <form method="POST" enctype="multipart/form-data" class="form-container">
+<form method="POST" action="{{ request.path }}" enctype="multipart/form-data" style="margin:0; width: 100%; display: flex; flex-direction: column;">
     {% csrf_token %}
 
-    <section class="form-section">
-      {{ form.as_p }}
-    </section>
-    
-    <div class="form-actions">
-      <button type="submit" class="btn-primary">Salvar</button>
-      <a class="btn ghost" href="{% url 'pagar:pagar_create' %}">Cancelar</a>
+    {# CSS Scoped: Aplica estilos apenas aos inputs dentro deste modal #}
+    <style>
+        .modal-body input, 
+        .modal-body select, 
+        .modal-body textarea {
+            width: 100%;
+            padding: 10px;
+            border-radius: 8px;
+            border: 1px solid #cbd5e1;
+            font-size: 14px;
+            box-sizing: border-box; /* Garante que o padding não estoure a largura */
+        }
+        .modal-body input:focus, 
+        .modal-body select:focus,
+        .modal-body textarea:focus {
+            border-color: #1976d2;
+            outline: none;
+        }
+        .form-label {
+            display: block; 
+            font-size: 13px; 
+            font-weight: 600; 
+            color: #475569; 
+            margin-bottom: 6px;
+        }
+        .error-msg {
+            color: #b91c1c; 
+            font-size: 11px; 
+            margin-top: 4px;
+        }
+    </style>
+
+    <div class="modal-header" style="padding: 20px 24px; border-bottom: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center; background: white; border-radius: 12px 12px 0 0;">
+        <h3 class="modal-title" style="font-size: 18px; font-weight: 700; color: #1e293b; margin: 0;">{{ title }}</h3>
+        <button type="button" class="btn-close" onclick="closeModal('modalGeneric')" style="background: transparent; border: none; cursor: pointer; font-size: 20px; color: #94a3b8;">✕</button>
     </div>
-  </form>
-</div>
 
+    <div class="modal-body" style="padding: 24px; background: white; flex: 1;">
+        
+        <div class="form-section-title" style="margin-bottom: 20px; font-size: 14px; font-weight: 600; color: #1e293b; border-bottom: 1px solid #e2e8f0; padding-bottom: 8px;">
+            Dados do Lançamento
+        </div>
 
-{% endblock %}
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+            {% for field in form %}
+            <div class="form-group" style="{% if field.name == 'observacoes' or field.name == 'descricao' %}grid-column: span 2;{% endif %} margin-bottom: 5px;">
+                <label class="form-label">{{ field.label }}</label>
+                {{ field }}
+                {% if field.errors %}
+                    <div class="error-msg">{{ field.errors.0 }}</div>
+                {% endif %}
+            </div>
+            {% endfor %}
+        </div>
 
+    </div>
 
+    <div class="modal-footer" style="padding: 16px 24px; border-top: 1px solid #e2e8f0; background: #f8fafc; border-radius: 0 0 12px 12px; display: flex; justify-content: flex-end; gap: 12px;">
+        <button type="button" class="btn-ghost" onclick="closeModal('modalGeneric')" style="background: white; border: 1px solid #cbd5e1; color: #475569; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: 600;">Cancelar</button>
+        <button type="submit" class="rh-btn-primary" style="background: linear-gradient(180deg, #1976d2, #1565c0); color: white; padding: 10px 20px; border-radius: 8px; border: none; font-weight: 600; cursor: pointer;">Salvar Receita</button>
+    </div>
+</form>

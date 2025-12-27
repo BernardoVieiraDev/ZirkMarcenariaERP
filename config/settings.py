@@ -1,4 +1,7 @@
 from pathlib import Path
+import django.utils.encoding
+# Correção de compatibilidade para django-fernet-fields
+django.utils.encoding.force_text = django.utils.encoding.force_str
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -29,7 +32,9 @@ INSTALLED_APPS = [
     'apps.ferias.apps.FeriasConfig',
     'apps.banco_horas.apps.BancoHorasConfig',
     'apps.comissionamento.apps.ComissionamentoConfig',
-    'apps.relatorios.apps.RelatoriosConfig'
+    'apps.relatorios.apps.RelatoriosConfig',
+    'apps.rescisao.apps.RescisaoConfig'
+
 ]
 
 MIDDLEWARE = [
@@ -40,7 +45,12 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
+    # Middleware customizado deve ficar por último ou após o AuthenticationMiddleware
+    "config.middleware.LoginRequiredMiddleware", 
 ]
+LOGIN_URL = '/'             # A raiz será a tela de login
+LOGIN_REDIRECT_URL = '/dashboard/'  # Para onde vai após logar
+LOGOUT_REDIRECT_URL = '/'   # Para onde vai após sair
 
 # Defina o caminho das URLs para o novo nome de pasta (config)
 ROOT_URLCONF = "config.urls"
@@ -108,3 +118,7 @@ STATIC_ROOT = BASE_DIR / "staticfiles"
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+
+FERNET_KEYS = [
+    'pPz3-FoPxGNLD9SglRd-0L65svR4TA3WqoqPFEgrYeg=',
+]

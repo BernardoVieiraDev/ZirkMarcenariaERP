@@ -1,0 +1,22 @@
+<form method="POST" action="{{ request.path }}">
+    {% csrf_token %}
+    
+    <div class="modal-header">
+        <h3 class="modal-title">Confirmar Exclusão</h3>
+        <button type="button" class="btn-close" onclick="closeActionModal()">✕</button>
+    </div>
+    
+    <div class="modal-body">
+        <p style="font-size: 15px; color: #475569;">
+            Tem certeza que deseja excluir a rescisão do funcionário <strong>{{ object.funcionario.nome }}</strong>?
+        </p>
+        <div style="margin-top: 10px; padding: 15px; background: #fef2f2; border: 1px solid #fee2e2; border-radius: 8px; color: #b91c1c; font-size: 13px;">
+            ⚠️ O registro será apagado permanentemente.
+        </div>
+    </div>
+    
+    <div class="modal-footer">
+        <button type="button" class="btn-ghost" onclick="closeActionModal()">Cancelar</button>
+        <button type="submit" class="rh-btn-primary" style="background: #ef4444; border-color: #ef4444;">Confirmar Exclusão</button>
+    </div>
+</form>

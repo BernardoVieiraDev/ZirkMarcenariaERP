@@ -10,7 +10,9 @@ requires-python = ">=3.13"
 dependencies = [
     "django",
     "xlsxwriter",
-    "requests"
+    "requests",
+    "cryptography (>=46.0.3,<47.0.0)",
+    "django-fernet-fields (>=0.6,<0.7)"
 ]
 
 [tool.poetry]

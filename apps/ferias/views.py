@@ -4,11 +4,11 @@ from django.contrib import messages
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_POST
-
+from django.urls import reverse
 from apps.funcionarios.models import Funcionario
 
-from .forms import FeriasForm, PagamentoFeriasForm, PeriodoAquisitivoForm
-from .models import Ferias, PagamentoFerias, PeriodoAquisitivo
+from .forms import FeriasForm, RecibosContabilidadeForm, PagamentoFeriasForm, PeriodoAquisitivoForm
+from .models import Ferias, RecibosContabilidade, PagamentoFerias, PeriodoAquisitivo
 from .services import FeriasExcelService
 
 
@@ -186,3 +186,68 @@ def exportar_planilha_geral(request):
     )
     response['Content-Disposition'] = f'attachment; filename={filename}'
     return response
+
+
+
+def listar_recibos(request):
+    recibos = (
+        RecibosContabilidade.objects
+        .select_related("funcionario")
+        .order_by("-recibo_de_ferias_contabilidade")
+    )
+    
+    # Formulário vazio para o Modal de criação
+    form_recibo = RecibosContabilidadeForm()
+
+    return render(request, "core/ferias/listar_recibos.html", {
+        "recibos": recibos,
+        "form_recibo": form_recibo
+    })
+
+def registrar_recibo(request):
+    if request.method == 'POST':
+        form = RecibosContabilidadeForm(request.POST)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Recibo contábil registrado com sucesso!")
+            return redirect('ferias:listar_recibos')
+    else:
+        form = RecibosContabilidadeForm()
+    return render(request, 'core/ferias/registrar_recibo.html', {'form': form}) # Fallback se não usar modal
+
+def editar_recibo(request, pk):
+    recibo = get_object_or_404(RecibosContabilidade, pk=pk)
+    form = RecibosContabilidadeForm(request.POST or None, instance=recibo)
+
+    if request.method == 'POST':
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Recibo atualizado.")
+            return redirect('ferias:listar_recibos')
+    
+    # Retorna apenas o form para o modal se for AJAX
+    if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+        return render(request, 'core/ferias/form_modal_recibo.html', {
+            'form': form,
+            'object': recibo,
+            'action_url': request.path 
+        })
+    
+    return redirect('ferias:listar_recibos')
+
+@require_POST
+def deletar_recibo(request, pk):
+    recibo = get_object_or_404(RecibosContabilidade, pk=pk)
+    recibo.delete()
+    messages.success(request, "Recibo deletado.")
+    return redirect('ferias:listar_recibos')
+
+# View auxiliar para o modal de exclusão (opcional, igual ao padrão que você já usa)
+def confirmar_delete_recibo(request, pk):
+    recibo = get_object_or_404(RecibosContabilidade, pk=pk)
+    if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+        return render(request, 'core/ferias/delete_modal.html', {
+            'object': recibo,
+            'delete_url': reverse('ferias:deletar_recibo', kwargs={'pk': pk})
+        })
+    return redirect('ferias:listar_recibos')

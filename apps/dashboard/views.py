@@ -1,17 +1,22 @@
-from django.shortcuts import render
-from django.db.models import Sum, Q
-from decimal import Decimal
 from datetime import datetime, timedelta
+from decimal import Decimal
 
+from django.db.models import Q, Sum
+from django.shortcuts import render
+
+from apps.comissionamento.models import ContratoRT
+from apps.ferias.models import PeriodoAquisitivo
 # Importe os modelos
-from apps.financeiro.pagar.models import (
-    Boleto, FaturaCartao, PrestacaoEmprestimo, GastoVeiculoConsorcio,
-    GastoContabilidade, GastoImovel, GastoUtilidade, GastoGeral, Cheque, 
-    GastoGasolina, PagamentoFuncionario
-)
+from apps.financeiro.pagar.models import (Boleto, Cheque, FaturaCartao,
+                                          GastoContabilidade, GastoGasolina,
+                                          GastoGeral, GastoImovel,
+                                          GastoUtilidade,
+                                          GastoVeiculoConsorcio,
+                                          PagamentoFuncionario,
+                                          PrestacaoEmprestimo)
 from apps.financeiro.receber.models import Receber
 from apps.funcionarios.models import Funcionario
-from apps.comissionamento.models import ContratoRT
+
 
 def dashboard(request):
     now = datetime.now()
@@ -57,6 +62,36 @@ def dashboard(request):
         recentes = ModelClass.objects.all().order_by('-data_vencimento')[:5]
         ultimos_gastos_list.extend(list(recentes))
 
+
+        # --- NOVA LÓGICA: ALERTAS DE FÉRIAS ---
+    ferias_alerta_list = []
+    
+    # Buscamos períodos aquisitivos e trazemos as férias registradas para evitar N+1 queries no loop
+    periodos = PeriodoAquisitivo.objects.select_related('funcionario').prefetch_related('ferias_registradas').all()
+    
+    for p in periodos:
+        saldo = p.saldo_restante() # Usa o método do model que calcula dias - tirados
+        
+        if saldo > 0:
+            # O prazo legal para conceder férias é geralmente 1 ano após o fim do período aquisitivo
+            try:
+                prazo_concessivo = p.data_fim.replace(year=p.data_fim.year + 1)
+            except ValueError: # Tratamento para 29 de fev
+                prazo_concessivo = p.data_fim + timedelta(days=365)
+            
+            dias_para_vencer = (prazo_concessivo - today).days
+            
+            # ALERTA: Se faltam menos de 45 dias para estourar o prazo e ainda tem saldo
+            if 0 <= dias_para_vencer <= 45:
+                ferias_alerta_list.append({
+                    'funcionario': p.funcionario.nome,
+                    'data_limite': prazo_concessivo,
+                    'dias_restantes_prazo': dias_para_vencer,
+                    'saldo_dias': saldo,
+                    # Flag para urgência crítica (menos de 15 dias é perigoso por causa do aviso prévio de férias)
+                    'critico': dias_para_vencer < 30 
+                })
+
     # Adicionar GastoGeral ao total e últimos gastos
     total_geral = GastoGeral.objects.exclude(status='Pago').aggregate(total=Sum('valor_total'))['total'] or Decimal('0.00')
     total_pagar_pendente += total_geral
@@ -86,6 +121,8 @@ def dashboard(request):
     # Contratos RT Ativos (Lista)
     contratos_list = ContratoRT.objects.filter(saldo_devedor__gt=0).order_by('arquiteta__nome')[:5]
 
+    ferias_alerta_list.sort(key=lambda x: x['dias_restantes_prazo'])
+
     # Total Receber
     receber_total = Receber.objects.exclude(status='Pago').aggregate(total=Sum('valor'))['total'] or Decimal('0.00')
     
@@ -100,7 +137,7 @@ def dashboard(request):
         'vencendo_list': vencendo_list,
         'contratos_list': contratos_list,
         'ultimos_gastos': ultimos_gastos_list,
-        
+        'ferias_alerta_list': ferias_alerta_list,
         'atrasados_count': len(atrasados_list), # Opcional se quiser mostrar o número no título
     }
     

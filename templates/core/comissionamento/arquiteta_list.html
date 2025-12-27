@@ -110,18 +110,18 @@
     }
     .dropdown-content.show { display: block; }
     
-    .dropdown-content a {
+    .dropdown-content button {
         color: var(--text-main); padding: 10px 16px; text-decoration: none;
         display: flex; align-items: center; gap: 10px; font-size: 13px; width: 100%;
-        transition: background 0.1s;
+        transition: background 0.1s; background: none; border: none; cursor: pointer; text-align: left;
     }
-    .dropdown-content a:hover { background-color: #f8fafc; color: var(--primary); }
-    .dropdown-content a.delete-item:hover { background-color: #fef2f2; color: var(--danger-text); }
+    .dropdown-content button:hover { background-color: #f8fafc; color: var(--primary); }
+    .dropdown-content .delete-item:hover { background-color: #fef2f2; color: var(--danger-text); }
     
     @keyframes fadeIn { from { opacity: 0; transform: translateY(-5px); } to { opacity: 1; transform: translateY(0); } }
     .empty-msg { text-align: center; padding: 40px; color: var(--text-muted); font-style: italic; }
 
-    /* === CSS MODAL === */
+    /* === CSS MODAL (Global) === */
     .modal-overlay {
         display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.75); 
         z-index: 10000; overflow-y: auto; padding: 20px;
@@ -139,13 +139,17 @@
     .modal-title { font-size: 18px; font-weight: 700; color: #1e293b; margin: 0; }
     .btn-close { background: transparent; border: none; cursor: pointer; font-size: 24px; color: #94a3b8; padding: 4px; line-height: 1; }
     .btn-close:hover { color: #0f172a; }
+    
     .modal-body { padding: 24px; }
+    
+    /* Estilos simples para o modal de criação local */
     .form-group { margin-bottom: 16px; }
     .form-group label { display: block; font-size: 13px; font-weight: 600; color: #475569; margin-bottom: 6px; }
     .form-group input, .form-group select, .form-group textarea { 
         width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #cbd5e1; font-size: 14px; 
     }
     .form-group input:focus, .form-group select:focus { border-color: var(--primary); outline: none; }
+    
     .modal-footer { padding: 16px 24px; border-top: 1px solid #e2e8f0; background: #f8fafc; border-radius: 0 0 12px 12px; display: flex; justify-content: flex-end; gap: 12px; }
     .btn-ghost { background: white; border: 1px solid #cbd5e1; color: #475569; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: 600; }
     .btn-ghost:hover { background: #f1f5f9; color: #1e293b; }
@@ -160,14 +164,14 @@
             <p>Cadastro de profissionais e dados bancários para RT</p>
         </div>
         <div>
-            <button onclick="openModal()" class="btn-new">
+            <button onclick="openModal('modalArquiteta')" class="btn-new">
                 <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
                 Nova Arquiteta
             </button>
         </div>
     </header>
 
-    {# --- BLOCO DE MENSAGENS COM TIMER (AUTO REMOVE) --- #}
+    {# --- BLOCO DE MENSAGENS --- #}
     {% if messages %}
         <div id="messages-container">
             {% for message in messages %}
@@ -178,7 +182,6 @@
             {% endfor %}
         </div>
         <script>
-            // Script para remover as mensagens automaticamente após 5 segundos
             setTimeout(function() {
                 const msgs = document.querySelectorAll('.alert-box');
                 msgs.forEach(m => {
@@ -186,10 +189,9 @@
                     m.style.opacity = '0';
                     setTimeout(() => m.remove(), 500);
                 });
-            }, 5000); // 5000ms = 5 segundos
+            }, 5000);
         </script>
     {% endif %}
-    {# -------------------------------------------------- #}
 
     <div class="content-panel">
         <div class="toolbar">
@@ -239,12 +241,13 @@
                                 </button>
                                 
                                 <div id="menu-{{ arquiteta.pk }}" class="dropdown-content">
-                                    <a href="{% url 'comissionamento:arquiteta_edit' pk=arquiteta.pk %}">
+                                    {# Botões atualizados para chamar a função AJAX #}
+                                    <button onclick="openRemoteModal('{% url 'comissionamento:arquiteta_edit' pk=arquiteta.pk %}')">
                                         ✏️ Editar
-                                    </a>
-                                    <a href="{% url 'comissionamento:arquiteta_delete' pk=arquiteta.pk %}" class="delete-item">
+                                    </button>
+                                    <button onclick="openRemoteModal('{% url 'comissionamento:arquiteta_delete' pk=arquiteta.pk %}')" class="delete-item">
                                         🗑️ Excluir
-                                    </a>
+                                    </button>
                                 </div>
                             </div>
                         </td>
@@ -266,7 +269,7 @@
             {% csrf_token %}
             <div class="modal-header">
                 <h3 class="modal-title">Nova Arquiteta</h3>
-                <button type="button" class="btn-close" onclick="closeModal()">✕</button>
+                <button type="button" class="btn-close" onclick="closeModal('modalArquiteta')">✕</button>
             </div>
             
             <div class="modal-body">
@@ -284,27 +287,88 @@
             </div>
             
             <div class="modal-footer">
-                <button type="button" class="btn-ghost" onclick="closeModal()">Cancelar</button>
+                <button type="button" class="btn-ghost" onclick="closeModal('modalArquiteta')">Cancelar</button>
                 <button type="submit" class="rh-btn-primary">Salvar Cadastro</button>
             </div>
         </form>
     </div>
 </div>
 
+<div id="modalGeneric" class="modal-overlay">
+    <div class="modal-window" id="modalGenericContent">
+        <div style="text-align:center; padding:40px; color:#64748b;">Carregando...</div>
+    </div>
+</div>
+
 <script>
-    // Controle do Modal
-    function openModal() {
-        document.getElementById('modalArquiteta').classList.add('open');
+    // --- Controle do Modal Local ---
+    function openModal(id) {
+        document.getElementById(id).classList.add('open');
         document.body.style.overflow = 'hidden';
     }
 
-    function closeModal() {
-        document.getElementById('modalArquiteta').classList.remove('open');
+    function closeModal(id) {
+        if (!id) return;
+        document.getElementById(id).classList.remove('open');
         document.body.style.overflow = '';
     }
 
-    document.getElementById('modalArquiteta').addEventListener('click', function(e) {
-        if (e.target === this) closeModal();
+    // --- Controle do Modal Remoto (AJAX) ---
+    function openRemoteModal(url) {
+        const modal = document.getElementById('modalGeneric');
+        const content = document.getElementById('modalGenericContent');
+        
+        // Limpa e mostra loading
+        content.innerHTML = '<div style="text-align:center; padding:40px; color:#64748b;">Carregando...</div>';
+        modal.classList.add('open');
+        document.body.style.overflow = 'hidden';
+
+        fetch(url)
+            .then(response => response.text())
+            .then(html => {
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(html, 'text/html');
+                
+                // Tenta pegar o formulário completo (que já tem header/body/footer)
+                let newContent = doc.querySelector('form');
+                
+                if (newContent) {
+                    content.innerHTML = newContent.outerHTML;
+                    // Reexecuta scripts se houver
+                    const scripts = content.getElementsByTagName("script");
+                    for (let i = 0; i < scripts.length; i++) {
+                        eval(scripts[i].innerText);
+                    }
+                } else {
+                    // Fallback
+                    content.innerHTML = `
+                        <div class="modal-header">
+                            <h3 class="modal-title">Ação</h3>
+                            <button type="button" class="btn-close" onclick="closeModal('modalGeneric')">✕</button>
+                        </div>
+                        <div class="modal-body">
+                            ${doc.body.innerHTML}
+                        </div>
+                    `;
+                }
+            })
+            .catch(err => {
+                console.error(err);
+                content.innerHTML = `
+                    <div class="modal-header">
+                        <h3 class="modal-title" style="color:red">Erro</h3>
+                        <button type="button" class="btn-close" onclick="closeModal('modalGeneric')">✕</button>
+                    </div>
+                    <div class="modal-body">Erro de conexão. Tente novamente.</div>
+                `;
+            });
+    }
+
+    // Fechar ao clicar fora
+    document.querySelectorAll('.modal-overlay').forEach(modal => {
+        modal.addEventListener('click', function(e) {
+            if (e.target === this) closeModal(this.id);
+        });
     });
 
     // Filtro da tabela
@@ -318,7 +382,7 @@
         });
     }
 
-    // Toggle do menu 3 pontinhos
+    // Menu Dropdown
     function toggleMenu(menuId) {
         document.querySelectorAll('.dropdown-content').forEach(menu => {
             if (menu.id !== menuId) menu.classList.remove('show');

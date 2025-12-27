@@ -1,6 +1,27 @@
 <form method="POST" action="{{ request.path }}">
     {% csrf_token %}
     
+    <style>
+        /* Remove as bolinhas da lista e deixa na horizontal */
+        #id_tipo_pis_pasep {
+            list-style-type: none !important;
+            padding-left: 0 !important;
+            margin: 0 !important;
+            display: flex;
+            gap: 20px; /* Espaço entre PIS e PASEP */
+        }
+
+        /* Alinha a bolinha do rádio com o texto */
+        #id_tipo_pis_pasep li {
+            display: flex;
+            align-items: center;
+        }
+
+        #id_tipo_pis_pasep input {
+            margin-right: 5px;
+        }
+    </style>
+
     <div class="modal-header">
         <h3 class="modal-title">{{ title }}</h3>
         <button type="button" class="btn-close" onclick="closeActionModal()">✕</button>

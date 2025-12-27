@@ -17,7 +17,7 @@ class PeriodoAquisitivo(models.Model):
 
     def dias_gozados(self):
         total = 0
-        for f in self.ferias_registradas.all():
+        for f in self.ferias_registradas.all(): #type: ignore
             total += max(0, (f.dias_tirados - (f.faltas_justificadas_descontadas or 0)))
         return total
 
@@ -48,7 +48,7 @@ class Ferias(models.Model):
         if self.pk:
             old = Ferias.objects.get(pk=self.pk)
             outros_total = sum(max(0, f.dias_tirados - (f.faltas_justificadas_descontadas or 0))
-                               for f in self.periodo.ferias_registradas.exclude(pk=self.pk))
+                               for f in self.periodo.ferias_registradas.exclude(pk=self.pk)) #type: ignore
             saldo_disponivel = self.periodo.dias_direito - outros_total
         else:
             saldo_disponivel = self.periodo.saldo_restante()
@@ -76,7 +76,7 @@ class PagamentoFerias(models.Model):
                 # O uso de 'hasattr' evita erro se a relação não existir no banco ainda,
                 # mas o ideal é garantir que existe via try/except ObjectDoesNotExist.
                 if hasattr(self.funcionario, 'dados_trabalhistas'):
-                    salario = self.funcionario.dados_trabalhistas.salario
+                    salario = self.funcionario.dados_trabalhistas.salario #type: ignore
                     if salario:
                         # Cálculo: Salário / 3
                         # É importante converter o divisor para Decimal para manter precisão

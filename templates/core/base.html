@@ -60,7 +60,11 @@
           <a class="nav-link text-white-50 small {% if route == 'funcionarios:funcionarios' %}active{% endif %}" href="{% url 'funcionarios:funcionarios' %}">Funcionários</a>
           <a class="nav-link text-white-50 small {% if route == 'ferias:listar_funcionarios' %}active{% endif %}" href="{% url 'ferias:listar_funcionarios' %}">Gestão de Férias</a>
           <a class="nav-link text-white-50 small {% if route == 'ferias:listar_pagamentos' %}active{% endif %}" href="{% url 'ferias:listar_pagamentos' %}">Pagamentos Férias</a>
+          <a class="nav-link text-white-50 small {% if route == 'ferias:listar_recibos' %}active{% endif %}" href="{% url 'ferias:listar_recibos' %}">Recibo Contabilidade</a>
           <a class="nav-link text-white-50 small {% if route == 'banco_horas:banco_horas_list' %}active{% endif %}" href="{% url 'banco_horas:banco_horas_list' %}">Banco de Horas</a>
+          <a class="nav-link text-white-50 small {% if route == 'rescisao:rescisao_list' %}active{% endif %}" href="{% url 'rescisao:rescisao_list' %}">Rescisões</a>
+
+        </li>
         </div>
       </div>
 
@@ -71,8 +75,7 @@
            aria-expanded="{% if 'receber' in route or 'pagar' in route %}true{% else %}false{% endif %}">
 
           <span class="nav-left">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M2 7h20v2H2V7zm0 6h20v2H2v-2z"/></svg>
-            <span class="nav-text">Financeiro</span>
+<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-receipt h-5 w-5"><path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1Z"></path><path d="M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8"></path><path d="M12 17.5v-11"></path></svg>            <span class="nav-text">Financeiro</span>
           </span>
           <span class="nav-right">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 9 6 6 6-6"></path></svg>
@@ -93,8 +96,7 @@
            aria-expanded="{% if 'comissionamento' in route %}true{% else %}false{% endif %}">
 
           <span class="nav-left">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l2 4-2 4-2-4 2-4zm0 8v12m-6 0l6-6 6 6"/></svg>
-            <span class="nav-text">Arquitetos / RT</span>
+<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"> <rect x="4" y="2" width="16" height="20" rx="2"/> <path d="M9 22v-4h6v4"/> <path d="M8 6h.01M12 6h.01M16 6h.01"/> <path d="M8 10h.01M12 10h.01M16 10h.01"/> </svg> <span class="nav-text">Arquitetos / RT</span>
           </span>
           <span class="nav-right">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 9 6 6 6-6"></path></svg>
@@ -111,8 +113,7 @@
       <a class="nav-link text-white nav-item-link mt-2 {% if 'relatorios' in route %}active{% endif %}"
          href="{% url 'relatorios:listar_planilhas' %}">
         <span class="nav-left">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
-            <path d="M3 3h18v18H3V3zm4 3v12h10V6H7z"/>
+<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-file-text h-5 w-5"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"></path><path d="M14 2v4a2 2 0 0 0 2 2h4"></path><path d="M10 9H8"></path><path d="M16 13H8"></path><path d="M16 17H8"></path></svg> <span class="nav-text"></span>            <path d="M3 3h18v18H3V3zm4 3v12h10V6H7z"/>
           </svg>
           <span class="nav-text">Planilhas</span>
         </span>

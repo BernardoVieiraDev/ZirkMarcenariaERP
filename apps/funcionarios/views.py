@@ -141,15 +141,22 @@ def deletar_funcionario(request, pk):
         return render(request, 'core/funcionarios/delete_modal.html', {'object': obj})
 
     return render(request, 'core/funcionarios/delete.html', {'object': obj})
+
+
 def gerar_excel_funcionario(request, pk):
     funcionario = get_object_or_404(Funcionario, pk=pk)
-    caminho_temp = os.path.join(settings.MEDIA_ROOT, f'Funcionario_{funcionario.nome}.xlsx')
-    CadastroFuncionarioExcelService.gerar_modelo(funcionario, caminho_arquivo=caminho_temp)
-    if os.path.exists(caminho_temp):
-        response = FileResponse(open(caminho_temp, 'rb'), as_attachment=True, filename=f'{funcionario.nome}.xlsx')
-        return response
-    return HttpResponse("Erro ao gerar o arquivo.", status=500)
-
+    
+    # Chama o serviço que agora retorna um buffer (BytesIO)
+    arquivo_excel = CadastroFuncionarioExcelService.gerar_modelo(funcionario)
+    
+    if arquivo_excel:
+        return FileResponse(
+            arquivo_excel, 
+            as_attachment=True, 
+            filename=f'Funcionario_{funcionario.nome}.xlsx'
+        )
+    
+    return HttpResponse("Erro ao gerar o arquivo Excel.", status=500)
 def buscar_endereco_por_cep(request):
     cep = request.GET.get('cep', '').replace('-', '')
     

@@ -22,9 +22,10 @@ class DocumentosFuncionarioForm(forms.ModelForm):
     class Meta:
         model = DocumentosFuncionario
         fields = [
-            'pis_pasep', 'rg', 'rg_orgao_expedidor', 'cpf', 
+            'pis_pasep', 'tipo_pis_pasep', 'rg', 'rg_orgao_expedidor', 'cpf', 
             'ctps_numero', 'ctps_serie', 'ctps_uf', 'titulo_eleitor', 'certificado_reservista'
         ]
+
 
 class DadosTrabalhistasForm(forms.ModelForm):
     class Meta:

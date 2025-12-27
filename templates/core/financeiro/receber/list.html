@@ -5,10 +5,11 @@
 
 {% block content %}
 <style>
+    /* ... Seus estilos existentes ... */
     :root {
         --bg: #f8fafc; --card: #ffffff; 
         --primary: #1976d2; 
-        --text-main: #1e293b; /* Preto padrão para listagem */
+        --text-main: #1e293b; 
         --text-muted: #64748b; 
         --border: #e2e8f0; --radius: 12px;
         --success-bg: #dcfce7; --success-text: #166534;
@@ -18,77 +19,64 @@
     }
     
     .rh-container { max-width: 1200px; margin: 0 auto; padding: 24px 0; font-family: Inter, system-ui, sans-serif; color: var(--text-main); }
-    
-    /* Padronização de Fonte para Valores em Lista */
-    .font-semibold {
-        font-weight: 600;
-        /* Fonte padrão sem estilização extra (removido Roboto Mono) */
-    }
+    .font-semibold { font-weight: 600; }
 
-    /* === HEADER === */
+    /* Header e Botões */
     .page-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; flex-wrap: wrap; gap: 16px; }
-    
     .header-title h1 { font-size: 26px; font-weight: 700; color: #1e293b; margin: 0; letter-spacing: -0.5px; }
     .header-title p { font-size: 14px; color: var(--text-muted); margin: 4px 0 0 0; }
 
-    /* Botão Novo */
+    /* Botão Principal (Nova Receita) */
     .btn-new {
         background: linear-gradient(180deg, var(--primary), #1565c0);
-        color: white;
+        color: white; padding: 10px 20px; border-radius: 8px; text-decoration: none;
+        font-weight: 600; font-size: 14px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        display: inline-flex; align-items: center; gap: 8px; border: none; cursor: pointer;
+    }
+    .btn-new:hover { transform: translateY(-1px); filter: brightness(1.1); }
+
+    /* NOVO: Botão Exportar (Estilo Ghost) */
+    .btn-export {
+        background: white;
+        color: var(--success-text);
+        border: 1px solid var(--border);
         padding: 10px 20px;
         border-radius: 8px;
         text-decoration: none;
         font-weight: 600;
         font-size: 14px;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        display: inline-flex; align-items: center; gap: 8px;
-        transition: transform 0.1s;
-        border: none;
-        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        transition: all 0.2s;
+        box-shadow: 0 1px 2px rgba(0,0,0,0.05);
     }
-    .btn-new:hover { transform: translateY(-1px); filter: brightness(1.1); }
+    .btn-export:hover {
+        background-color: #f0fdf4; /* Verde muito suave */
+        border-color: #bbf7d0;
+        transform: translateY(-1px);
+        color: #14532d;
+    }
 
-    /* === CARDS DE RESUMO (Não usa font-semibold aqui, mantendo estilo do card) === */
+    /* Summary Cards */
     .summary-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 20px; margin-bottom: 30px; }
-    
     .summary-card {
         background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px;
         box-shadow: 0 1px 3px rgba(0,0,0,0.05); position: relative; overflow: hidden;
-        border-left: 4px solid #10b981; /* Verde para Receitas */
+        border-left: 4px solid #10b981; 
     }
-    
     .summary-card h3 { font-size: 13px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; margin: 0 0 8px 0; }
     .summary-card .value { font-size: 24px; font-weight: 700; color: var(--text-main); }
     .summary-icon { position: absolute; right: 20px; top: 20px; opacity: 0.1; font-size: 40px; color: #10b981; }
 
-    /* === PAINEL DA TABELA === */
-    .content-panel {
-        background: white;
-        border: 1px solid var(--border);
-        border-radius: var(--radius);
-        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.02);
-        overflow: visible; /* IMPORTANTE para o menu de ações */
-    }
-
+    /* Tabela */
+    .content-panel { background: white; border: 1px solid var(--border); border-radius: var(--radius); box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.02); overflow: visible; }
     .toolbar { padding: 16px; border-bottom: 1px solid var(--border); background: #fff; }
     .search-input { width: 100%; max-width: 350px; padding: 10px 16px; border-radius: 8px; border: 1px solid var(--border); font-size: 14px; }
-
-    /* Tabela */
     .table-responsive { overflow-x: auto; min-height: 400px; }
     .rh-table { width: 100%; border-collapse: collapse; text-align: left; }
-    
-    .rh-table thead th { 
-        background: #f8fafc; padding: 14px 20px; 
-        font-size: 12px; font-weight: 600; text-transform: uppercase; 
-        color: var(--text-muted); border-bottom: 1px solid var(--border); 
-    }
-    
-    .rh-table tbody td { 
-        padding: 16px 20px; font-size: 14px; vertical-align: middle; 
-        border-bottom: 1px solid #f1f5f9; 
-        color: var(--text-main); /* Cor preto padrão */
-        position: relative;
-    }
+    .rh-table thead th { background: #f8fafc; padding: 14px 20px; font-size: 12px; font-weight: 600; text-transform: uppercase; color: var(--text-muted); border-bottom: 1px solid var(--border); }
+    .rh-table tbody td { padding: 16px 20px; font-size: 14px; vertical-align: middle; border-bottom: 1px solid #f1f5f9; color: var(--text-main); position: relative; }
     .rh-table tbody tr:hover { background: #f8fafc; }
 
     /* Badges */
@@ -96,97 +84,53 @@
     .st-pago { background: var(--success-bg); color: var(--success-text); border: 1px solid #bbf7d0; }
     .st-pendente { background: var(--warning-bg); color: var(--warning-text); border: 1px solid #fde68a; }
     .st-info { background: var(--info-bg); color: var(--info-text); border: 1px solid #bae6fd; }
-
     .cat-badge { font-size: 11px; background: #f1f5f9; padding: 3px 8px; border-radius: 4px; color: #64748b; border: 1px solid #e2e8f0; }
 
-    /* === MENU DE AÇÕES (3 Pontos) === */
+    /* Menu de Ações */
     .action-menu { position: relative; display: inline-block; }
-    
-    .dots-btn {
-        background: transparent; border: none; cursor: pointer; padding: 8px; border-radius: 50%;
-        color: var(--text-muted); transition: background 0.2s; display: flex; align-items: center; justify-content: center;
-    }
+    .dots-btn { background: transparent; border: none; cursor: pointer; padding: 8px; border-radius: 50%; color: var(--text-muted); transition: background 0.2s; display: flex; align-items: center; justify-content: center; }
     .dots-btn:hover { background: #f1f5f9; color: var(--primary); }
-    
-    .dropdown-content {
-        display: none;
-        position: absolute;
-        right: 0;
-        top: 100%;
-        margin-top: 4px;
-        background-color: white;
-        min-width: 150px;
-        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
-        border-radius: 8px;
-        border: 1px solid #e2e8f0;
-        z-index: 9999;
-        overflow: hidden;
-        animation: fadeIn 0.1s ease-out;
-    }
-    
+    .dropdown-content { display: none; position: absolute; right: 0; top: 100%; margin-top: 4px; background-color: white; min-width: 150px; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1); border-radius: 8px; border: 1px solid #e2e8f0; z-index: 9999; overflow: hidden; animation: fadeIn 0.1s ease-out; }
     .dropdown-content.show { display: block; }
-    
-    .dropdown-content a {
-        color: var(--text-main);
-        padding: 10px 16px;
-        text-decoration: none;
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        font-size: 13px;
-        width: 100%;
-        transition: background 0.1s;
-    }
-    
-    .dropdown-content a:hover { background-color: #f8fafc; color: var(--primary); }
-    .dropdown-content a.delete-item:hover { background-color: #fef2f2; color: var(--danger-text); }
-    
+    .dropdown-content button { color: var(--text-main); padding: 10px 16px; text-decoration: none; display: flex; align-items: center; gap: 10px; font-size: 13px; width: 100%; transition: background 0.1s; background: none; border: none; cursor: pointer; text-align: left; }
+    .dropdown-content button:hover { background-color: #f8fafc; color: var(--primary); }
+    .dropdown-content .delete-item:hover { background-color: #fef2f2; color: var(--danger-text); }
     @keyframes fadeIn { from { opacity: 0; transform: translateY(-5px); } to { opacity: 1; transform: translateY(0); } }
 
     .empty-msg { text-align: center; padding: 40px; color: var(--text-muted); font-style: italic; }
 
-    /* --- CSS MODAL --- */
-    .modal-overlay {
-        display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.75); 
-        z-index: 10000; overflow-y: auto; padding: 20px;
-        align-items: flex-start; justify-content: center; backdrop-filter: blur(3px);
-    }
+    /* CSS MODAL */
+    .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.75); z-index: 10000; overflow-y: auto; padding: 20px; align-items: flex-start; justify-content: center; backdrop-filter: blur(3px); }
     .modal-overlay.open { display: flex; }
-    
-    .modal-window {
-        background: white; width: 100%; max-width: 600px; margin: 30px auto; 
-        border-radius: 12px; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
-        display: flex; flex-direction: column; position: relative;
-    }
-    
+    .modal-window { background: white; width: 100%; max-width: 600px; margin: 30px auto; border-radius: 12px; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25); display: flex; flex-direction: column; position: relative; }
     .modal-header { padding: 20px 24px; border-bottom: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center; }
     .modal-title { font-size: 18px; font-weight: 700; color: #1e293b; margin: 0; }
     .btn-close { background: transparent; border: none; cursor: pointer; font-size: 24px; color: #94a3b8; padding: 4px; line-height: 1; }
     .btn-close:hover { color: #0f172a; }
-    
     .modal-body { padding: 24px; }
     
-    .form-group { margin-bottom: 16px; }
-    .form-group label { display: block; font-size: 13px; font-weight: 600; color: #475569; margin-bottom: 6px; }
-    .form-group input, .form-group select, .form-group textarea { 
-        width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #cbd5e1; font-size: 14px; 
-    }
+    /* Formulário dentro do Modal (Padrão) */
+    .form-group input, .form-group select, .form-group textarea { width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #cbd5e1; font-size: 14px; }
     .form-group input:focus, .form-group select:focus { border-color: var(--primary); outline: none; }
-    
-    .modal-footer { padding: 16px 24px; border-top: 1px solid #e2e8f0; background: #f8fafc; border-radius: 0 0 12px 12px; display: flex; justify-content: flex-end; gap: 12px; }
-    .btn-ghost { background: white; border: 1px solid #cbd5e1; color: #475569; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: 600; }
-    .btn-ghost:hover { background: #f1f5f9; color: #1e293b; }
 </style>
 
 <div class="rh-container">
-    
     <header class="page-header">
         <div class="header-title">
             <h1>Contas a Receber</h1>
             <p>Gerenciamento de receitas e entradas</p>
         </div>
-        <div>
-            <button onclick="openModal()" class="btn-new">
+        <div style="display: flex; gap: 12px;">
+            <a href="{% url 'relatorios:exportar_receber' %}" class="btn-export">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                    <polyline points="7 10 12 15 17 10"></polyline>
+                    <line x1="12" y1="15" x2="12" y2="3"></line>
+                </svg>
+                Exportar Excel
+            </a>
+
+            <button onclick="openModal('modalReceita')" class="btn-new">
                 <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
                 Nova Receita
             </button>
@@ -260,12 +204,13 @@
                                 </button>
                                 
                                 <div id="menu-{{ it.pk }}" class="dropdown-content">
-                                    <a href="{% url 'receber:receber_edit' it.pk %}">
+                                    {# Ações agora abrem o modal remoto #}
+                                    <button onclick="openRemoteModal('{% url 'receber:receber_edit' it.pk %}')">
                                         ✏️ Editar
-                                    </a>
-                                    <a href="{% url 'receber:receber_delete' it.pk %}" class="delete-item">
+                                    </button>
+                                    <button onclick="openRemoteModal('{% url 'receber:receber_delete' it.pk %}')" class="delete-item">
                                         🗑️ Excluir
-                                    </a>
+                                    </button>
                                 </div>
                             </div>
                         </td>
@@ -283,75 +228,133 @@
 
 <div id="modalReceita" class="modal-overlay">
     <div class="modal-window">
+        
         <form method="POST" action="{% url 'receber:receber_add' %}">
             {% csrf_token %}
             
             <div class="modal-header">
                 <h3 class="modal-title">Nova Receita</h3>
-                <button type="button" class="btn-close" onclick="closeModal()">✕</button>
+                <button type="button" class="btn-close" onclick="closeModal('modalReceita')">✕</button>
             </div>
             
             <div class="modal-body">
                 {% for field in form %}
-                <div class="form-group">
-                    <label>{{ field.label }}</label>
+                <div class="form-group" style="margin-bottom:16px;">
+                    <label style="display:block;margin-bottom:6px;color:#475569;font-weight:600;font-size:13px">{{ field.label }}</label>
                     {{ field }}
-                    {% if field.errors %}
-                        <div style="color:var(--danger-text); font-size:11px; margin-top:2px;">
-                            {{ field.errors.0 }}
-                        </div>
-                    {% endif %}
+                    {% if field.errors %}<div style="color:#b91c1c;font-size:11px">{{ field.errors.0 }}</div>{% endif %}
                 </div>
                 {% endfor %}
             </div>
             
-            <div class="modal-footer">
-                <button type="button" class="btn-ghost" onclick="closeModal()">Cancelar</button>
-                <button type="submit" class="rh-btn-primary">Salvar Receita</button>
+            <div class="modal-footer" style="padding:16px 24px;border-top:1px solid #e2e8f0;background:#f8fafc;border-radius:0 0 12px 12px;display:flex;justify-content:flex-end;gap:12px;">
+                <button type="button" class="btn-ghost" onclick="closeModal('modalReceita')" style="background:white;border:1px solid #cbd5e1;padding:10px 20px;border-radius:8px;cursor:pointer;">Cancelar</button>
+                <button type="submit" class="rh-btn-primary" style="background:linear-gradient(180deg,#1976d2,#1565c0);color:white;padding:10px 20px;border-radius:8px;border:none;cursor:pointer;font-weight:600;">Salvar Receita</button>
             </div>
         </form>
     </div>
 </div>
 
+<div id="modalGeneric" class="modal-overlay">
+    <div class="modal-window" id="modalGenericContent">
+        <div style="text-align:center; padding:40px; color:#64748b;">Carregando...</div>
+    </div>
+</div>
+
 <script>
-    // --- Controle do Modal ---
-    function openModal() {
-        document.getElementById('modalReceita').classList.add('open');
+    // --- Controle do Modal Local ---
+    function openModal(modalId) {
+        document.getElementById(modalId).classList.add('open');
         document.body.style.overflow = 'hidden';
     }
 
-    function closeModal() {
-        document.getElementById('modalReceita').classList.remove('open');
+    // Função de fechar atualizada para lidar com múltiplos modais
+    function closeModal(modalId) {
+        if (!modalId) modalId = 'modalReceita'; // Default
+        document.getElementById(modalId).classList.remove('open');
         document.body.style.overflow = '';
     }
 
-    document.getElementById('modalReceita').addEventListener('click', function(e) {
-        if (e.target === this) closeModal();
+    // --- Controle do Modal Remoto (AJAX) ---
+    function openRemoteModal(url) {
+        const modal = document.getElementById('modalGeneric');
+        const content = document.getElementById('modalGenericContent');
+        
+        // Limpa e mostra loading
+        content.innerHTML = '<div style="text-align:center; padding:40px; color:#64748b;">Carregando...</div>';
+        modal.classList.add('open');
+        document.body.style.overflow = 'hidden';
+
+        fetch(url)
+            .then(response => response.text())
+            .then(html => {
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(html, 'text/html');
+                
+                // Tenta pegar o formulário completo (que já tem header/body/footer)
+                let newContent = doc.querySelector('form');
+                
+                if (newContent) {
+                    // SE achou um formulário, usa ele diretamente (sem criar header extra)
+                    content.innerHTML = newContent.outerHTML;
+                    
+                    // Re-executa scripts que possam estar no HTML injetado
+                    const scripts = content.getElementsByTagName("script");
+                    for (let i = 0; i < scripts.length; i++) {
+                        eval(scripts[i].innerText);
+                    }
+                } else {
+                    // FALLBACK
+                    let fallbackContent = doc.querySelector('.remote-content') || doc.querySelector('.panel') || doc.body;
+                    content.innerHTML = `
+                        <div class="modal-header">
+                            <h3 class="modal-title">Ação</h3>
+                            <button type="button" class="btn-close" onclick="closeModal('modalGeneric')">✕</button>
+                        </div>
+                        <div class="modal-body">
+                            ${fallbackContent.innerHTML}
+                        </div>
+                    `;
+                }
+            })
+            .catch(err => {
+                console.error(err);
+                content.innerHTML = `
+                    <div class="modal-header">
+                        <h3 class="modal-title" style="color:red">Erro</h3>
+                        <button type="button" class="btn-close" onclick="closeModal('modalGeneric')">✕</button>
+                    </div>
+                    <div class="modal-body">Erro de conexão. Tente novamente.</div>
+                `;
+            });
+    }
+
+    // Fechar ao clicar fora
+    document.querySelectorAll('.modal-overlay').forEach(modal => {
+        modal.addEventListener('click', function(e) {
+            if (e.target === this) closeModal(this.id);
+        });
     });
 
     // Filtro da tabela
     function filterTable() {
         const query = document.getElementById('searchInput').value.toLowerCase();
         const rows = document.querySelectorAll('.receber-row');
-        
         rows.forEach(row => {
             const text = row.innerText.toLowerCase();
             row.style.display = text.includes(query) ? '' : 'none';
         });
     }
 
-    // Lógica do Menu Dropdown
+    // Menu Dropdown
     function toggleMenu(menuId) {
-        // Fecha outros menus
         document.querySelectorAll('.dropdown-content').forEach(menu => {
             if (menu.id !== menuId) menu.classList.remove('show');
         });
-        // Alterna o atual
         const menu = document.getElementById(menuId);
         if (menu) menu.classList.toggle('show');
     }
 
-    // Fecha menu ao clicar fora
     window.onclick = function(event) {
         if (!event.target.closest('.dots-btn')) {
             document.querySelectorAll('.dropdown-content').forEach(menu => {

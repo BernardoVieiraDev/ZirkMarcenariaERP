@@ -14,13 +14,11 @@ class GastoBase(models.Model):
     """
     Classe Abstrata Base para reusar campos comuns em todos os modelos de gastos.
     """
-    # ALTERAÇÃO: 'descricao' agora é opcional
     descricao = models.CharField(
         max_length=255, 
         verbose_name="Descrição do Gasto",
         blank=True 
     )
-    # ALTERAÇÃO: Unificação dos campos de valor em 'valor' (removendo valor_original e valor_pago)
     valor = models.DecimalField(
         max_digits=10, 
         decimal_places=2, 
@@ -28,59 +26,45 @@ class GastoBase(models.Model):
         default=Decimal('0.00'),
         null=True
     )
-    data_vencimento = models.DateField(
-        verbose_name="Data de Vencimento"
-    )
-    data_pagamento = models.DateField(
-        null=True, 
-        blank=True, 
-        verbose_name="Data de Pagamento"
-    )
+    data_vencimento = models.DateField(verbose_name="Data de Vencimento")
+    data_pagamento = models.DateField(null=True, blank=True, verbose_name="Data de Pagamento")
+    valor_pago = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True, verbose_name="Valor Pago")
+    juros = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal('0.00'), verbose_name="Juros/Multa", null=True, blank=True)
+    observacoes = models.TextField(null=True, blank=True, verbose_name="Observações")
+    status = models.CharField('Status', max_length=20, choices=StatusPagamento.choices, default=StatusPagamento.PENDENTE)
 
-    valor_pago = models.DecimalField(
-        max_digits=10, 
-        decimal_places=2, 
-        null=True, 
-        blank=True, 
-        verbose_name="Valor Pago"
-    )
-    # RESTAURADO: Juros/Multa (Voltará a aparecer em todos os modelos herdados)
-    juros = models.DecimalField(
-        max_digits=10, 
-        decimal_places=2, 
-        default=Decimal('0.00'), 
-        verbose_name="Juros/Multa",
-        null=True, 
-        blank=True, 
-
-    )
-    observacoes = models.TextField(
-        null=True, 
-        blank=True, 
-        verbose_name="Observações"
-    )
-    status = models.CharField(
-        'Status',
-        max_length=20,
-        choices=StatusPagamento.choices,
-        default=StatusPagamento.PENDENTE,
-    )
+    # Dicionário com nomes legíveis para cada modelo
+    MODEL_NAMES = {
+        "Boleto": "Boleto",
+        "GastoUtilidade": "Utilidade",
+        "FaturaCartao": "Fatura de Cartão",
+        "Cheque": "Cheque",
+        "PrestacaoEmprestimo": "Prestação de Empréstimo",
+        "GastoVeiculoConsorcio": "Veículo Consórcio",
+        "GastoContabilidade": "Contabilidade",
+        "GastoImovel": "Imóvel",
+        "GastoGeral": "Gasto Geral",
+        "GastoGasolina": "Gasolina",
+        "FolhaPagamento": "Folha de Pagamento",
+        "ComissaoArquiteto": "Comissão de Arquiteto",
+        "Emprestimo": "Empréstimo",
+        "Pessoa": "Pessoa",
+    }
 
     class Meta:
         abstract = True
         ordering = ['-data_vencimento']
 
     def get_valor_consolidado(self):
-        """Retorna o valor para a lista/soma unificada."""
         return self.valor 
             
     def get_data_consolidada(self):
-        """Retorna a data de vencimento para a lista unificada."""
         return self.data_vencimento
     
     def get_model_name(self):
-        """Retorna o nome da classe do objeto (Boleto, FaturaCartao, etc.)."""
-        return self.__class__.__name__
+        """Retorna o nome amigável do modelo."""
+        return self.MODEL_NAMES.get(self.__class__.__name__, self.__class__.__name__)
+
 
 class Boleto(GastoBase):
     nota_fiscal = models.CharField(
@@ -259,9 +243,24 @@ class ComissaoArquiteto(models.Model):
     data_pagamento = models.DateField()
     valor_comissao = models.DecimalField(max_digits=10, decimal_places=2)
     observacoes = models.TextField(null=True, blank=True)
+    
+    # Campo adicionado para compatibilidade com a view
+    status = models.CharField(
+        'Status',
+        max_length=20,
+        choices=StatusPagamento.choices,
+        default=StatusPagamento.PAGO 
+    )
+
     class Meta:
         verbose_name = "Comissão de Arquiteto"
         verbose_name_plural = "Comissões de Arquitetos"
+
+    def get_valor_consolidado(self):
+        return self.valor_comissao
+
+    def get_model_name(self):
+        return self.__class__.__name__
 
 
 class GastoContabilidade(GastoBase):
@@ -413,6 +412,14 @@ class FolhaPagamento(models.Model):
     
     observacoes = models.TextField(blank=True, null=True, verbose_name="Observações")
 
+    # Campo adicionado para compatibilidade com a view
+    status = models.CharField(
+        'Status',
+        max_length=20,
+        choices=StatusPagamento.choices,
+        default=StatusPagamento.PENDENTE
+    )
+
     class Meta:
         verbose_name = "Pagamento de Folha"
         verbose_name_plural = "Pagamentos de Folha"
@@ -435,6 +442,10 @@ class FolhaPagamento(models.Model):
             # Vou somar tudo como 'Saída de Caixa' para a empresa.
             # Se a lógica for Saldo a Pagar, teria que subtrair.
         )
+    
+    # Método adicionado para compatibilidade com a view
+    def get_valor_consolidado(self):
+        return self.total_funcionario
 
     def get_model_name(self):
         return self.__class__.__name__

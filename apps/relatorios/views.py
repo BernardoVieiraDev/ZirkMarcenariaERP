@@ -12,6 +12,7 @@ from apps.financeiro.pagar.models import (Boleto, Cheque, FaturaCartao,
                                           GastoImovel, GastoUtilidade,
                                           GastoVeiculoConsorcio,
                                           PrestacaoEmprestimo)
+from apps.financeiro.receber.models import Receber
 
 # Imports dos Services
 from .extensions import (BNDESExcelService, BoletoExcelService,
@@ -24,6 +25,7 @@ from .extensions import (BNDESExcelService, BoletoExcelService,
                          GastoUtilidadeExcelService,
                          GastoVeiculoConsorcioExcelService,
                          PrestacaoEmprestimoExcelService)
+from .services.receber import ReceberExcelService
 
 
 def list_planilhas(request):
@@ -223,9 +225,10 @@ def exportar_folha(request):
         return HttpResponse(f"Erro interno: {str(e)}", status=500)
     
 import io
+from datetime import datetime
+
 import xlsxwriter
 from django.http import FileResponse, HttpResponse
-from datetime import datetime
 
 # ... imports dos models e services ...
 
@@ -321,3 +324,17 @@ def exportar_multiplas_planilhas(request):
         as_attachment=True, 
         filename=filename
     )
+
+def exportar_receber(request):
+    # Busca todos os registros ordenados por data de vencimento
+    # Você pode adicionar filtros aqui se quiser (ex: apenas ano atual)
+    dados = Receber.objects.all().order_by('data_vencimento')
+    
+    data_hoje = datetime.now().strftime("%Y-%m-%d")
+    nome_arquivo = f"Relatorio_ContasReceber_{data_hoje}.xlsx"
+
+    try:
+        buffer = ReceberExcelService.gerar_relatorio_receber(dados)
+        return FileResponse(buffer, as_attachment=True, filename=nome_arquivo)
+    except Exception as e:
+        return HttpResponse(f"Erro interno: {str(e)}", status=500)
