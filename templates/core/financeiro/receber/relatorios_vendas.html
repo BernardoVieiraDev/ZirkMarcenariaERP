@@ -1,0 +1,214 @@
+{% extends 'core/base.html' %}
+{% load humanize %}
+
+{% block content %}
+<div class="container-fluid mt-4 mb-5">
+    
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="text-primary font-weight-bold mb-1">2. Relatório de Desempenho</h2>
+            <p class="text-muted mb-0">Análise gerencial de Vendas (Entradas) e Compras (Saídas)</p>
+        </div>
+        <div>
+            <a href="{% url 'relatorios:exportar_vendas' %}?ano={{ ano_selecionado }}" class="btn btn-success shadow-sm">
+                <i class="fas fa-file-excel mr-1"></i> Exportar Excel
+            </a>
+            <a href="{% url 'receber:receber' %}" class="btn btn-secondary shadow-sm ml-2">
+                <i class="fas fa-arrow-left mr-1"></i> Voltar
+            </a>
+        </div>
+    </div>
+
+    <div class="d-flex justify-content-center mb-4">
+        <div class="btn-group shadow-sm" role="group">
+            <a href="?ano={{ ano_anterior }}" class="btn btn-outline-primary" title="Ano Anterior">
+                <i class="fas fa-chevron-left"></i> {{ ano_anterior }}
+            </a>
+            <button type="button" class="btn btn-primary disabled font-weight-bold px-4">
+                <i class="fas fa-calendar-alt mr-2"></i> {{ ano_selecionado }}
+            </button>
+            <a href="?ano={{ proximo_ano }}" class="btn btn-outline-primary" title="Próximo Ano">
+                {{ proximo_ano }} <i class="fas fa-chevron-right"></i>
+            </a>
+        </div>
+    </div>
+
+    <div class="card shadow mb-5 border-left-success">
+        <div class="card-header py-3 bg-white d-flex align-items-center justify-content-between">
+            <h5 class="m-0 font-weight-bold text-success">
+                <i class="fas fa-arrow-up mr-2"></i> ENTRADAS (VENDAS)
+            </h5>
+            <span class="badge badge-success px-2 py-1">Receitas</span>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-bordered table-hover mb-0 text-center">
+                    <thead class="thead-light">
+                        <tr>
+                            <th rowspan="2" class="align-middle" style="width: 15%;">PERÍODO</th>
+                            <th colspan="2" style="background-color: #dcfce7; color: #166534; border-bottom: 2px solid #166534;">
+                                À VISTA (Pix/Dinheiro)
+                            </th>
+                            <th colspan="2" style="background-color: #fef9c3; color: #854d0e; border-bottom: 2px solid #854d0e;">
+                                A PRAZO (Boleto/Cartão)
+                            </th>
+                            <th rowspan="2" class="align-middle bg-light font-weight-bold">TOTAL GERAL</th>
+                        </tr>
+                        <tr>
+                            <th class="small text-muted text-uppercase">Valor R$</th>
+                            <th class="small text-muted text-uppercase">% Mix</th>
+                            <th class="small text-muted text-uppercase">Valor R$</th>
+                            <th class="small text-muted text-uppercase">% Mix</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% if media_vendas %}
+                        <tr style="background-color: #f0fdf4; border-bottom: 2px solid #bbf7d0; font-weight: bold;">
+                            <td class="text-success text-left pl-3">MÉDIA MENSAL</td>
+                            <td class="text-success">{{ media_vendas.vista_val|floatformat:2|intcomma }}</td>
+                            <td class="text-success">{{ media_vendas.vista_perc|floatformat:1 }}%</td>
+                            <td class="text-warning text-dark">{{ media_vendas.prazo_val|floatformat:2|intcomma }}</td>
+                            <td class="text-warning text-dark">{{ media_vendas.prazo_perc|floatformat:1 }}%</td>
+                            <td class="text-dark">{{ media_vendas.total|floatformat:2|intcomma }}</td>
+                        </tr>
+                        {% endif %}
+
+                        {% for linha in dados_vendas %}
+                        <tr>
+                            <td class="text-left pl-3 font-weight-bold text-capitalize">{{ linha.data|date:"F" }}</td>
+                            
+                            <td>{{ linha.vista_val|floatformat:2|intcomma }}</td>
+                            <td>
+                                <div class="d-flex align-items-center justify-content-center">
+                                    <small class="mr-1">{{ linha.vista_perc|floatformat:0 }}%</small>
+                                    <div class="progress" style="height: 4px; width: 50px;">
+                                        <div class="progress-bar bg-success" role="progressbar" style="width: {{ linha.vista_perc|stringformat:'f' }}%"></div>
+                                    </div>
+                                </div>
+                            </td>
+
+                            <td>{{ linha.prazo_val|floatformat:2|intcomma }}</td>
+                            <td>
+                                <div class="d-flex align-items-center justify-content-center">
+                                    <small class="mr-1">{{ linha.prazo_perc|floatformat:0 }}%</small>
+                                    <div class="progress" style="height: 4px; width: 50px;">
+                                        <div class="progress-bar bg-warning" role="progressbar" style="width: {{ linha.prazo_perc|stringformat:'f' }}%"></div>
+                                    </div>
+                                </div>
+                            </td>
+
+                            <td class="font-weight-bold bg-light">{{ linha.total|floatformat:2|intcomma }}</td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="6" class="text-center text-muted py-4">
+                                <i class="fas fa-box-open mb-2"></i><br>Nenhuma venda registrada em {{ ano_selecionado }}.
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="card shadow border-left-danger">
+        <div class="card-header py-3 bg-white d-flex align-items-center justify-content-between">
+            <h5 class="m-0 font-weight-bold text-danger">
+                <i class="fas fa-arrow-down mr-2"></i> SAÍDAS (COMPRAS/DESPESAS)
+            </h5>
+            <span class="badge badge-danger px-2 py-1">Despesas</span>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-bordered table-hover mb-0 text-center">
+                    <thead class="thead-light">
+                        <tr>
+                            <th rowspan="2" class="align-middle" style="width: 15%;">PERÍODO</th>
+                            <th colspan="2" style="background-color: #fee2e2; color: #991b1b; border-bottom: 2px solid #991b1b;">
+                                À VISTA (Caixa/Pequenos Gastos)
+                            </th>
+                            <th colspan="2" style="background-color: #ffedd5; color: #9a3412; border-bottom: 2px solid #9a3412;">
+                                A PRAZO (Boletos/Fornecedores)
+                            </th>
+                            <th rowspan="2" class="align-middle bg-light font-weight-bold">TOTAL GERAL</th>
+                        </tr>
+                        <tr>
+                            <th class="small text-muted text-uppercase">Valor R$</th>
+                            <th class="small text-muted text-uppercase">% Mix</th>
+                            <th class="small text-muted text-uppercase">Valor R$</th>
+                            <th class="small text-muted text-uppercase">% Mix</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% if media_compras %}
+                        <tr style="background-color: #fff1f2; border-bottom: 2px solid #fda4af; font-weight: bold;">
+                            <td class="text-danger text-left pl-3">MÉDIA MENSAL</td>
+                            <td class="text-danger">{{ media_compras.vista_val|floatformat:2|intcomma }}</td>
+                            <td class="text-danger">{{ media_compras.vista_perc|floatformat:1 }}%</td>
+                            <td style="color: #c2410c;">{{ media_compras.prazo_val|floatformat:2|intcomma }}</td>
+                            <td style="color: #c2410c;">{{ media_compras.prazo_perc|floatformat:1 }}%</td>
+                            <td class="text-dark">{{ media_compras.total|floatformat:2|intcomma }}</td>
+                        </tr>
+                        {% endif %}
+
+                        {% for linha in dados_compras %}
+                        <tr>
+                            <td class="text-left pl-3 font-weight-bold text-capitalize">{{ linha.data|date:"F" }}</td>
+                            
+                            <td>{{ linha.vista_val|floatformat:2|intcomma }}</td>
+                            <td>
+                                <div class="d-flex align-items-center justify-content-center">
+                                    <small class="mr-1">{{ linha.vista_perc|floatformat:0 }}%</small>
+                                    <div class="progress" style="height: 4px; width: 50px;">
+                                        <div class="progress-bar bg-danger" role="progressbar" style="width: {{ linha.vista_perc|stringformat:'f' }}%"></div>
+                                    </div>
+                                </div>
+                            </td>
+
+                            <td>{{ linha.prazo_val|floatformat:2|intcomma }}</td>
+                            <td>
+                                <div class="d-flex align-items-center justify-content-center">
+                                    <small class="mr-1">{{ linha.prazo_perc|floatformat:0 }}%</small>
+                                    <div class="progress" style="height: 4px; width: 50px;">
+                                        <div class="progress-bar" role="progressbar" style="background-color: #fdba74; width: {{ linha.prazo_perc|stringformat:'f' }}%"></div>
+                                    </div>
+                                </div>
+                            </td>
+
+                            <td class="font-weight-bold bg-light">{{ linha.total|floatformat:2|intcomma }}</td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="6" class="text-center text-muted py-4">
+                                <i class="fas fa-file-invoice-dollar mb-2"></i><br>Nenhuma despesa registrada em {{ ano_selecionado }}.
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        
+        <div class="card-footer bg-white small text-muted">
+            <div class="row">
+                <div class="col-md-6">
+                    <strong><i class="fas fa-info-circle text-primary"></i> Classificação Vendas:</strong>
+                    <ul class="mb-0 pl-3">
+                        <li>Definida pelo campo "Classificação Gerencial" no cadastro.</li>
+                        <li>Padrão: "A Prazo" se não informado.</li>
+                    </ul>
+                </div>
+                <div class="col-md-6">
+                    <strong><i class="fas fa-info-circle text-primary"></i> Classificação Compras:</strong>
+                    <ul class="mb-0 pl-3">
+                        <li><strong>A Prazo:</strong> Boletos, Faturas, Folha, Impostos (Padrão Automático).</li>
+                        <li><strong>À Vista:</strong> Definido manualmente em "Gastos Gerais" ou "Gasolina".</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+{% endblock %}

@@ -202,7 +202,8 @@ class GastoGeralForm(forms.ModelForm):
             'motorista': forms.TextInput(attrs={'class': 'form-control'}),
             'carro': forms.TextInput(attrs={'class': 'form-control'}),
             'cliente': forms.TextInput(attrs={'class': 'form-control'}),
-        'status': forms.Select(attrs={'class': 'form-select'}), # Novo widget
+            'tipo_pagamento': forms.Select(attrs={'class': 'form-control'}),
+            'status': forms.Select(attrs={'class': 'form-select'}), 
         }
 
 # Modelo GastoGasolina (usa o mesmo form, mas você pode personalizá-lo se necessário)

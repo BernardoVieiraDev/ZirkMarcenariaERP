@@ -1,0 +1,26 @@
+{% extends 'core/base.html' %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="card border-danger shadow">
+        <div class="card-header bg-danger text-white">
+            <h5 class="mb-0">Confirmar Exclusão</h5>
+        </div>
+        <div class="card-body text-center">
+            <p class="lead">Você tem certeza que deseja excluir este lançamento?</p>
+            
+            <div class="alert alert-secondary d-inline-block text-start">
+                <strong>Data:</strong> {{ item.data|date:"d/m/Y" }}<br>
+                <strong>Categoria:</strong> {{ item.categoria.nome }}<br>
+                <strong>Valor:</strong> R$ {{ item.valor }}
+            </div>
+            
+            <form method="post" class="mt-4">
+                {% csrf_token %}
+                <a href="{% url 'socios:listar_lancamentos' %}" class="btn btn-secondary">Cancelar</a>
+                <button type="submit" class="btn btn-danger">Sim, Excluir Definitivamente</button>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

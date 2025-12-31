@@ -101,6 +101,8 @@
     .status-badge { display: inline-flex; align-items: center; padding: 2px 10px; border-radius: 12px; font-size: 11px; font-weight: 600; gap: 4px; }
     .st-pago { background: var(--success-bg); color: var(--success-text); border: 1px solid #bbf7d0; }
     .st-pendente { background: var(--warning-bg); color: var(--warning-text); border: 1px solid #fde68a; }
+    /* Estilo para Atrasado */
+    .st-atrasado { background: #fee2e2; color: var(--danger-text); border: 1px solid #fecaca; }
 
     .cat-badge { 
         font-size: 11px; background: #f1f5f9; padding: 3px 8px; border-radius: 4px; color: #64748b; border: 1px solid #e2e8f0;
@@ -199,6 +201,7 @@
             <option value="">Todos os Status</option>
             <option value="Pendente">Pendente</option>
             <option value="Pago">Pago</option>
+            <option value="Atrasado">Atrasado</option>
         </select>
 
         <select id="filterTipo" class="filter-select" onchange="applyFilters()">
@@ -230,7 +233,7 @@
                         {% for conta in list_contas %}
                         <tr class="conta-row" 
                             data-search="{{ conta.descricao|default:conta.get_model_name|lower }} {{ conta.get_model_name|lower }}"
-                            data-status="{% if conta.status == 'PG' or conta.status == 'Pago' %}Pago{% else %}Pendente{% endif %}"
+                            data-status="{% if conta.status == 'PG' or conta.status == 'Pago' %}Pago{% elif conta.status == 'Atrasado' %}Atrasado{% else %}Pendente{% endif %}"
                             data-tipo="{{ conta.get_model_name }}">
                             
                             <td>
@@ -248,6 +251,8 @@
                             <td>
                                 {% if conta.status == 'PG' or conta.status == 'Pago' %}
                                     <span class="status-badge st-pago">Pago</span>
+                                {% elif conta.status == 'Atrasado' %}
+                                    <span class="status-badge st-atrasado">Atrasado</span>
                                 {% else %}
                                     <span class="status-badge st-pendente">Pendente</span>
                                 {% endif %}
@@ -360,7 +365,7 @@
                         {% for conta in list_folha %}
                         <tr class="conta-row"
                             data-search="{{ conta.funcionario.nome|lower }} folha pagamento"
-                            data-status="{% if conta.status == 'PG' or conta.status == 'Pago' %}Pago{% else %}Pendente{% endif %}"
+                            data-status="{% if conta.status == 'PG' or conta.status == 'Pago' %}Pago{% elif conta.status == 'Atrasado' %}Atrasado{% else %}Pendente{% endif %}"
                             data-tipo="FolhaPagamento">
                             
                             <td>
@@ -378,6 +383,8 @@
                             <td>
                                 {% if conta.status == 'PG' or conta.status == 'Pago' %}
                                     <span class="status-badge st-pago">Pago</span>
+                                {% elif conta.status == 'Atrasado' %}
+                                    <span class="status-badge st-atrasado">Atrasado</span>
                                 {% else %}
                                     <span class="status-badge st-pendente">Pendente</span>
                                 {% endif %}
@@ -427,7 +434,7 @@
                         {% for conta in list_comissao %}
                         <tr class="conta-row"
                             data-search="{{ conta.arquiteto.nome|lower }} comissão"
-                            data-status="{% if conta.status == 'PG' or conta.status == 'Pago' %}Pago{% else %}Pendente{% endif %}"
+                            data-status="{% if conta.status == 'PG' or conta.status == 'Pago' %}Pago{% elif conta.status == 'Atrasado' %}Atrasado{% else %}Pendente{% endif %}"
                             data-tipo="ComissaoArquiteto">
                             
                             <td>
@@ -445,6 +452,8 @@
                             <td>
                                 {% if conta.status == 'PG' or conta.status == 'Pago' %}
                                     <span class="status-badge st-pago">Pago</span>
+                                {% elif conta.status == 'Atrasado' %}
+                                    <span class="status-badge st-atrasado">Atrasado</span>
                                 {% else %}
                                     <span class="status-badge st-pendente">Pendente</span>
                                 {% endif %}

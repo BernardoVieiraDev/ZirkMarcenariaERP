@@ -1,0 +1,50 @@
+{% extends 'core/base.html' %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="card">
+        <div class="col-md-6 mb-3">
+    <label>Sócio</label>
+    <div class="input-group">
+        {{ form.socio }}
+        <a href="{% url 'socios:cadastrar_socio' %}" class="btn btn-outline-primary" title="Adicionar Novo Sócio">
+            +
+        </a>
+    </div>
+    <div class="form-text">Selecione o sócio ou clique no + para criar um novo.</div>
+</div>
+        <div class="card-header bg-primary text-white">
+            <h4>Registrar Despesa/Receita de Sócio</h4>
+        </div>
+        <div class="card-body">
+            <form method="post">
+                {% csrf_token %}
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label>Sócio</label>
+                        {{ form.socio }}
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label>Data</label>
+                        {{ form.data }}
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label>Categoria (Selecione na lista)</label>
+                        {{ form.categoria }}
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label>Valor (R$)</label>
+                        {{ form.valor }}
+                    </div>
+                    <div class="col-12 mb-3">
+                        <label>Observação</label>
+                        {{ form.observacao }}
+                    </div>
+                </div>
+                <button type="submit" class="btn btn-success">Salvar Lançamento</button>
+                <a href="{% url 'socios:relatorio_anual' %}" class="btn btn-secondary">Voltar</a>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

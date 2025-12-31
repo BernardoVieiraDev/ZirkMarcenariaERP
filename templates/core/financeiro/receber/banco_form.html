@@ -1,0 +1,43 @@
+{% extends 'core/base.html' %}
+
+{% block content %}
+<div class="container mt-5" style="max-width: 600px;">
+    <div class="card shadow">
+        <div class="card-header bg-warning text-dark">
+            <h5 class="m-0 font-weight-bold"><i class="fas fa-edit mr-2"></i>Editar Banco: {{ banco.nome }}</h5>
+        </div>
+        <div class="card-body">
+            
+            <div class="alert alert-danger" role="alert">
+                <i class="fas fa-exclamation-triangle mr-2"></i>
+                <strong>Atenção ao alterar o Saldo Inicial!</strong><br>
+                Alterar este valor recalculará o saldo de <u>todas</u> as movimentações passadas e futuras desta conta. Faça isso apenas para correções de abertura de conta.
+            </div>
+
+            <form method="POST">
+                {% csrf_token %}
+                
+                {% for field in form %}
+                    <div class="mb-3">
+                        <label class="form-label font-weight-bold">{{ field.label }}</label>
+                        {{ field }}
+                        {% if field.name == 'saldo_inicial' %}
+                            <small class="text-danger font-weight-bold">
+                                * Cuidado ao editar este campo.
+                            </small>
+                        {% endif %}
+                    </div>
+                {% endfor %}
+
+                <hr>
+                <div class="d-flex justify-content-between">
+                    <a href="{% url 'receber:bancos_list' %}" class="btn btn-secondary">Cancelar</a>
+                    <button type="submit" class="btn btn-primary" onclick="return confirm('Tem certeza que deseja alterar os dados desta conta bancária? Se alterou o saldo, todo o extrato será recalculado.');">
+                        Salvar Alterações
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,86 @@
+{% extends 'core/base.html' %}
+{% load humanize %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h3>Gerenciar Contas Bancárias</h3>
+        <a href="{% url 'receber:movimento_banco' %}" class="btn btn-outline-secondary">
+            <i class="fas fa-arrow-left"></i> Voltar para Extrato
+        </a>
+    </div>
+
+    <div class="row mt-4">
+        <div class="col-md-4 mb-4">
+            <div class="card shadow border-left-primary">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Adicionar Novo Banco</h6>
+                </div>
+                <div class="card-body">
+                    <form method="POST">
+                        {% csrf_token %}
+                        {% for field in form %}
+                            <div class="mb-3">
+                                <label class="form-label small font-weight-bold text-secondary">{{ field.label }}</label>
+                                {{ field }}
+                            </div>
+                        {% endfor %}
+                        <button type="submit" class="btn btn-primary btn-block w-100">
+                            <i class="fas fa-save mr-1"></i> Salvar Banco
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-8">
+            <div class="card shadow">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-secondary">Bancos Cadastrados</h6>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead class="thead-light">
+                            <tr>
+                                <th>Banco</th>
+                                <th>Agência / Conta</th>
+                                <th>Saldo Inicial (R$)</th>
+                                <th class="text-center">Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for banco in bancos %}
+                                <tr>
+                                    <td class="align-middle font-weight-bold">{{ banco.nome }}</td>
+                                    <td class="align-middle small">
+                                        {% if banco.agencia %}Ag: {{ banco.agencia }}{% endif %}
+                                        {% if banco.conta %}<br>CC: {{ banco.conta }}{% endif %}
+                                    </td>
+                                    <td class="align-middle text-primary">
+                                        {{ banco.saldo_inicial|floatformat:2|intcomma }}
+                                    </td>
+                                    <td class="align-middle text-center">
+                                        <a href="{% url 'receber:banco_edit' banco.pk %}" class="btn btn-sm btn-outline-primary" title="Editar">
+                                            <i class="fas fa-edit"></i>
+                                        </a>
+                                        <form action="{% url 'receber:banco_delete' banco.pk %}" method="POST" class="d-inline" onsubmit="return confirm('ATENÇÃO: Excluir este banco apagará TODO o histórico de movimentações dele. Tem certeza?');">
+                                            {% csrf_token %}
+                                            <button type="submit" class="btn btn-sm btn-outline-danger border-0" title="Excluir">
+                                                <i class="fas fa-trash-alt"></i>
+                                            </button>
+                                        </form>
+                                    </td>
+                                </tr>
+                            {% empty %}
+                                <tr>
+                                    <td colspan="4" class="text-center text-muted py-4">Nenhum banco cadastrado.</td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

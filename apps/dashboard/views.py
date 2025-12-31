@@ -1,7 +1,8 @@
 from datetime import datetime, timedelta
 from decimal import Decimal
 
-from django.db.models import Q, Sum
+from django.db.models import Q, Sum, F, Value, DecimalField
+from django.db.models.functions import Coalesce
 from django.shortcuts import render
 
 from apps.comissionamento.models import ContratoRT
@@ -63,7 +64,7 @@ def dashboard(request):
         ultimos_gastos_list.extend(list(recentes))
 
 
-        # --- NOVA LÓGICA: ALERTAS DE FÉRIAS ---
+    # --- NOVA LÓGICA: ALERTAS DE FÉRIAS ---
     ferias_alerta_list = []
     
     # Buscamos períodos aquisitivos e trazemos as férias registradas para evitar N+1 queries no loop
@@ -118,8 +119,13 @@ def dashboard(request):
     ultimos_gastos_list.sort(key=get_sort_date, reverse=True)
     ultimos_gastos_list = ultimos_gastos_list[:5]
 
-    # Contratos RT Ativos (Lista)
-    contratos_list = ContratoRT.objects.filter(saldo_devedor__gt=0).order_by('arquiteta__nome')[:5]
+    # --- CORREÇÃO AQUI: Contratos RT Ativos ---
+    # Como não existe mais 'saldo_devedor' no banco, calculamos via annotate.
+    # Coalesce garante que se valor_pago for None, seja tratado como 0.
+    contratos_list = ContratoRT.objects.annotate(
+        pago_safe=Coalesce('valor_pago', Value(0, output_field=DecimalField())),
+        saldo_devedor=F('valor_rt') - F('pago_safe')
+    ).filter(saldo_devedor__gt=0).order_by('arquiteta__nome')[:5]
 
     ferias_alerta_list.sort(key=lambda x: x['dias_restantes_prazo'])
 
@@ -138,7 +144,7 @@ def dashboard(request):
         'contratos_list': contratos_list,
         'ultimos_gastos': ultimos_gastos_list,
         'ferias_alerta_list': ferias_alerta_list,
-        'atrasados_count': len(atrasados_list), # Opcional se quiser mostrar o número no título
+        'atrasados_count': len(atrasados_list),
     }
     
     return render(request, 'core/dashboard.html', context)

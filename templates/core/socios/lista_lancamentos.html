@@ -1,0 +1,81 @@
+{% extends 'core/base.html' %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h3 class="text-primary"><i class="fas fa-list"></i> Extrato de Lançamentos</h3>
+        <div>
+            <a href="{% url 'socios:relatorio_anual' %}" class="btn btn-outline-primary">
+                <i class="fas fa-table"></i> Ver Visão Anual
+            </a>
+            <a href="{% url 'socios:registrar_despesa' %}" class="btn btn-success">
+                <i class="fas fa-plus"></i> Novo Lançamento
+            </a>
+        </div>
+    </div>
+
+    <div class="card shadow-sm">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover table-striped mb-0 align-middle">
+                    <thead class="table-dark">
+                        <tr>
+                            <th>Data</th>
+                            <th>Sócio</th>
+                            <th>Categoria</th>
+                            <th>Descrição</th>
+                            <th class="text-end">Valor</th>
+                            <th class="text-end" style="width: 100px;">Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in lancamentos %}
+                        <tr>
+                            <td>{{ item.data|date:"d/m/Y" }}</td>
+                            
+                            <td>
+                                <i class="fas fa-user-circle text-secondary me-1"></i>
+                                {{ item.socio.nome }}
+                            </td>
+                            
+                            <td>
+                                <span class="badge bg-light text-dark border">
+                                    {{ item.categoria.grupo }}
+                                </span>
+                                <small class="text-muted ms-1">{{ item.categoria.nome }}</small>
+                            </td>
+                            
+                            <td>{{ item.observacao|default:"-" }}</td>
+                            
+                            <td class="text-end fw-bold" style="color: {% if 'SAIDA' in item.categoria.tipo %}#dc3545{% else %}#198754{% endif %};">
+                                R$ {{ item.valor|floatformat:2 }}
+                            </td>
+
+                            <td class="text-end">
+                                {% if item.id %}
+                                    <a href="{% url 'socios:editar_lancamento' pk=item.id %}" class="btn btn-sm btn-outline-warning" title="Editar">
+                                        <i class="fas fa-pen"></i>
+                                    </a>
+                                    <a href="{% url 'socios:excluir_lancamento' pk=item.id %}" class="btn btn-sm btn-outline-danger ms-1" title="Excluir">
+                                        <i class="fas fa-trash"></i>
+                                    </a>
+                                {% else %}
+                                    <span class="text-muted small">Erro ID</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="6" class="text-center py-5 text-muted">
+                                <i class="fas fa-inbox fa-3x mb-3"></i>
+                                <p>Nenhum lançamento encontrado para este ano.</p>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

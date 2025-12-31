@@ -22,7 +22,8 @@ path('', auth_views.LoginView.as_view(
     path("ferias/", include("apps.ferias.urls")),
     path('banco-horas/', include('apps.banco_horas.urls')),
     path('comissionamento/', include('apps.comissionamento.urls')),
-    path('relatorios/', include("apps.relatorios.urls"))
+    path('relatorios/', include("apps.relatorios.urls")),
+    path('socios/', include('apps.socios.urls')),
 ]
 
 

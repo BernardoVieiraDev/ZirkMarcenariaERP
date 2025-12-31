@@ -2,78 +2,118 @@ import io
 import xlsxwriter
 from decimal import Decimal
 from datetime import datetime
-from django.db.models import Sum
-from django.db.models.functions import ExtractMonth
 
 class ReceberExcelService:
-    # Cores
-    COR_PRIMARIA_AZUL = '#004F9F'   
-    COR_HEADER_TABELA = '#F3F4F6'   
-    COR_FUNDO_SECAO = '#E2E8F0'     
-    COR_TEXTO_PRETO = '#1F2937'     
-    COR_BORDA = '#D1D5DB'           
+    # --- Paleta de Cores Profissional (Clean & Corporate) ---
+    
+    # Título Principal
+    COR_TITULO_BG = '#2C3E50'       # Azul Petróleo Escuro
+    COR_TITULO_TEXTO = '#FFFFFF'    # Branco
+    
+    # Cabeçalhos de Tabela
+    COR_HEADER_BG = '#34495E'       # Azul Petróleo
+    COR_HEADER_TEXT = '#FFFFFF'     # Branco
+    
+    # Separadores de Mês
+    COR_MES_BG = '#95A5A6'          # Cinza Azulado Médio
+    COR_MES_TEXT = '#FFFFFF'        # Branco
+    
+    # Totais e Rodapés
+    COR_TOTAL_BG = '#F4F6F7'        # Cinza Azulado Claro
+    COR_TOTAL_TEXT = '#2C3E50'      # Azul Escuro
+    
+    # Linhas e Bordas
+    COR_LINHA_DIVISORIA = '#BDC3C7' # Cinza Médio (Bordas estruturais)
+    COR_LINHA_SUAVE = '#E0E0E0'     # Cinza Claro (Linhas de dados)
 
     @classmethod
     def _define_formats(cls, workbook: xlsxwriter.Workbook):
-        border_style = {'border': 1, 'border_color': cls.COR_BORDA}
+        font_base = {'font_name': 'Calibri', 'valign': 'vcenter', 'font_size': 10}
+        
+        # Borda inferior suave para linhas de dados
+        bottom_line = {'bottom': 1, 'bottom_color': cls.COR_LINHA_SUAVE}
         
         return {
+            # --- TÍTULO PRINCIPAL ---
             'main_title': workbook.add_format({
-                'bold': True, 'font_size': 18, 'align': 'center', 'valign': 'vcenter',
-                'fg_color': cls.COR_PRIMARIA_AZUL, 'font_color': '#FFFFFF',
-                'font_name': 'Calibri'
+                **font_base, 'bold': True, 'font_size': 18, 'align': 'center',
+                'font_color': cls.COR_TITULO_TEXTO, 'bg_color': cls.COR_TITULO_BG,
+                'top': 1, 'top_color': cls.COR_TITULO_BG,
+                'left': 1, 'left_color': cls.COR_TITULO_BG,
+                'right': 1, 'right_color': cls.COR_TITULO_BG,
             }),
+            'main_title_bar': workbook.add_format({
+                'bg_color': cls.COR_TITULO_BG,
+                'bottom': 2, 'bottom_color': cls.COR_TITULO_BG,
+                'left': 1, 'left_color': cls.COR_TITULO_BG,
+                'right': 1, 'right_color': cls.COR_TITULO_BG,
+            }),
+
+            # --- TÍTULOS DE SEÇÃO (Resumo) ---
             'section_title': workbook.add_format({
-                'bold': True, 'font_size': 14, 'align': 'left', 'valign': 'vcenter',
-                'font_name': 'Calibri', 'color': cls.COR_PRIMARIA_AZUL,
-                'bottom': 2, 'bottom_color': cls.COR_PRIMARIA_AZUL # Linha azul embaixo
+                **font_base, 'bold': True, 'font_size': 14, 'align': 'left',
+                'font_color': cls.COR_TITULO_BG,
+                'bottom': 1, 'bottom_color': cls.COR_LINHA_DIVISORIA
             }),
-            'summary_header': workbook.add_format({
-                'bold': True, 'font_size': 11, 'align': 'left', 'valign': 'vcenter',
-                'fg_color': cls.COR_HEADER_TABELA, 'font_color': cls.COR_TEXTO_PRETO,
-                'font_name': 'Calibri', 'indent': 1, **border_style
-            }),
-            'summary_text': workbook.add_format({
-                'align': 'left', 'valign': 'vcenter', 'font_name': 'Calibri', 
-                'font_size': 11, 'indent': 1, **border_style
-            }),
-            'summary_money': workbook.add_format({
-                'align': 'right', 'valign': 'vcenter', 'font_name': 'Calibri', 
-                'font_size': 11, 'num_format': 'R$ #,##0.00', **border_style, 'bold': True
-            }),
-            # --- Formatos existentes ---
-            'title_month': workbook.add_format({
-                'bold': True, 'font_size': 16, 'align': 'left', 'valign': 'vcenter',
-                'fg_color': cls.COR_PRIMARIA_AZUL, 'font_color': '#FFFFFF',
-                'font_name': 'Calibri', 'indent': 1
-            }),
+
+            # --- CABEÇALHOS DE TABELA ---
             'header_table': workbook.add_format({
-                'bold': True, 'font_size': 11, 'align': 'center', 'valign': 'vcenter',
-                'fg_color': cls.COR_HEADER_TABELA, 'font_color': cls.COR_TEXTO_PRETO,
-                'font_name': 'Calibri', **border_style
+                **font_base, 'bold': True, 'font_size': 11, 'align': 'center',
+                'fg_color': cls.COR_HEADER_BG, 'font_color': cls.COR_HEADER_TEXT,
+                'border': 1, 'border_color': cls.COR_HEADER_BG
             }),
+            'header_table_left': workbook.add_format({
+                **font_base, 'bold': True, 'font_size': 11, 'align': 'left', 'indent': 1,
+                'fg_color': cls.COR_HEADER_BG, 'font_color': cls.COR_HEADER_TEXT,
+                'border': 1, 'border_color': cls.COR_HEADER_BG
+            }),
+
+            # --- SEPARADOR DE MÊS (ALTERADO: Font Size 16) ---
+            'month_title': workbook.add_format({
+                **font_base, 'bold': True, 'font_size': 16, 'align': 'left', 'indent': 1,
+                'fg_color': cls.COR_MES_BG, 'font_color': cls.COR_MES_TEXT,
+                'border': 1, 'border_color': cls.COR_MES_BG
+            }),
+
+            # --- DADOS ---
             'data_text': workbook.add_format({
-                'align': 'left', 'valign': 'vcenter', 'font_name': 'Calibri', 
-                'font_size': 10, 'indent': 1, **border_style
+                **font_base, 'align': 'left', 'indent': 1, 
+                'font_color': '#333333', **bottom_line
             }),
             'data_date': workbook.add_format({
-                'align': 'center', 'valign': 'vcenter', 'font_name': 'Calibri', 
-                'font_size': 10, 'num_format': 'dd/mm/yyyy', **border_style
+                **font_base, 'align': 'center', 
+                'num_format': 'dd/mm/yyyy', 'font_color': '#333333', **bottom_line
             }),
             'data_money': workbook.add_format({
-                'align': 'right', 'valign': 'vcenter', 'font_name': 'Calibri', 
-                'font_size': 10, 'num_format': 'R$ #,##0.00', 'right': 1, **border_style
+                **font_base, 'align': 'right', 
+                'num_format': '#,##0.00', 'font_color': '#333333', **bottom_line
             }),
+
+            # --- TOTAIS ---
             'total_label': workbook.add_format({
-                'bold': True, 'align': 'right', 'valign': 'vcenter',
-                'font_name': 'Calibri', 'font_size': 11, 'bg_color': cls.COR_FUNDO_SECAO,
-                'font_color': cls.COR_TEXTO_PRETO, **border_style
+                **font_base, 'bold': True, 'align': 'right', 
+                'bg_color': cls.COR_TOTAL_BG, 'font_color': cls.COR_TOTAL_TEXT,
+                'top': 1, 'top_color': cls.COR_LINHA_DIVISORIA, 
+                'bottom': 1, 'bottom_color': cls.COR_LINHA_DIVISORIA
             }),
             'total_money': workbook.add_format({
-                'bold': True, 'align': 'right', 'valign': 'vcenter', 
-                'font_name': 'Calibri', 'font_size': 11, 'bg_color': cls.COR_FUNDO_SECAO,
-                'font_color': cls.COR_TEXTO_PRETO, 'num_format': 'R$ #,##0.00', **border_style
-            })
+                **font_base, 'bold': True, 'align': 'right', 
+                'num_format': 'R$ #,##0.00', 
+                'bg_color': cls.COR_TOTAL_BG, 'font_color': cls.COR_TOTAL_TEXT,
+                'top': 1, 'top_color': cls.COR_LINHA_DIVISORIA,
+                'bottom': 1, 'bottom_color': cls.COR_LINHA_DIVISORIA
+            }),
+            
+            # Formatos específicos para o Resumo
+            'summary_text': workbook.add_format({
+                **font_base, 'align': 'left', 'indent': 1, 
+                'border': 1, 'border_color': cls.COR_LINHA_DIVISORIA
+            }),
+            'summary_money': workbook.add_format({
+                **font_base, 'align': 'right', 'bold': True,
+                'num_format': 'R$ #,##0.00', 
+                'border': 1, 'border_color': cls.COR_LINHA_DIVISORIA
+            }),
         }
 
     @staticmethod
@@ -88,35 +128,39 @@ class ReceberExcelService:
 
         try:
             ws = workbook.add_worksheet("Contas a Receber")
+            ws.hide_gridlines(2) # Visual limpo
+            
             fmt = ReceberExcelService._define_formats(workbook)
 
             # --- 1. Espaçamento de Colunas ---
-            ws.set_column('A:A', 25) 
-            ws.set_column('B:B', 18) 
-            ws.set_column('C:C', 35) 
-            ws.set_column('D:D', 25) 
-            ws.set_column('E:E', 20) 
-            ws.set_column('F:F', 20) 
-            ws.set_column('G:G', 40) 
-            ws.set_column('H:H', 25) 
+            ws.set_column('A:A', 25) # Forma/Categoria
+            ws.set_column('B:B', 15) # Data
+            ws.set_column('C:C', 30) # Cliente
+            ws.set_column('D:D', 20) # Categoria
+            ws.set_column('E:E', 18) # Valor Receber
+            ws.set_column('F:F', 18) # Valor Estoque
+            ws.set_column('G:G', 35) # Obs
+            ws.set_column('H:H', 18) # Data Pagto
 
-            row = 0
+            row = 1
 
             # --- 2. Título Principal ---
-            ws.set_row(row, 40)
+            ws.set_row(row, 35)
             ws.merge_range(row, 0, row, 7, "RELATÓRIO DE CONTAS A RECEBER 2025", fmt['main_title'])
-            row += 2
+            
+            # Barra Sólida Abaixo do Título
+            ws.set_row(row + 1, 5) 
+            ws.merge_range(row + 1, 0, row + 1, 7, "", fmt['main_title_bar'])
+            row += 3
 
             # ==============================================================================
-            # NOVA FUNCIONALIDADE: RESUMO POR CATEGORIA (Substitui o SUMIF do Excel)
+            # RESUMO POR CATEGORIA
             # ==============================================================================
             
-            # Passo A: Calcular os totais agrupados por categoria
             resumo_categorias = {}
             total_geral_resumo = Decimal('0.00')
             
             for item in dados_queryset:
-                # Pega a categoria ou define como 'Sem Categoria' se estiver vazio
                 cat_nome = item.categoria if item.categoria else "Outros"
                 valor = item.valor if item.valor else Decimal('0.00')
                 
@@ -127,29 +171,28 @@ class ReceberExcelService:
                 
                 total_geral_resumo += valor
 
-            # Passo B: Desenhar a Tabela de Resumo no Excel
-            ws.write(row, 0, "Resumo por Categoria", fmt['section_title'])
+            ws.write(row, 0, "Resumo Financeiro por Categoria", fmt['section_title'])
             row += 2
 
-            # Cabeçalho da tabelinha de resumo
-            ws.write(row, 0, "Categoria", fmt['summary_header'])
-            ws.write(row, 1, "Total Recebido", fmt['summary_header'])
+            # Cabeçalho da tabela de resumo
+            ws.write(row, 0, "Categoria", fmt['header_table_left'])
+            ws.write(row, 1, "Total Recebido", fmt['header_table'])
             row += 1
 
-            # Linhas da tabelinha
+            # Linhas de resumo
             for cat, total in resumo_categorias.items():
                 ws.write(row, 0, cat, fmt['summary_text'])
                 ws.write(row, 1, total, fmt['summary_money'])
                 row += 1
             
-            # Total Geral do Resumo
+            # Total Geral Resumo
             ws.write(row, 0, "TOTAL GERAL", fmt['total_label'])
             ws.write(row, 1, total_geral_resumo, fmt['total_money'])
             
-            row += 4 # Espaço generoso antes de começar os meses
+            row += 4 
 
             # ==============================================================================
-            # LISTAGEM MENSAL (Código Original Ajustado)
+            # LISTAGEM MENSAL
             # ==============================================================================
 
             headers = [
@@ -169,26 +212,28 @@ class ReceberExcelService:
                     if d.data_vencimento and d.data_vencimento.month == mes_num
                 ]
 
+                # Título do Mês (Altura Aumentada para 35 devido à fonte 16)
                 ws.set_row(row, 35) 
-                ws.merge_range(row, 0, row, 7, mes_nome, fmt['title_month'])
+                ws.merge_range(row, 0, row, 7, mes_nome, fmt['month_title'])
                 row += 1
 
-                ws.set_row(row, 30) 
+                # Cabeçalhos da Tabela
+                ws.set_row(row, 25) 
                 for col_num, header in enumerate(headers):
                     ws.write(row, col_num, header, fmt['header_table'])
                 row += 1
 
                 if not itens_mes:
-                    ws.set_row(row, 25)
-                    ws.merge_range(row, 0, row, 7, "-", fmt['data_text'])
-                    row += 3 
+                    ws.set_row(row, 20)
+                    ws.merge_range(row, 0, row, 7, "- Sem lançamentos neste mês -", fmt['data_text'])
+                    row += 2 
                     continue
 
                 total_valor = Decimal('0.00')
                 total_estoque = Decimal('0.00')
 
                 for item in itens_mes:
-                    ws.set_row(row, 25) 
+                    ws.set_row(row, 20) 
                     
                     valor = item.valor if item.valor else Decimal('0.00')
                     estoque = item.valor_estoque if item.valor_estoque else Decimal('0.00')
@@ -210,14 +255,22 @@ class ReceberExcelService:
                     total_estoque += estoque
                     row += 1
 
-                ws.set_row(row, 30) 
-                ws.merge_range(row, 0, row, 3, "TOTAL " + mes_nome + ":", fmt['total_label'])
+                # Totais do Mês
+                ws.set_row(row, 25) 
+                ws.merge_range(row, 0, row, 3, f"TOTAL {mes_nome}", fmt['total_label'])
                 ws.write(row, 4, total_valor, fmt['total_money'])
                 ws.write(row, 5, total_estoque, fmt['total_money'])
                 ws.write(row, 6, "", fmt['total_label'])
                 ws.write(row, 7, "", fmt['total_label'])
 
-                row += 2 
+                # Espaço entre meses (Aumentado para 4 saltos = 3 linhas vazias)
+                row += 4 
+
+            # Rodapé final
+            ws.set_row(row, 5)
+            border_top = workbook.add_format({'top': 1, 'top_color': '#BDC3C7'})
+            for col in range(8):
+                ws.write_blank(row, col, '', border_top)
 
         except Exception as e:
             print(f"❌ Erro ao gerar relatório receber: {e}")

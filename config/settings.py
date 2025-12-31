@@ -25,6 +25,7 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
+    'django.contrib.humanize',
     'apps.funcionarios.apps.FuncionariosConfig',
     'apps.dashboard.apps.DashboardConfig',
     'apps.financeiro.pagar.apps.PagarConfig',
@@ -33,7 +34,8 @@ INSTALLED_APPS = [
     'apps.banco_horas.apps.BancoHorasConfig',
     'apps.comissionamento.apps.ComissionamentoConfig',
     'apps.relatorios.apps.RelatoriosConfig',
-    'apps.rescisao.apps.RescisaoConfig'
+    'apps.rescisao.apps.RescisaoConfig',
+    'apps.socios.apps.SociosConfig',
 
 ]
 

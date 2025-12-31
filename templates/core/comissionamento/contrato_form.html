@@ -8,24 +8,38 @@
     </div>
     
     <div class="panel-body">
-        <p>Preencha os detalhes do contrato de RT. O Saldo Devedor será calculado automaticamente.</p>
-        
-        <form method="post">
+        <form method="post" action="{{ request.path }}">
             {% csrf_token %}
-            
             {% if form.non_field_errors %}
-                <div class="alert alert-danger">
-                    {{ form.non_field_errors }}
-                </div>
+                <div class="alert alert-danger">{{ form.non_field_errors }}</div>
             {% endif %}
 
-            {{ form.as_p }}
+            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px;">
+                <div style="grid-column: span 3;">{{ form.arquiteta.label_tag }} {{ form.arquiteta }}</div>
+                <div style="grid-column: span 3;">{{ form.cliente.label_tag }} {{ form.cliente }}</div>
+                
+                <div>{{ form.data_contrato.label_tag }} {{ form.data_contrato }}</div>
+                
+                <div>{{ form.valor_servico.label_tag }} {{ form.valor_servico }}</div>
+                <div>{{ form.percentual.label_tag }} {{ form.percentual }}</div>
+                
+                <div>{{ form.valor_rt.label_tag }} {{ form.valor_rt }}</div>
+                <div style="grid-column: span 2;"></div>
+
+                <div style="grid-column: span 3; border-top: 1px solid #eee; margin-top: 10px; padding-top: 10px;">
+                    <h4 style="margin-bottom: 10px; color: #154c79;">Dados do Pagamento</h4>
+                </div>
+
+                <div>{{ form.data_pagamento.label_tag }} {{ form.data_pagamento }}</div>
+                <div>{{ form.valor_pago.label_tag }} {{ form.valor_pago }}</div>
+                <div></div>
+                
+                <div style="grid-column: span 3;">{{ form.observacoes.label_tag }} {{ form.observacoes }}</div>
+            </div>
             
-            <div class="form-actions" style="margin-top: 20px;">
-                <button type="submit" class="btn btn-success">
-                    {% if edit_mode %}Salvar Alterações{% else %}Cadastrar Contrato{% endif %}
-                </button>
-                <a href="{% url 'comissionamento:contratos_list' %}" class="btn btn-secondary">Cancelar</a>
+            <div class="form-actions" style="margin-top: 20px; text-align: right;">
+                <a href="{% url 'comissionamento:contratos_list' %}" class="btn btn-secondary" style="margin-right: 10px; text-decoration: none; color: #666;">Cancelar</a>
+                <button type="submit" class="btn btn-success" style="background: #154c79; color: white; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer;">Salvar Registro</button>
             </div>
         </form>
     </div>

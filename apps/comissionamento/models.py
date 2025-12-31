@@ -1,16 +1,7 @@
+from django.db import models
 from decimal import Decimal
 
-from django.db import models
-from django.db.models import Sum
-from django.db.models.signals import post_delete, post_save, pre_save
-from django.dispatch import receiver
-
-
-# --- Modelos de Entidade (Pode ser uma FK para seu app 'funcionarios' se já tiver Pessoa) ---
 class Arquiteta(models.Model):
-    """
-    Modelo base para armazenar dados cadastrais e bancários da arquiteta/comissionada.
-    """
     nome = models.CharField(max_length=150)
     cpf = models.CharField(max_length=14, unique=True, null=True, blank=True)
     banco = models.CharField(max_length=50, verbose_name="Banco de Pagamento")
@@ -24,28 +15,20 @@ class Arquiteta(models.Model):
     def __str__(self):
         return self.nome
 
-# --- Modelos de Passivo e Gasto ---
-
 class ContratoRT(models.Model):
-    """
-    Representa o contrato de Remuneração Técnica (RT) e o passivo total com o cliente.
-    (Equivale à linha de resumo na aba 'RTs POR CLIENTE')
-    """
-    arquiteta = models.ForeignKey(
-        Arquiteta, 
-        on_delete=models.PROTECT, 
-        verbose_name="Arquiteta Responsável"
-    )
+    arquiteta = models.ForeignKey(Arquiteta, on_delete=models.PROTECT, verbose_name="Arquiteta Responsável")
     cliente = models.CharField(max_length=255, verbose_name="Nome do Cliente/Projeto")
-    data_contrato = models.DateField(verbose_name="Data de Assinatura")
-    valor_servico = models.DecimalField(max_digits=12, decimal_places=2, verbose_name="Valor Total do Serviço")
+    data_contrato = models.DateField(verbose_name="Data do Contrato", null=True, blank=True)
     
-    # Valores de RT (base para o cálculo)
-    valor_rt_total = models.DecimalField(max_digits=12, decimal_places=2, verbose_name="Valor Total da RT Devida")
-    percentual_rt = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True, verbose_name="Percentual (%)")
+    # Novo Campo
+    percentual = models.DecimalField(max_digits=5, decimal_places=2, verbose_name="Porcentagem (%)", default=Decimal('0.00'),)
     
-    # Saldo (Calculado automaticamente)
-    saldo_devedor = models.DecimalField(max_digits=12, decimal_places=2, default=Decimal('0.00'), editable=False)
+    valor_servico = models.DecimalField(max_digits=12, decimal_places=2, verbose_name="Valor do Serviço")
+    valor_rt = models.DecimalField(max_digits=12, decimal_places=2, verbose_name="Valor da RT")
+    
+    data_pagamento = models.DateField(verbose_name="Data do Pagamento", null=True, blank=True)
+    valor_pago = models.DecimalField(max_digits=12, decimal_places=2, verbose_name="Valor Pago", null=True, blank=True)
+    observacoes = models.TextField(verbose_name="Observações", null=True, blank=True)
     
     class Meta:
         verbose_name = "Contrato de RT"
@@ -53,70 +36,4 @@ class ContratoRT(models.Model):
         ordering = ['-data_contrato']
     
     def __str__(self):
-        return f"RT {self.arquiteta.nome} - Cliente {self.cliente}"
-
-class PagamentoRT(models.Model):
-    """
-    Registra cada pagamento de parcela da Remuneração Técnica.
-    (Equivale às linhas detalhadas na aba 'RT (2)')
-    """
-    contrato = models.ForeignKey(
-        ContratoRT, 
-        on_delete=models.CASCADE, 
-        verbose_name="Contrato de Referência"
-    )
-    data_pagamento = models.DateField(verbose_name="Data do Pagamento")
-    valor_pago = models.DecimalField(max_digits=10, decimal_places=2, verbose_name="Valor Pago")
-    observacoes = models.TextField(null=True, blank=True)
-    
-    class Meta:
-        verbose_name = "Pagamento de RT"
-        verbose_name_plural = "Pagamentos de RT"
-        ordering = ['-data_pagamento']
-
-    def __str__(self):
-        return f"Pgto {self.contrato.cliente} - {self.data_pagamento}"
-
-# --- Lógica de Negócio (Signals) ---
-
-# Conecta esta função ao evento de salvar (post_save) e deletar (post_delete) o PagamentoRT
-from django.db.models.signals import post_delete, post_save
-from django.dispatch import receiver
-
-
-@receiver([post_save, post_delete], sender=PagamentoRT)
-def recalcula_saldo_rt(sender, instance, **kwargs):
-    """Recalcula o saldo devedor do ContratoRT após cada pagamento ou exclusão."""
-    contrato = instance.contrato
-    
-    # Soma todos os pagamentos feitos para este contrato
-    total_pago = PagamentoRT.objects.filter(contrato=contrato).aggregate(
-        total=Sum('valor_pago')
-    )['total'] or Decimal('0.00')
-    
-    # Atualiza o saldo devedor
-    saldo_novo = contrato.valor_rt_total - total_pago
-    
-    # Atualiza via update para não disparar o save() do contrato recursivamente (embora o pre_save abaixo seja seguro)
-    ContratoRT.objects.filter(pk=contrato.pk).update(saldo_devedor=saldo_novo)
-
-
-# --- ADICIONE ESTE NOVO SIGNAL ---
-@receiver(pre_save, sender=ContratoRT)
-def calcula_saldo_ao_salvar_contrato(sender, instance, **kwargs):
-    """
-    Calcula o saldo devedor ao CRIAR ou EDITAR um contrato.
-    Isso garante que, ao criar um contrato novo, o saldo seja igual ao valor total (pois pago é 0).
-    Também ajusta o saldo se você editar o 'valor_rt_total' no formulário.
-    """
-    total_pago = Decimal('0.00')
-    
-    # Se o contrato já existe (tem ID), buscamos pagamentos anteriores para abater
-    if instance.pk:
-        # Usamos o manager reverso 'pagamentort_set'
-        total_pago = instance.pagamentort_set.aggregate(
-            total=Sum('valor_pago')
-        )['total'] or Decimal('0.00')
-    
-    # Define o saldo correto antes de salvar no banco
-    instance.saldo_devedor = instance.valor_rt_total - total_pago
+        return f"{self.arquiteta.nome} - {self.cliente}"

@@ -1,0 +1,375 @@
+{% extends "core/base.html" %}
+{% load static %}
+
+{% block title %}Relatórios por Período{% endblock %}
+
+{% block content %}
+<style>
+    :root {
+        --bg: #f8fafc; --card: #ffffff; 
+        --primary: #1976d2; --primary-hover: #1565c0;
+        --text-main: #0f172a; --text-muted: #64748b; 
+        --border: #e2e8f0; --radius: 12px;
+        --success: #166534;
+        --warning-bg: #fff7ed; --warning-text: #c2410c;
+        --purple-bg: #f3e8ff; --purple-text: #7e22ce;
+    }
+    
+    .rh-container { max-width: 1200px; margin: 0 auto; padding: 24px 20px; font-family: Inter, Roboto, sans-serif; color: var(--text-main); }
+    
+    /* === CONTROL BAR (DATAS) === */
+    .control-bar {
+        background: white;
+        border: 1px solid var(--primary);
+        border-radius: 16px;
+        padding: 20px 24px;
+        margin-bottom: 32px;
+        box-shadow: 0 4px 6px -1px rgba(25, 118, 210, 0.1);
+        display: flex;
+        align-items: center;
+        gap: 24px;
+        flex-wrap: wrap;
+    }
+
+    .control-info h2 { margin: 0; font-size: 18px; font-weight: 700; color: var(--primary); }
+    .control-info p { margin: 4px 0 0 0; font-size: 13px; color: var(--text-muted); }
+
+    .date-inputs { display: flex; gap: 16px; align-items: flex-end; flex-grow: 1; }
+    .input-group { display: flex; flex-direction: column; gap: 6px; flex: 1; }
+    .input-group label { font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-muted); }
+    .input-group input { 
+        padding: 10px 12px; border: 1px solid var(--border); border-radius: 8px; font-size: 14px; 
+        transition: border 0.2s; background: #f8fafc;
+    }
+    .input-group input:focus { border-color: var(--primary); outline: none; background: white; }
+
+    /* === GRID DE CARDS === */
+    .section-label { 
+        font-size: 14px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted); 
+        margin-bottom: 16px; display: flex; align-items: center; gap: 8px; margin-top: 32px;
+    }
+    .section-label::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+
+    .reports-grid {
+        display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 16px; margin-bottom: 20px;
+    }
+
+    /* Card vira um botão de submit "falso" que aciona o JS */
+    .report-card-btn {
+        background: var(--card); border: 1px solid var(--border); border-radius: var(--radius);
+        padding: 20px; text-align: left; cursor: pointer; transition: all 0.2s;
+        position: relative; overflow: hidden; display: flex; flex-direction: column; height: 100%;
+        border-bottom: 4px solid transparent;
+        align-items: flex-start; /* Alinha ícone e texto à esquerda */
+    }
+    .report-card-btn:hover { transform: translateY(-3px); box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1); border-bottom-color: var(--primary); }
+    
+    .card-icon { 
+        width: 44px; height: 44px; background: #f0f9ff; color: var(--primary); border-radius: 12px; 
+        display: flex; align-items: center; justify-content: center; margin-bottom: 12px; 
+        transition: background 0.2s;
+    }
+    .report-card-btn:hover .card-icon { background: var(--primary); color: white; }
+    
+    .card-title { font-size: 14px; font-weight: 600; color: #1e293b; margin-bottom: 4px; }
+    .card-desc { font-size: 12px; color: var(--text-muted); line-height: 1.4; }
+
+    /* ESTILO ESPECIAL PARA O CARD GERENCIAL */
+    .gerencial-card:hover { border-bottom-color: #7e22ce; }
+    .gerencial-card .card-icon { background: var(--purple-bg); color: var(--purple-text); }
+    .gerencial-card:hover .card-icon { background: var(--purple-text); color: white; }
+
+    /* === CONSOLIDADO === */
+    .consolidado-panel {
+        background: white; border: 1px solid var(--border); border-radius: 16px; overflow: hidden; margin-top: 40px;
+    }
+    .panel-header { background: #f8fafc; padding: 20px 24px; border-bottom: 1px solid var(--border); }
+    .panel-header h3 { margin: 0; font-size: 16px; font-weight: 700; color: #334155; }
+    .panel-body { padding: 24px; }
+
+    .options-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 12px; }
+    .check-label {
+        display: flex; align-items: center; gap: 10px; padding: 12px; border: 1px solid var(--border);
+        border-radius: 8px; cursor: pointer; transition: 0.2s; font-size: 13px;
+    }
+    .check-label:hover { background: #f8fafc; }
+    .check-label:has(input:checked) { border-color: var(--primary); background: #eff6ff; color: var(--primary); font-weight: 600; }
+
+    .btn-consolidado {
+        width: 100%; margin-top: 24px; padding: 14px; 
+        background: linear-gradient(180deg, var(--success), #15803d);
+        color: white; border: none; border-radius: 8px;
+        font-weight: 600; font-size: 15px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px;
+        transition: filter 0.2s, transform 0.1s;
+        box-shadow: 0 4px 6px rgba(22, 101, 52, 0.2);
+    }
+    .btn-consolidado:hover { filter: brightness(1.1); transform: translateY(-1px); }
+
+    /* ERROR TOAST */
+    #dateError {
+        display: none; position: fixed; top: 20px; right: 20px; background: #fee2e2; color: #991b1b; 
+        padding: 16px; border-radius: 8px; border: 1px solid #fecaca; box-shadow: 0 4px 6px rgba(0,0,0,0.1); z-index: 1000;
+    }
+
+</style>
+
+<div class="rh-container">
+    
+    <div id="dateError">⚠️ Selecione as datas de <strong>Início</strong> e <strong>Fim</strong> antes de baixar.</div>
+
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
+        <div>
+            <h1 style="font-size: 26px; font-weight: 700; color: #0f172a; margin: 0;">Relatórios por Período</h1>
+            <p style="margin: 4px 0 0 0; color: #64748b;">Histórico completo de lançamentos.</p>
+        </div>
+        <a href="{% url 'relatorios:listar_planilhas' %}" style="text-decoration: none; color: var(--primary); font-weight: 600; font-size: 14px; display: flex; align-items: center; gap: 6px;">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+            Voltar para Rápidos
+        </a>
+    </div>
+
+    <div class="control-bar">
+        <div class="control-info">
+            <h2>Defina o Intervalo</h2>
+            <p>Estas datas serão aplicadas a todos os downloads abaixo.</p>
+        </div>
+        <div class="date-inputs">
+            <div class="input-group">
+                <label>Data Início</label>
+                <input type="date" id="globalDtInicio" onchange="syncDates()">
+            </div>
+            <div class="input-group">
+                <label>Data Fim</label>
+                <input type="date" id="globalDtFim" onchange="syncDates()">
+            </div>
+        </div>
+    </div>
+
+    <form id="singleDownloadForm" action="{% url 'relatorios:exportar_por_periodo' %}" method="POST" style="display: none;">
+        {% csrf_token %}
+        <input type="hidden" name="data_inicio" id="singleDtInicio">
+        <input type="hidden" name="data_fim" id="singleDtFim">
+        <input type="hidden" name="tipo_relatorio" id="singleTipoRelatorio">
+    </form>
+
+    <div class="section-label">Financeiro (Pagamentos Gerais)</div>
+    <div class="reports-grid">
+        <div class="report-card-btn" onclick="baixarIndividual('boletos')">
+            <div class="card-icon"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg></div>
+            <div class="card-title">Boletos</div>
+            <div class="card-desc">Geral (Vencimento)</div>
+        </div>
+        <div class="report-card-btn" onclick="baixarIndividual('cheques')">
+            <div class="card-icon"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg></div>
+            <div class="card-title">Cheques</div>
+            <div class="card-desc">Pela data de emissão</div>
+        </div>
+        <div class="report-card-btn" onclick="baixarIndividual('utilidades')">
+            <div class="card-icon"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg></div>
+            <div class="card-title">Utilidades</div>
+            <div class="card-desc">Água, Luz, Net</div>
+        </div>
+        <div class="report-card-btn" onclick="baixarIndividual('gastos_gerais')">
+            <div class="card-icon"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg></div>
+            <div class="card-title">Gastos Gerais</div>
+            <div class="card-desc">Pela data da despesa</div>
+        </div>
+        <div class="report-card-btn" onclick="baixarIndividual('contabilidade')">
+            <div class="card-icon"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="2" width="16" height="20" rx="2"/><line x1="8" y1="6" x2="16" y2="6"/><line x1="16" y1="14" x2="16" y2="14"/><line x1="16" y1="18" x2="16" y2="18"/><line x1="12" y1="14" x2="12" y2="14"/><line x1="12" y1="18" x2="12" y2="18"/><line x1="8" y1="14" x2="8" y2="14"/><line x1="8" y1="18" x2="8" y2="18"/></svg></div>
+            <div class="card-title">Contabilidade</div>
+            <div class="card-desc">Impostos e taxas</div>
+        </div>
+    </div>
+
+    <div class="section-label">Cartões, Veículos e Transporte</div>
+    <div class="reports-grid">
+        <div class="report-card-btn" onclick="baixarIndividual('cartoes')">
+            <div class="card-icon"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg></div>
+            <div class="card-title">Cartões de Crédito</div>
+            <div class="card-desc">Sicoob/Bradesco</div>
+        </div>
+        <div class="report-card-btn" onclick="baixarIndividual('bndes')">
+            <div class="card-icon"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg></div>
+            <div class="card-title">Cartão BNDES</div>
+            <div class="card-desc">Faturas (Vencimento)</div>
+        </div>
+        <div class="report-card-btn" onclick="baixarIndividual('veiculos')">
+            <div class="card-icon"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 16H9m10 0h3v-3.15a1 1 0 0 0-.84-.99L16 11l-2.7-3.6a1 1 0 0 0-.8-.4H5.24a2 2 0 0 0-1.8 1.1l-.8 1.63A6 6 0 0 0 2 12.42V16h2"/><circle cx="6.5" cy="16.5" r="2.5"/><circle cx="16.5" cy="16.5" r="2.5"/></svg></div>
+            <div class="card-title">Veículos</div>
+            <div class="card-desc">Manutenção/Consórcio</div>
+        </div>
+        <div class="report-card-btn" onclick="baixarIndividual('gasolina')">
+            <div class="card-icon"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 22v-8a2 2 0 0 1 2-2h2.5"/><path d="M6 16h2.5"/><path d="M11 22v-8a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2a2 2 0 0 1-2 2h-4"/><path d="M13 14h.01"/><path d="M17 14h.01"/><path d="M15 18h.01"/></svg></div>
+            <div class="card-title">Gasolina</div>
+            <div class="card-desc">Abastecimentos</div>
+        </div>
+    </div>
+
+    <div class="section-label">Imóveis e Empréstimos</div>
+    <div class="reports-grid">
+        <div class="report-card-btn" onclick="baixarIndividual('condominio')">
+            <div class="card-icon"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg></div>
+            <div class="card-title">Condomínio</div>
+            <div class="card-desc">Taxas e Acordos</div>
+        </div>
+        <div class="report-card-btn" onclick="baixarIndividual('iptu')">
+            <div class="card-icon"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/><line x1="8" y1="2" x2="8" y2="18"/><line x1="16" y1="6" x2="16" y2="22"/></svg></div>
+            <div class="card-title">IPTU</div>
+            <div class="card-desc">Impostos Prediais</div>
+        </div>
+        <div class="report-card-btn" onclick="baixarIndividual('prestacoes')">
+            <div class="card-icon"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg></div>
+            <div class="card-title">Empréstimos</div>
+            <div class="card-desc">Prestações Bancárias</div>
+        </div>
+    </div>
+
+    <div class="section-label">Receitas e RH</div>
+    <div class="reports-grid">
+        <div class="report-card-btn" onclick="baixarIndividual('receber')">
+            <div class="card-icon"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></div>
+            <div class="card-title">Contas a Receber</div>
+            <div class="card-desc">Entradas (Vencimento)</div>
+        </div>
+        <div class="report-card-btn" onclick="baixarIndividual('folha')">
+            <div class="card-icon"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div>
+            <div class="card-title">Folha de Pagamento</div>
+            <div class="card-desc">Salários (Data Referência)</div>
+        </div>
+        <div class="report-card-btn" onclick="baixarIndividual('comissoes')">
+            <div class="card-icon"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="22" y1="11" x2="16" y2="11"/></svg></div>
+            <div class="card-title">Comissões RT</div>
+            <div class="card-desc">Arquitetos (Pagamento)</div>
+        </div>
+    </div>
+
+    <div class="section-label">Relatórios Gerenciais e Desempenho</div>
+    <div class="reports-grid">
+        <div class="report-card-btn gerencial-card" onclick="baixarVendasCompras()" style="border: 1px solid #d8b4fe;">
+            <div class="card-icon"><i class="fas fa-chart-line fa-lg"></i></div>
+            <div class="card-title">Vendas e Compras</div>
+            <div class="card-desc"><strong>Baixar Planilha de Desempenho</strong><br>Entradas vs Saídas (Ano Selecionado)</div>
+        </div>
+    </div>
+
+    <div class="section-label">Exportação em Lote</div>
+    <div class="consolidado-panel">
+        <form action="{% url 'relatorios:exportar_consolidado_periodo' %}" method="POST" id="formConsolidadoPeriodo" onsubmit="return validarAntesSubmit()">
+            {% csrf_token %}
+            <input type="hidden" name="data_inicio" id="consDtInicio">
+            <input type="hidden" name="data_fim" id="consDtFim">
+
+            <div class="panel-header">
+                <h3>Relatório Consolidado do Período</h3>
+                <p style="font-size: 13px; color: #64748b; margin-top: 4px;">Selecione para gerar um único Excel (.xlsx) com múltiplas abas.</p>
+            </div>
+            
+            <div class="panel-body">
+                <div style="margin-bottom: 24px; max-width: 600px;">
+                    <label style="display: block; font-size: 13px; font-weight: 600; color: var(--text-muted); margin-bottom: 8px;">
+                        Nome do Arquivo (Opcional)
+                    </label>
+                    <input type="text" name="nome_arquivo" placeholder="Ex: Relatorio_Trimestral_2024" 
+                           style="width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: 8px; font-size: 14px; color: #0f172a; background: #fff;">
+                    <small style="color: #94a3b8; font-size: 11px; margin-top: 4px; display: block;">
+                        Se deixar em branco, o nome será gerado com as datas do período selecionado.
+                    </small>
+                </div>
+                <div class="options-grid">
+                    <label class="check-label"><input type="checkbox" name="relatorios" value="boletos"> Boletos</label>
+                    <label class="check-label"><input type="checkbox" name="relatorios" value="utilidades"> Utilidades</label>
+                    <label class="check-label"><input type="checkbox" name="relatorios" value="cheques"> Cheques</label>
+                    <label class="check-label"><input type="checkbox" name="relatorios" value="contabilidade"> Contabilidade</label>
+                    <label class="check-label"><input type="checkbox" name="relatorios" value="cartoes"> Cartões Crédito</label>
+                    <label class="check-label"><input type="checkbox" name="relatorios" value="bndes"> Cartão BNDES</label>
+                    <label class="check-label"><input type="checkbox" name="relatorios" value="gastos_gerais"> Gastos Gerais</label>
+                    <label class="check-label"><input type="checkbox" name="relatorios" value="veiculos"> Veículos</label>
+                    <label class="check-label"><input type="checkbox" name="relatorios" value="condominio"> Condomínio</label>
+                    <label class="check-label"><input type="checkbox" name="relatorios" value="iptu"> IPTU</label>
+                    <label class="check-label"><input type="checkbox" name="relatorios" value="gasolina"> Gasolina</label>
+                    <label class="check-label"><input type="checkbox" name="relatorios" value="prestacoes"> Empréstimos</label>
+                    <label class="check-label"><input type="checkbox" name="relatorios" value="folha"> Folha Pagto</label>
+                    <label class="check-label"><input type="checkbox" name="relatorios" value="comissoes"> Comissões RT</label>
+                    <label class="check-label"><input type="checkbox" name="relatorios" value="receber"> Contas a Receber</label>
+                    <label class="check-label"><input type="checkbox" name="relatorios" value="vendas_compras"> Vendas e Compras </label>
+                </div>
+
+                <button type="submit" class="btn-consolidado">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                    Baixar Consolidado do Período
+                </button>
+            </div>
+        </form>
+    </div>
+
+</div>
+
+<script>
+    function syncDates() {
+        const i = document.getElementById('globalDtInicio').value;
+        const f = document.getElementById('globalDtFim').value;
+        document.getElementById('singleDtInicio').value = i;
+        document.getElementById('singleDtFim').value = f;
+        document.getElementById('consDtInicio').value = i;
+        document.getElementById('consDtFim').value = f;
+    }
+
+    function validarAntesSubmit() {
+        const i = document.getElementById('globalDtInicio').value;
+        const f = document.getElementById('globalDtFim').value;
+        
+        // Se os campos hidden estiverem vazios, tenta preencher de novo
+        if (!document.getElementById('consDtInicio').value) syncDates();
+
+        if (!i || !f) {
+            const err = document.getElementById('dateError');
+            err.style.display = 'block';
+            setTimeout(() => err.style.display = 'none', 4000);
+            return false;
+        }
+        syncDates();
+        return true;
+    }
+
+    function baixarIndividual(tipo) {
+        if (validarAntesSubmit()) {
+            document.getElementById('singleTipoRelatorio').value = tipo;
+            document.getElementById('singleDownloadForm').submit();
+        }
+    }
+
+    // NOVA FUNÇÃO para baixar o relatório de Vendas e Compras
+    function baixarVendasCompras() {
+        const i = document.getElementById('globalDtInicio').value;
+        if (!i) {
+            const err = document.getElementById('dateError');
+            err.innerHTML = "⚠️ Selecione pelo menos a <strong>Data de Início</strong> para definir o ano.";
+            err.style.display = 'block';
+            setTimeout(() => err.style.display = 'none', 4000);
+            return;
+        }
+        // Extrai o ano da data de início selecionada
+        const date = new Date(i);
+        const year = date.getFullYear();
+        
+        // Redireciona diretamente para a rota de download com o ano na URL
+        const url = "{% url 'relatorios:exportar_vendas' %}?ano=" + year;
+        window.location.href = url;
+    }
+    
+    // Inicializa datas com o mês atual para facilitar
+    window.onload = function() {
+        const today = new Date();
+        const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
+        const lastDay = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+        
+        const fmt = d => d.toISOString().split('T')[0];
+        
+        if(!document.getElementById('globalDtInicio').value) {
+            document.getElementById('globalDtInicio').value = fmt(firstDay);
+            document.getElementById('globalDtFim').value = fmt(lastDay);
+            syncDates();
+        }
+    };
+</script>
+{% endblock %}

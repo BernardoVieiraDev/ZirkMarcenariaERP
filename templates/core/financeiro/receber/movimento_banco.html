@@ -1,0 +1,233 @@
+{% extends 'core/base.html' %}
+{% load humanize %}
+
+{% block title %}Movimento Bancário{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4 mb-5">
+
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="text-secondary font-weight-bold mb-1"><i class="fas fa-university mr-2"></i>4. Movimento Bancário</h2>
+            <p class="text-muted mb-0">Controle de entradas e saídas por conta bancária</p>
+        </div>
+        <div>
+            <a href="{% url 'receber:bancos_list' %}" class="btn btn-outline-info shadow-sm mr-2">
+                <i class="fas fa-landmark mr-1"></i> Gerenciar Bancos
+            </a>
+            
+            <button type="button" class="btn btn-primary shadow-sm" data-bs-toggle="modal" data-bs-target="#modalLancamento">
+                <i class="fas fa-plus-circle mr-1"></i> Novo Movimento
+            </button>
+        </div>
+    </div>
+
+    <div class="card bg-light mb-4 border-0 shadow-sm">
+        <div class="card-body py-3">
+            <div class="row align-items-center">
+                <div class="col-md-5">
+                    <form method="GET" id="formBanco" class="d-flex align-items-center">
+                        <input type="hidden" name="ano" value="{{ ano_atual }}">
+                        <input type="hidden" name="mes" value="{{ mes_atual }}">
+                        <label class="font-weight-bold mr-2 mb-0 text-dark">Conta:</label>
+                        <select name="banco_id" class="form-control font-weight-bold text-primary" onchange="this.form.submit()">
+                            {% for b in todos_bancos %}
+                                <option value="{{ b.id }}" {% if b.id == banco_selecionado.id %}selected{% endif %}>
+                                    {{ b.nome }} {% if b.agencia %}- Ag: {{ b.agencia }}{% endif %}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </form>
+                </div>
+
+                <div class="col-md-7 text-right">
+                    <div class="btn-group shadow-sm" role="group">
+                        <a href="?banco_id={{ banco_selecionado.id }}&ano={{ ant_ano }}&mes={{ ant_mes }}" class="btn btn-white text-primary border">
+                            <i class="fas fa-chevron-left"></i> Anterior
+                        </a>
+                        <button type="button" class="btn btn-primary disabled font-weight-bold px-4" style="min-width: 200px;">
+                            {{ data_ref|date:"F / Y"|upper }}
+                        </button>
+                        <a href="?banco_id={{ banco_selecionado.id }}&ano={{ prox_ano }}&mes={{ prox_mes }}" class="btn btn-white text-primary border">
+                            Próximo <i class="fas fa-chevron-right"></i>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mb-4">
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-secondary shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-secondary text-uppercase mb-1">Saldo Anterior</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">R$ {{ saldo_anterior|floatformat:2|intcomma }}</div>
+                        </div>
+                        <div class="col-auto"><i class="fas fa-history fa-2x text-gray-300"></i></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-success shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-success text-uppercase mb-1">+ Entradas ({{ data_ref|date:"M" }})</div>
+                            <div class="h5 mb-0 font-weight-bold text-success">R$ {{ total_entradas|floatformat:2|intcomma }}</div>
+                        </div>
+                        <div class="col-auto"><i class="fas fa-arrow-up fa-2x text-gray-300"></i></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-danger shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-danger text-uppercase mb-1">- Saídas ({{ data_ref|date:"M" }})</div>
+                            <div class="h5 mb-0 font-weight-bold text-danger">R$ {{ total_saidas|floatformat:2|intcomma }}</div>
+                        </div>
+                        <div class="col-auto"><i class="fas fa-arrow-down fa-2x text-gray-300"></i></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-primary shadow h-100 py-2 bg-light">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">Saldo Atual (Banco)</div>
+                            <div class="h4 mb-0 font-weight-bold text-primary">R$ {{ saldo_atual|floatformat:2|intcomma }}</div>
+                        </div>
+                        <div class="col-auto"><i class="fas fa-university fa-2x text-primary"></i></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card shadow mb-4">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">Extrato: {{ banco_selecionado.nome }}</h6>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-bordered table-hover" width="100%" cellspacing="0">
+                    <thead class="thead-light">
+                        <tr>
+                            <th style="width: 10%;">Data</th>
+                            <th>Histórico / Descrição</th>
+                            <th style="width: 10%;">Tipo</th>
+                            <th style="width: 15%;">Valor (R$)</th>
+                            <th style="width: 5%;">Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in movimentacoes %}
+                        <tr>
+                            <td class="align-middle">{{ item.data|date:"d/m/Y" }}</td>
+                            <td class="align-middle">
+                                <span class="font-weight-bold">{{ item.descricao }}</span>
+                                {% if item.observacoes %}
+                                    <br><small class="text-muted">{{ item.observacoes }}</small>
+                                {% endif %}
+                            </td>
+                            <td class="align-middle text-center">
+                                {% if item.tipo == 'E' %}
+                                    <span class="badge bg-success text-white">Crédito</span>
+                                {% else %}
+                                    <span class="badge bg-danger text-white">Débito</span>
+                                {% endif %}
+                            </td>
+                            <td class="align-middle font-weight-bold {% if item.tipo == 'E' %}text-success{% else %}text-danger{% endif %}">
+                                {% if item.tipo == 'S' %}- {% endif %}
+                                {{ item.valor|floatformat:2|intcomma }}
+                            </td>
+                            <td class="align-middle text-center" style="white-space: nowrap;">
+    
+    <a href="{% url 'receber:movimento_banco_edit' item.pk %}" class="btn btn-sm btn-outline-primary border-0" title="Editar">
+        <i class="fas fa-pen"></i>
+    </a>
+
+    <form action="{% url 'receber:movimento_banco_delete' item.pk %}" method="POST" onsubmit="return confirm('Excluir este lançamento?');" style="display:inline;">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-sm btn-outline-danger border-0" title="Excluir">
+            <i class="fas fa-trash-alt"></i>
+        </button>
+    </form>
+</td>
+                            <td class="align-middle text-center">
+                                <form action="{% url 'receber:movimento_banco_delete' item.pk %}" method="POST" onsubmit="return confirm('Excluir este lançamento?');">
+                                    {% csrf_token %}
+                                    <button type="submit" class="btn btn-sm btn-outline-danger border-0">
+                                        <i class="fas fa-trash-alt"></i>
+                                    </button>
+                                </form>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="5" class="text-center text-muted py-5">
+                                <i class="fas fa-file-invoice-dollar fa-3x mb-3 text-gray-300"></i>
+                                <p>Nenhuma movimentação para este banco neste mês.</p>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="modalLancamento" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <form method="POST">
+          {% csrf_token %}
+          <div class="modal-header bg-primary text-white">
+            <h5 class="modal-title">Novo Movimento: {{ banco_selecionado.nome }}</h5>
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+          </div>
+          <div class="modal-body">
+            <div class="mb-3">
+                <label class="form-label">Data</label>
+                {{ form.data }}
+            </div>
+            <div class="row">
+                <div class="col-6 mb-3">
+                    <label class="form-label">Tipo</label>
+                    {{ form.tipo }}
+                </div>
+                <div class="col-6 mb-3">
+                    <label class="form-label">Valor (R$)</label>
+                    {{ form.valor }}
+                </div>
+            </div>
+            <div class="mb-3">
+                <label class="form-label">Histórico</label>
+                {{ form.descricao }}
+            </div>
+            <div class="mb-3">
+                <label class="form-label">Observações</label>
+                {{ form.observacoes }}
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+            <button type="submit" class="btn btn-primary">Salvar</button>
+          </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

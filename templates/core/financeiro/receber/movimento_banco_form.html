@@ -1,0 +1,52 @@
+{% extends 'core/base.html' %}
+
+{% block content %}
+<div class="container mt-5" style="max-width: 600px;">
+    <div class="card shadow">
+        <div class="card-header bg-primary text-white">
+            <h5 class="m-0"><i class="fas fa-pen mr-2"></i>Editar Lançamento</h5>
+        </div>
+        <div class="card-body">
+            <p class="text-muted mb-4">
+                Editando lançamento do banco <strong>{{ movimento.banco.nome }}</strong> datado de {{ movimento.data|date:"d/m/Y" }}.
+            </p>
+
+            <form method="POST">
+                {% csrf_token %}
+                
+                <div class="mb-3">
+                    <label class="form-label">Data</label>
+                    {{ form.data }}
+                </div>
+                
+                <div class="row">
+                    <div class="col-6 mb-3">
+                        <label class="form-label">Tipo</label>
+                        {{ form.tipo }}
+                    </div>
+                    <div class="col-6 mb-3">
+                        <label class="form-label">Valor (R$)</label>
+                        {{ form.valor }}
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Histórico / Descrição</label>
+                    {{ form.descricao }}
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Observações</label>
+                    {{ form.observacoes }}
+                </div>
+
+                <hr>
+                <div class="d-flex justify-content-end">
+                    <a href="javascript:history.back()" class="btn btn-secondary mr-2" style="margin-right: 10px;">Cancelar</a>
+                    <button type="submit" class="btn btn-success">Salvar Alteração</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

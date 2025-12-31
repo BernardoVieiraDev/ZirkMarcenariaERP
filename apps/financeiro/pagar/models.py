@@ -323,6 +323,17 @@ class GastoGeral(models.Model):
         ('DINHEIRO', 'Dinheiro'),
         ('CARTAO', 'Cartão'),
     ]
+
+    TIPO_PAGAMENTO_CHOICES = [
+        ('VISTA', 'À Vista'),
+        ('PRAZO', 'A Prazo'),
+    ]
+    tipo_pagamento = models.CharField(
+        max_length=10,
+        choices=TIPO_PAGAMENTO_CHOICES,
+        default='VISTA', # Padrão À Vista, pois gastos gerais costumam ser do dia a dia
+        verbose_name="Classificação Gerencial"
+    )
     
     descricao = models.CharField(max_length=255, verbose_name="Descrição do Item")
     data_gasto = models.DateField(verbose_name="Data do Gasto")

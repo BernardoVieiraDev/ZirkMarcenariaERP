@@ -20,7 +20,18 @@ urlpatterns = [
     path('exportar_gasolina/', views.exportar_gasolina, name='exportar_gasolina'),
     path('exportar_comissoes/', views.exportar_comissoes, name='exportar_comissoes'),
     path('exportar_prestacoes/', views.exportar_prestacoes, name='exportar_prestacoes'),
-path('exportar_folha/', views.exportar_folha, name='exportar_folha'),
-path('exportar-receber/', views.exportar_receber, name='exportar_receber'),
-path('exportar_multiplas/', views.exportar_multiplas_planilhas, name='exportar_multiplas_planilhas'),
-]
+    path('exportar_folha/', views.exportar_folha, name='exportar_folha'),
+    path('exportar-receber/', views.exportar_receber, name='exportar_receber'),
+    path('exportar_multiplas/', views.exportar_multiplas_planilhas, name='exportar_multiplas_planilhas'),
+    path('exportar/rt/', views.exportar_rt, name='exportar_rt'),
+path('historico/', views.list_planilhas_periodo, name='planilhas_por_periodo'),
+    path('exportar/periodo/', views.exportar_por_periodo, name='exportar_por_periodo'),
+    path('exportar/consolidado-periodo/', views.exportar_consolidado_periodo, name='exportar_consolidado_periodo'),   
+    path('exportar/vendas/', views.exportar_vendas, name='exportar_vendas'),
+    
+    path('exportar-caixa-diario/', views.exportar_caixa_diario, name='exportar_caixa_diario'),
+    
+    
+    
+    
+    ]
