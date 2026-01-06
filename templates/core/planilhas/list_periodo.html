@@ -252,6 +252,103 @@
         </div>
     </div>
 
+    <div class="section-label">Fechamento Mensal (Contabilidade)</div>
+    <div class="reports-grid">
+        <div class="report-card-btn" onclick="baixarMensal('pagar')" style="border-left: 4px solid #ef4444;">
+            <div class="card-icon" style="color: #ef4444; background: #fee2e2;">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M19 12l-7 7-7-7"/></svg>
+            </div>
+            <div class="card-title">Baixar Pagar (Mensal)</div>
+            <div class="card-desc">Usa o mês da <strong>Data Início</strong> selecionada acima.</div>
+        </div>
+
+        <div class="report-card-btn" onclick="baixarMensal('receber')" style="border-left: 4px solid #16a34a;">
+            <div class="card-icon" style="color: #16a34a; background: #dcfce7;">
+                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M5 12l7-7 7 7"/></svg>
+            </div>
+            <div class="card-title">Baixar Receber (Mensal)</div>
+            <div class="card-desc">Usa o mês da <strong>Data Início</strong> selecionada acima.</div>
+        </div>
+    </div>
+
+<div class="consolidado-panel" style="margin-bottom: 32px; margin-top: 20px;">
+    <div class="panel-header">
+        <h3>Movimento Bancário (Extrato)</h3>
+        <p style="font-size: 13px; color: #64748b; margin-top: 4px;">
+            Selecione o Banco e o mês de referência para gerar o relatório.
+        </p>
+    </div>
+    
+    <div class="panel-body">
+        <form action="{% url 'relatorios:exportar_movimentacao_bancaria' %}" method="GET">
+            <input type="hidden" name="tipo" value="movimento_banco">
+            
+            <div style="display: flex; gap: 16px; align-items: flex-end; flex-wrap: wrap;">
+                
+                <div class="input-group" style="flex: 2; min-width: 250px;">
+                    <label>Banco</label>
+                    <select name="banco_id" required 
+                        style="padding: 10px 12px; border: 1px solid var(--border); border-radius: 8px; font-size: 14px; background: #f8fafc; color: var(--text-main); width: 100%; outline: none; height: 42px;">
+                        <option value="" disabled selected>Selecione um Banco...</option>
+                        {% for b in bancos %}
+                            <option value="{{ b.id }}">{{ b.nome }}</option>
+                        {% empty %}
+                            <option value="" disabled>Nenhum banco cadastrado</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="input-group" style="flex: 1; min-width: 150px;">
+                    <label>Mês</label>
+                    <select name="mes" 
+                        style="padding: 10px 12px; border: 1px solid var(--border); border-radius: 8px; font-size: 14px; background: #f8fafc; color: var(--text-main); width: 100%; outline: none; height: 42px;">
+                        {% for num, nome in meses %}
+                            <option value="{{ num }}" {% if num == request.now|date:"n"|add:"0" %}selected{% endif %}>
+                                {{ nome }}
+                            </option>
+                        {% endfor %}
+                        
+                        {# Fallback caso a variável meses não venha do contexto #}
+                        {% if not meses %}
+                             <option value="{% now 'n' %}" selected>Mês Atual ({% now 'F' %})</option>
+                             <option value="1">Janeiro</option>
+                             <option value="2">Fevereiro</option>
+                             <option value="3">Março</option>
+                             <option value="4">Abril</option>
+                             <option value="5">Maio</option>
+                             <option value="6">Junho</option>
+                             <option value="7">Julho</option>
+                             <option value="8">Agosto</option>
+                             <option value="9">Setembro</option>
+                             <option value="10">Outubro</option>
+                             <option value="11">Novembro</option>
+                             <option value="12">Dezembro</option>
+                        {% endif %}
+                    </select>
+                </div>
+
+                <div class="input-group" style="flex: 1; min-width: 100px;">
+                    <label>Ano</label>
+                    <input type="number" name="ano" value="{% now 'Y' %}" 
+                        style="padding: 10px 12px; border: 1px solid var(--border); border-radius: 8px; font-size: 14px; background: #f8fafc; width: 100%; height: 42px;">
+                </div>
+
+                <div style="flex: 0 0 auto;">
+                    <button type="submit" 
+                        style="height: 42px; padding: 0 24px; background: var(--primary); color: white; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 8px; transition: background 0.2s;"
+                        onmouseover="this.style.background='var(--primary-hover)'" 
+                        onmouseout="this.style.background='var(--primary)'">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                        Gerar Extrato
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+
+
     <div class="section-label">Exportação em Lote</div>
     <div class="consolidado-panel">
         <form action="{% url 'relatorios:exportar_consolidado_periodo' %}" method="POST" id="formConsolidadoPeriodo" onsubmit="return validarAntesSubmit()">
@@ -292,6 +389,17 @@
                     <label class="check-label"><input type="checkbox" name="relatorios" value="comissoes"> Comissões RT</label>
                     <label class="check-label"><input type="checkbox" name="relatorios" value="receber"> Contas a Receber</label>
                     <label class="check-label"><input type="checkbox" name="relatorios" value="vendas_compras"> Vendas e Compras </label>
+                <label class="check-label" style="background:#FEF2F2; border-color:#FCA5A5;">
+                        <input type="checkbox" name="relatorios" value="pagar_mensal"> 
+                        <span style="color:#991B1B; font-weight:600;">Pagar (Mensal)</span>
+                    </label>
+                    
+                    <label class="check-label" style="background:#EFF6FF; border-color:#BFDBFE;">
+                        <input type="checkbox" name="relatorios" value="receber_mensal"> 
+                        <span style="color:#1E3A8A; font-weight:600;">Receber (Mensal)</span>
+                    </label>
+                    </div>
+                
                 </div>
 
                 <button type="submit" class="btn-consolidado">
@@ -371,5 +479,28 @@
             syncDates();
         }
     };
+
+function baixarMensal(tipo) {
+        const i = document.getElementById('globalDtInicio').value;
+        const f = document.getElementById('globalDtFim').value;
+        
+        if (!i || !f) {
+            const err = document.getElementById('dateError');
+            err.innerHTML = "⚠️ Selecione as datas de <strong>Início</strong> e <strong>Fim</strong>.";
+            err.style.display = 'block';
+            setTimeout(() => err.style.display = 'none', 4000);
+            return;
+        }
+        
+        // Agora enviamos as datas completas, não apenas mes/ano
+        let url = "";
+        if(tipo === 'pagar') {
+            url = "{% url 'relatorios:exportar_pagar_mensal' %}?data_inicio=" + i + "&data_fim=" + f;
+        } else {
+            url = "{% url 'relatorios:exportar_receber_mensal' %}?data_inicio=" + i + "&data_fim=" + f;
+        }
+        
+        window.location.href = url;
+    }
 </script>
 {% endblock %}

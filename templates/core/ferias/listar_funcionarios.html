@@ -4,329 +4,405 @@
 {% block content %}
 <style>
     :root {
-        --bg: #f6f8fb; --card: #ffffff; --primary: #1976d2; --muted: #6b7280; 
-        --success: #16a34a; --danger: #e11d48; --radius: 10px; 
-        --shadow: 0 6px 18px rgba(15,23,42,0.06);
+        --bg-color: #f8fafc;
+        --card-bg: #ffffff;
+        --primary: #2563eb; /* Azul mais moderno */
+        --primary-hover: #1d4ed8;
+        --text-main: #1e293b;
+        --text-muted: #64748b;
+        --border: #e2e8f0;
+        --success: #10b981;
+        --danger: #ef4444;
+        --radius: 12px;
+        --shadow-sm: 0 1px 3px rgba(0,0,0,0.1);
+        --shadow-md: 0 4px 6px -1px rgba(0,0,0,0.1);
     }
-    .rh-container { max-width: 1100px; margin: 0 auto; padding: 22px 0; font-family: Inter, Roboto, sans-serif; color: #0f172a; }
-    
-    /* Header e Busca */
-    .rh-header { display: flex; gap: 16px; align-items: center; margin-bottom: 24px; flex-wrap: wrap; }
-    .rh-search { flex: 1; min-width: 250px; }
-    .rh-search input { width: 100%; padding: 12px 16px; border-radius: 12px; border: 1px solid #e6e9ef; background: white; font-size: 14px; }
-    .rh-title { font-size: 24px; font-weight: 700; margin: 0 0 10px; width: 100%; }
-    
-    .top-actions { display: flex; gap: 12px; align-items: center; }
-    
-    /* Botões */
-    .rh-btn { padding: 10px 14px; border-radius: 12px; border: 0; cursor: pointer; box-shadow: var(--shadow); font-weight: 600; text-decoration: none; display: inline-flex; align-items: center; justify-content: center; font-size: 14px; transition: transform 0.1s; }
-    .rh-btn-primary { background: linear-gradient(180deg, var(--primary), #0f66c3); color: white; }
-    .rh-btn-ghost { background: transparent; border: 1px solid #e6e9ef; color: var(--muted); }
-    .rh-btn-ghost:hover { background: #f8fafc; color: #0f172a; }
-    .rh-btn-danger { background: #fee2e2; color: var(--danger); border: 1px solid #fecaca; padding: 6px 10px; font-size: 12px; }
 
-    /* Grid de Funcionários */
-    .rh-grid { display: grid; grid-template-columns: 1fr; gap: 18px; }
+    body { background-color: var(--bg-color); color: var(--text-main); font-family: 'Inter', system-ui, sans-serif; }
+
+    .rh-container { max-width: 1200px; margin: 0 auto; padding: 30px 20px; }
+
+    /* --- HEADER --- */
+    .rh-header { 
+        display: flex; justify-content: space-between; align-items: center; 
+        margin-bottom: 30px; flex-wrap: wrap; gap: 20px; 
+    }
+    .rh-title h1 { font-size: 28px; font-weight: 800; color: #0f172a; margin: 0; letter-spacing: -0.5px; }
+    .rh-title p { color: var(--text-muted); font-size: 14px; margin-top: 4px; }
+
+    .header-actions { display: flex; gap: 10px; align-items: center; }
     
-    /* Card do Funcionário - IMPORTANTE: overflow visible para o menu sair */
-    .employee-card { 
-        background: var(--card); 
-        border-radius: var(--radius); 
-        box-shadow: var(--shadow); 
-        padding: 20px; 
-        transition: all 0.2s; 
-        border: 1px solid transparent;
-        overflow: visible; 
+    .btn-nav {
+        background: white; border: 1px solid var(--border); color: var(--text-main);
+        padding: 8px 16px; border-radius: 8px; font-size: 14px; font-weight: 500;
+        text-decoration: none; display: inline-flex; align-items: center; gap: 8px;
+        transition: all 0.2s; box-shadow: var(--shadow-sm);
+    }
+    .btn-nav:hover { background: #f1f5f9; border-color: #cbd5e1; color: var(--primary); transform: translateY(-1px); }
+    .btn-nav i { font-size: 16px; }
+
+    .search-bar { position: relative; width: 100%; max-width: 400px; }
+    .search-bar input {
+        width: 100%; padding: 12px 16px 12px 40px; border-radius: 10px;
+        border: 1px solid var(--border); background: white; font-size: 14px;
+        box-shadow: var(--shadow-sm); transition: border-color 0.2s;
+    }
+    .search-bar input:focus { outline: none; border-color: var(--primary); ring: 2px var(--primary); }
+    .search-icon { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: #94a3b8; }
+
+    /* --- GRID FUNCIONÁRIOS --- */
+    .rh-grid { display: grid; grid-template-columns: 1fr; gap: 24px; }
+
+    .employee-card {
+        background: var(--card-bg); border-radius: var(--radius);
+        box-shadow: var(--shadow-md); border: 1px solid var(--border);
+        overflow: visible; transition: transform 0.2s;
+    }
+    /* .employee-card:hover { transform: translateY(-2px); box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); } */
+
+    .card-header {
+        padding: 20px 24px; border-bottom: 1px solid var(--border);
+        display: flex; justify-content: space-between; align-items: center;
+        background: linear-gradient(to right, #ffffff, #f8fafc);
     }
     
-    .employee-head { display: flex; gap: 16px; align-items: center; }
-    .avatar { width: 56px; height: 56px; border-radius: 12px; background: #eef2ff; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 18px; color: var(--primary); flex-shrink: 0; }
-    .emp-info { flex: 1; }
-    .emp-name { font-weight: 700; font-size: 16px; margin-bottom: 4px; }
-    .emp-meta { color: var(--muted); font-size: 13px; display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
-    .saldo-box { text-align: right; min-width: 80px; }
-    .saldo-label { color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; }
-    .saldo-value { font-weight: 800; font-size: 18px; color: var(--primary); }
+    .user-info { display: flex; gap: 16px; align-items: center; }
+    .avatar {
+        width: 48px; height: 48px; background: #eff6ff; color: var(--primary);
+        border-radius: 10px; display: flex; align-items: center; justify-content: center;
+        font-weight: 700; font-size: 18px; border: 1px solid #dbeafe;
+    }
+    .user-details h3 { font-size: 16px; font-weight: 700; margin: 0; color: #334155; }
+    .user-details span { font-size: 13px; color: var(--text-muted); display: block; margin-top: 2px; }
 
-    /* Tabs */
-    .rh-tabs { display: flex; gap: 8px; margin-top: 20px; border-bottom: 1px solid #f1f5f9; padding-bottom: 12px; overflow-x: auto; }
-    .rh-tab { padding: 6px 14px; border-radius: 999px; background: #fafafa; border: 1px solid #f1f5f9; cursor: pointer; font-size: 13px; font-weight: 500; color: var(--muted); white-space: nowrap; }
-    .rh-tab.active { background: var(--primary); color: white; border-color: var(--primary); }
-    .tab-content { display: none; margin-top: 16px; }
+    .card-actions { display: flex; gap: 12px; align-items: center; }
+    .saldo-badge {
+        text-align: right; padding-right: 16px; border-right: 1px solid var(--border);
+    }
+    .saldo-badge small { display: block; font-size: 11px; text-transform: uppercase; color: var(--text-muted); font-weight: 600; }
+    .saldo-badge strong { font-size: 20px; color: var(--primary); line-height: 1.2; }
+    .saldo-badge strong.negative { color: var(--danger); }
+
+    .btn-action-sm {
+        background: var(--primary); color: white; border: none; padding: 8px 12px;
+        border-radius: 6px; font-size: 13px; font-weight: 600; cursor: pointer;
+        display: flex; align-items: center; gap: 6px; transition: background 0.2s;
+    }
+    .btn-action-sm:hover { background: var(--primary-hover); }
+    .btn-ghost-sm {
+        background: transparent; color: var(--text-muted); border: 1px solid var(--border);
+        padding: 7px 11px; border-radius: 6px; font-size: 13px; cursor: pointer;
+    }
+    .btn-ghost-sm:hover { background: #f1f5f9; color: var(--text-main); }
+
+    /* --- TABS --- */
+    .tabs-container { padding: 0 24px; background: #f8fafc; border-bottom: 1px solid var(--border); }
+    .rh-tabs { display: flex; gap: 20px; }
+    .rh-tab {
+        padding: 14px 4px; font-size: 13px; font-weight: 600; color: var(--text-muted);
+        border-bottom: 2px solid transparent; cursor: pointer; transition: all 0.2s;
+    }
+    .rh-tab:hover { color: var(--primary); }
+    .rh-tab.active { color: var(--primary); border-bottom-color: var(--primary); }
+
+    .tab-content { display: none; padding: 20px 24px; animation: fadeIn 0.2s ease-out; }
     .tab-content.active { display: block; }
 
-    /* Container da Tabela - CORREÇÃO DE OVERFLOW */
-    .rh-table-container { 
-        background: #fbfdff; 
-        border-radius: 10px; 
-        padding: 0; 
-        border: 1px solid #eef3fc; 
-        overflow: visible; /* Permite que o menu "vaze" para fora */
+    /* --- TABELAS --- */
+    .rh-table { width: 100%; border-collapse: separate; border-spacing: 0; }
+    .rh-table th { 
+        text-align: left; font-size: 12px; font-weight: 600; text-transform: uppercase; 
+        color: var(--text-muted); padding: 12px 8px; border-bottom: 1px solid var(--border);
     }
+    .rh-table td { 
+        padding: 14px 8px; font-size: 14px; border-bottom: 1px solid #f1f5f9; color: #475569; vertical-align: middle;
+    }
+    .rh-table tr:last-child td { border-bottom: none; }
     
-    .rh-table { width: 100%; border-collapse: collapse; }
-    
-    /* Células da Tabela */
-    .rh-table th, .rh-table td { padding: 12px 14px; text-align: left; font-size: 14px; }
-    
-    /* Posição relativa na célula para ancorar o menu */
-    .rh-table td { position: relative; }
-    
-    .rh-table thead th { color: var(--muted); font-size: 12px; text-transform: uppercase; background: #f8fafc; border-bottom: 1px solid #eef3fc; font-weight: 600; }
-    .rh-table tr + tr td { border-top: 1px dashed #e6e9ef; }
-    
-    .empty-state { padding: 30px; text-align: center; color: var(--muted); font-size: 14px; background: #fbfdff; border-radius: 8px; border: 1px dashed #e2e8f0; }
+    .periodo-dates { font-weight: 600; color: #334155; }
+    .periodo-meta { font-size: 12px; color: var(--text-muted); }
 
-    /* --- MENU DE AÇÕES (3 PONTOS) --- */
-    .action-menu { position: relative; display: inline-block; }
-    
-    .dots-btn {
-        background: transparent; border: none; cursor: pointer; padding: 6px; border-radius: 50%;
-        color: var(--muted); transition: background 0.2s; display: flex; align-items: center; justify-content: center;
+    .btn-icon {
+        border: none; background: transparent; cursor: pointer; color: #94a3b8; padding: 6px; border-radius: 4px; transition: all 0.2s;
     }
-    .dots-btn:hover { background: #eef2ff; color: var(--primary); }
-    
-    .dropdown-content {
-        display: none;
-        position: absolute;
-        right: 0;
-        top: 100%;
-        margin-top: 4px;
-        background-color: white;
-        min-width: 140px;
-        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15); /* Sombra reforçada */
-        border-radius: 8px;
-        border: 1px solid #e2e8f0;
-        z-index: 9999; /* Z-index alto para ficar por cima de tudo */
-        overflow: hidden;
-        animation: fadeIn 0.1s ease-out;
-    }
-    
-    .dropdown-content.show { display: block; }
-    
-    .dropdown-content button {
-        color: #334155;
-        padding: 10px 14px;
+    .btn-icon:hover { background: #f1f5f9; color: var(--primary); }
+    .btn-launch {
+        background: #ecfdf5; color: #059669; border: 1px solid #d1fae5;
+        padding: 4px 10px; border-radius: 99px; font-size: 12px; font-weight: 600;
+        cursor: pointer; display: inline-flex; align-items: center; gap: 4px;
         text-decoration: none;
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        font-size: 13px;
-        width: 100%;
-        background: none;
-        border: none;
-        cursor: pointer;
-        text-align: left;
-        transition: background 0.1s;
     }
-    
-    .dropdown-content button:hover { background-color: #f8fafc; color: var(--primary); }
-    .dropdown-content button.delete-item:hover { background-color: #fef2f2; color: #b91c1c; }
-    
-    @keyframes fadeIn { from { opacity: 0; transform: translateY(-5px); } to { opacity: 1; transform: translateY(0); } }
+    .btn-launch:hover { background: #d1fae5; }
 
-    /* --- CSS MODAL --- */
+    /* --- DROPDOWN & MODALS (Mantidos e refinados) --- */
+    .action-menu { position: relative; }
+    .dropdown-content {
+        display: none; position: absolute; right: 0; top: 100%; margin-top: 5px;
+        background: white; min-width: 160px; box-shadow: 0 10px 25px -5px rgba(0,0,0,0.15);
+        border-radius: 8px; border: 1px solid var(--border); z-index: 50; overflow: hidden;
+    }
+    .dropdown-content.show { display: block; }
+    .dropdown-item {
+        display: flex; align-items: center; gap: 8px; padding: 10px 16px; width: 100%;
+        border: none; background: none; text-align: left; cursor: pointer; font-size: 13px; color: #475569;
+    }
+    .dropdown-item:hover { background: #f8fafc; color: var(--primary); }
+    .dropdown-item.delete:hover { background: #fef2f2; color: var(--danger); }
+
+    /* Modal Overlay */
     .modal-overlay {
-        display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.75); 
-        z-index: 10000; /* Modal acima de tudo */
-        overflow-y: auto; padding: 20px;
-        align-items: flex-start; justify-content: center; backdrop-filter: blur(3px);
+        display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.6); 
+        backdrop-filter: blur(4px); z-index: 1000; align-items: center; justify-content: center;
+        opacity: 0; transition: opacity 0.2s;
     }
-    .modal-overlay.open { display: flex; }
-    
+    .modal-overlay.open { display: flex; opacity: 1; }
     .modal-window {
-        background: white; width: 100%; max-width: 600px; margin: 30px auto; 
-        border-radius: 12px; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
-        display: flex; flex-direction: column; position: relative;
+        background: white; width: 100%; max-width: 550px; border-radius: 16px;
+        box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25); transform: scale(0.95); transition: transform 0.2s;
+        display: flex; flex-direction: column; max-height: 90vh;
     }
-    
-    .modal-header { padding: 20px 24px; border-bottom: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center; }
-    .modal-title { font-size: 18px; font-weight: 700; color: #1e293b; margin: 0; }
-    .btn-close { background: transparent; border: none; cursor: pointer; font-size: 24px; color: #94a3b8; padding: 4px; line-height: 1; }
-    .btn-close:hover { color: #0f172a; }
-    
-    .modal-body { padding: 24px; }
-    
+    .modal-overlay.open .modal-window { transform: scale(1); }
+    .modal-header { padding: 20px 24px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
+    .modal-title { font-size: 18px; font-weight: 700; margin: 0; }
+    .modal-body { padding: 24px; overflow-y: auto; }
+    .modal-footer { padding: 16px 24px; background: #f8fafc; border-top: 1px solid var(--border); display: flex; justify-content: flex-end; gap: 12px; border-radius: 0 0 16px 16px; }
+
+    /* Form Styles within Modal */
     .form-group { margin-bottom: 16px; }
     .form-group label { display: block; font-size: 13px; font-weight: 600; color: #475569; margin-bottom: 6px; }
     .form-group input, .form-group select, .form-group textarea { 
         width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #cbd5e1; font-size: 14px; 
     }
-    .form-group input:focus, .form-group select:focus { border-color: var(--primary); outline: none; }
+    .form-group input:focus, .form-group select:focus { border-color: var(--primary); outline: none; box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1); }
     
-    .modal-footer { padding: 16px 24px; border-top: 1px solid #e2e8f0; background: #f8fafc; border-radius: 0 0 12px 12px; display: flex; justify-content: flex-end; gap: 12px; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
 </style>
 
 <div class="rh-container">
-    <h1 class="rh-title">Gerenciar Férias</h1>
-
-    <header class="rh-header">
-        <div class="rh-search">
-            <input id="searchInput" type="search" placeholder="Pesquisar funcionário por nome..." onkeyup="filterEmployees()">
+    <div class="rh-header">
+        <div class="rh-title">
+            <h1>Gestão de Férias</h1>
+            <p>Gerencie períodos aquisitivos, saldos e concessões.</p>
         </div>
-        <div class="top-actions">
-            <a href="{% url 'ferias:listar_pagamentos' %}" class="rh-btn rh-btn-ghost">
-                Ver Pagamentos
+        <div class="header-actions">
+            <div class="search-bar">
+                <span class="search-icon">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                </span>
+                <input id="searchInput" type="text" placeholder="Buscar funcionário..." onkeyup="filterEmployees()">
+            </div>
+            
+            <a href="{% url 'ferias:listar_pagamentos' %}" class="btn-nav">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="2"></rect><line x1="2" y1="10" x2="22" y2="10"></line></svg>
+                Pagamentos
             </a>
-
-            <a href="{% url 'ferias:listar_recibos' %}" class="rh-btn rh-btn-ghost">
-                    Ver Recibos
-                </a>
-
-            <button onclick="openCreateModal('modalPeriodo', '{% url 'ferias:registrar_periodo' %}', 'Novo Período Aquisitivo')" class="rh-btn rh-btn-primary">
-                + Período Aquisitivo
-            </button>
-            <button onclick="openCreateModal('modalFerias', '{% url 'ferias:registrar_ferias' %}', 'Registrar Férias Gozadas')" class="rh-btn rh-btn-primary">
-                + Férias Tiradas
-            </button>
-            <a href="{% url 'ferias:exportar_planilha_ferias' %}" class="btn btn-lg btn-success">
-            <i class="bi bi-file-earmark-spreadsheet me-2"></i>
-            Baixar Planilha Geral
-        </a>
+            <a href="{% url 'ferias:listar_recibos' %}" class="btn-nav">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+                Recibos
+            </a>
+            <a href="{% url 'ferias:exportar_planilha_ferias' %}" class="btn-nav" title="Baixar Planilha Geral">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                Exportar
+            </a>
         </div>
-    </header>
+    </div>
 
-    <main class="rh-grid" id="employeesGrid">
+    <div class="rh-grid" id="employeesGrid">
         {% for funcionario in funcionarios %}
         <div class="employee-card" data-name="{{ funcionario.nome|lower }}">
-            <div class="employee-head">
-                <div class="avatar">{{ funcionario.nome|slice:":2"|upper }}</div>
-                <div class="emp-info">
-                    <div class="emp-name">{{ funcionario.nome }}</div>
-                    <div class="emp-meta">
-                        <span><strong style="color:#0f172a">{{ funcionario.periodos_aquisitivos.count }}</strong> Períodos</span>
-                        <span>•</span>
-                        <a href="{% url 'banco_horas:registrar' %}?func={{ funcionario.id }}" style="color:var(--primary); text-decoration:none; font-weight:600; font-size:12px">Lançar Horas</a>
+            <div class="card-header">
+                <div class="user-info">
+                    <div class="avatar">{{ funcionario.nome|slice:":2"|upper }}</div>
+                    <div class="user-details">
+                        <h3>{{ funcionario.nome }}</h3>
+                        <span>{{ funcionario.funcao|default:"Colaborador" }}</span>
                     </div>
                 </div>
-                <div class="saldo-box">
-                    <div class="saldo-label">Saldo Total</div>
-                    <div class="saldo-value" id="saldo-total-{{ funcionario.id }}">--</div>
+                <div class="card-actions">
+                    <div class="saldo-badge">
+                        <small>Saldo Disponível</small>
+                        <strong id="saldo-display-{{ funcionario.id }}">--</strong>
+                    </div>
+                    <button onclick="openCreatePeriodo('{{ funcionario.id }}')" class="btn-action-sm">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                        Novo Período
+                    </button>
+                    <a href="{% url 'banco_horas:registrar' %}?func={{ funcionario.id }}" class="btn-ghost-sm" title="Lançar Horas">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+                    </a>
                 </div>
             </div>
 
-            <div class="rh-tabs">
-                <div class="rh-tab active" onclick="switchTab(this, 'periodos-{{ funcionario.id }}')">Períodos Aquisitivos</div>
-                <div class="rh-tab" onclick="switchTab(this, 'ferias-{{ funcionario.id }}')">Férias Tiradas</div>
+            <div class="tabs-container">
+                <div class="rh-tabs">
+                    <div class="rh-tab active" onclick="switchTab(this, 'periodos-{{ funcionario.id }}')">Períodos Aquisitivos</div>
+                    <div class="rh-tab" onclick="switchTab(this, 'ferias-{{ funcionario.id }}')">Histórico de Férias</div>
+                </div>
             </div>
 
             <div id="periodos-{{ funcionario.id }}" class="tab-content active">
-                <div class="rh-table-container">
-                    {% if funcionario.periodos_aquisitivos.all %}
-                    <table class="rh-table">
-                        <thead>
-                            <tr><th>Período</th><th>Dias</th><th>Tirados</th><th>Saldo</th><th style="width:50px"></th></tr>
-                        </thead>
-                        <tbody>
-                            {% for periodo in funcionario.periodos_aquisitivos.all %}
-                            <tr>
-                                <td><strong>{{ periodo.data_inicio|date:"d/m/Y" }}</strong> → {{ periodo.data_fim|date:"d/m/Y" }}</td>
-                                <td>{{ periodo.dias_direito }}</td>
-                                <td>{{ periodo.total_dias_tirados }}</td>
-                                <td><span class="calc-saldo" data-emp="{{ funcionario.id }}">{{ periodo.saldo_restante }}</span></td>
-                                <td style="text-align: right; overflow: visible;">
+                {% if funcionario.periodos_aquisitivos.all %}
+                <table class="rh-table">
+                    <thead>
+                        <tr>
+                            <th style="width: 40%;">Período</th>
+                            <th>Direito</th>
+                            <th>Tirados</th>
+                            <th>Saldo</th>
+                            <th style="text-align: right;">Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for periodo in funcionario.periodos_aquisitivos.all %}
+                        <tr>
+                            <td>
+                                <div class="periodo-dates">{{ periodo.data_inicio|date:"d/m/Y" }} a {{ periodo.data_fim|date:"d/m/Y" }}</div>
+                                {% if periodo.vencido %}
+                                <div class="periodo-meta" style="color:var(--danger)">Vencido</div>
+                                {% endif %}
+                            </td>
+                            <td>{{ periodo.dias_direito }}</td>
+                            <td>{{ periodo.total_dias_tirados }}</td>
+                            <td>
+                                <span class="calc-saldo" data-emp="{{ funcionario.id }}" style="font-weight:700; color: {% if periodo.saldo_restante < 0 %}var(--danger){% else %}var(--success){% endif %}">
+                                    {{ periodo.saldo_restante }}
+                                </span>
+                            </td>
+                            <td style="text-align: right;">
+                                <div style="display: flex; align-items: center; justify-content: flex-end; gap: 8px;">
+                                    {% if periodo.saldo_restante > 0 %}
+                                    <button class="btn-launch" onclick="openCreateFerias('{{ periodo.pk }}')">
+                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12h20"></path></svg>
+                                        Férias
+                                    </button>
+                                    {% endif %}
+                                    
                                     <div class="action-menu">
-                                        <button class="dots-btn" onclick="toggleMenu('menu-periodo-{{ periodo.pk }}')">
-                                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="1"/><circle cx="12" cy="5" r="1"/><circle cx="12" cy="19" r="1"/></svg>
+                                        <button class="btn-icon" onclick="toggleMenu('menu-p-{{ periodo.pk }}')">
+                                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="1"></circle><circle cx="12" cy="5" r="1"></circle><circle cx="12" cy="19" r="1"></circle></svg>
                                         </button>
-                                        <div id="menu-periodo-{{ periodo.pk }}" class="dropdown-content">
-                                            <button onclick="openEditPeriodo('{{ periodo.pk }}', '{% url 'ferias:editar_periodo' periodo.pk %}', 
-                                                '{{ periodo.funcionario.id }}', '{{ periodo.data_inicio|date:'Y-m-d' }}', 
-                                                '{{ periodo.data_fim|date:'Y-m-d' }}', '{{ periodo.dias_direito }}')">
+                                        <div id="menu-p-{{ periodo.pk }}" class="dropdown-content">
+                                            <button class="dropdown-item" onclick="openEditPeriodo('{{ periodo.pk }}', '{% url 'ferias:editar_periodo' periodo.pk %}', '{{ periodo.funcionario.id }}', '{{ periodo.data_inicio|date:'Y-m-d' }}', '{{ periodo.data_fim|date:'Y-m-d' }}', '{{ periodo.dias_direito }}')">
+                                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
                                                 Editar
                                             </button>
-                                            <button class="delete-item" onclick="openDeleteModal('{% url 'ferias:deletar_periodo' periodo.pk %}', 'Excluir Período Aquisitivo')">
+                                            <button class="dropdown-item delete" onclick="openDeleteModal('{% url 'ferias:deletar_periodo' periodo.pk %}', 'Excluir Período')">
+                                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
                                                 Excluir
                                             </button>
-                                            <div class="d-flex justify-content-end mb-3">
-</div>
                                         </div>
                                     </div>
-                                </td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                    {% else %}
-                        <div class="empty-state">Nenhum período aquisitivo registrado.</div>
-                    {% endif %}
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                {% else %}
+                <div style="text-align: center; padding: 20px; color: var(--text-muted); font-size: 14px;">
+                    Nenhum período aquisitivo cadastrado para este colaborador.
                 </div>
+                {% endif %}
             </div>
 
             <div id="ferias-{{ funcionario.id }}" class="tab-content">
-                <div class="rh-table-container">
-                    {% with has_ferias=False %}
-                        {% for periodo in funcionario.periodos_aquisitivos.all %}
-                            {% if periodo.ferias_registradas.exists %}{% with has_ferias=True %}{% endwith %}{% endif %}
-                        {% endfor %}
+                {% with has_ferias=False %}
+                    {% for periodo in funcionario.periodos_aquisitivos.all %}
+                        {% if periodo.ferias_registradas.exists %}{% with has_ferias=True %}{% endwith %}{% endif %}
+                    {% endfor %}
 
-                        <table class="rh-table" id="table-ferias-{{ funcionario.id }}">
-                            <thead><tr><th>Período referência</th><th>Dias</th><th>Tipo</th><th style="width:50px"></th></tr></thead>
-                            <tbody>
-                                {% for periodo in funcionario.periodos_aquisitivos.all %}
-                                    {% for ferias in periodo.ferias_registradas.all %}
-                                    <tr>
-                                        <td style="color:var(--muted); font-size:12px">{{ periodo.data_inicio|date:"d/m/Y" }} - {{ periodo.data_fim|date:"d/m/Y" }}</td>
-                                        <td>{{ ferias.dias_tirados }} {% if ferias.faltas_justificadas_descontadas %}<span style="color:var(--danger)">(-{{ ferias.faltas_justificadas_descontadas }})</span>{% endif %}</td>
-                                        <td>{% if ferias.ferias_no_recesso_final_ano %}Final do Ano{% else %} Carnaval {% endif %}</td>
-                                        <td style="text-align: right; overflow: visible;">
-                                            <div class="action-menu">
-                                                <button class="dots-btn" onclick="toggleMenu('menu-ferias-{{ ferias.pk }}')">
-                                                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="1"/><circle cx="12" cy="5" r="1"/><circle cx="12" cy="19" r="1"/></svg>
+                    <table class="rh-table" id="table-ferias-{{ funcionario.id }}">
+                        <thead>
+                            <tr>
+                                <th>Período Ref.</th>
+                                <th>Dias</th>
+                                <th>Tipo</th>
+                                <th>Observações</th>
+                                <th style="text-align: right;">Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for periodo in funcionario.periodos_aquisitivos.all %}
+                                {% for ferias in periodo.ferias_registradas.all %}
+                                <tr>
+                                    <td>
+                                        <span style="font-size: 12px; color: var(--text-muted);">{{ periodo.data_inicio|date:"d/m/Y" }} - {{ periodo.data_fim|date:"d/m/Y" }}</span>
+                                    </td>
+                                    <td style="font-weight: 600;">
+                                        {{ ferias.dias_tirados }} dias
+                                        {% if ferias.faltas_justificadas_descontadas %}
+                                        <span style="font-size: 11px; color: var(--danger); display:block;">({{ ferias.faltas_justificadas_descontadas }} faltas desc.)</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if ferias.ferias_no_recesso_final_ano %}
+                                            <span style="background: #e0e7ff; color: #3730a3; padding: 2px 8px; border-radius: 99px; font-size: 11px;">Recesso</span>
+                                        {% elif ferias.ferias_no_carnaval %}
+                                            <span style="background: #fae8ff; color: #86198f; padding: 2px 8px; border-radius: 99px; font-size: 11px;">Carnaval</span>
+                                        {% else %}
+                                            <span style="background: #f1f5f9; color: #475569; padding: 2px 8px; border-radius: 99px; font-size: 11px;">Normal</span>
+                                        {% endif %}
+                                    </td>
+                                    <td style="max-width: 150px; font-size: 12px; color: #64748b;">{{ ferias.observacoes|truncatechars:30|default:"-" }}</td>
+                                    <td style="text-align: right;">
+                                        <div class="action-menu">
+                                            <button class="btn-icon" onclick="toggleMenu('menu-f-{{ ferias.pk }}')">
+                                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="1"></circle><circle cx="12" cy="5" r="1"></circle><circle cx="12" cy="19" r="1"></circle></svg>
+                                            </button>
+                                            <div id="menu-f-{{ ferias.pk }}" class="dropdown-content">
+                                                <button class="dropdown-item" onclick="openEditFerias('{{ ferias.pk }}', '{% url 'ferias:editar_ferias' ferias.pk %}', '{{ ferias.periodo.id }}', '{{ ferias.dias_tirados }}', '{{ ferias.faltas_justificadas_descontadas }}', '{{ ferias.observacoes|escapejs }}')">
+                                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+                                                    Editar
                                                 </button>
-                                                <div id="menu-ferias-{{ ferias.pk }}" class="dropdown-content">
-                                                    <button onclick="openEditFerias('{{ ferias.pk }}', '{% url 'ferias:editar_ferias' ferias.pk %}', 
-                                                        '{{ ferias.periodo.id }}', '{{ ferias.dias_tirados }}', 
-                                                        '{{ ferias.faltas_justificadas_descontadas }}', '{{ ferias.observacoes|escapejs }}')">
-                                                        Editar
-                                                    </button>
-                                                    <button class="delete-item" onclick="openDeleteModal('{% url 'ferias:deletar_ferias' ferias.pk %}', 'Excluir Registro de Férias')">
-                                                        Excluir
-                                                    </button>
-                                                </div>
+                                                <button class="dropdown-item delete" onclick="openDeleteModal('{% url 'ferias:deletar_ferias' ferias.pk %}', 'Excluir Férias')">
+                                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                                                    Excluir
+                                                </button>
                                             </div>
-                                        </td>
-                                    </tr>
-                                    {% endfor %}
+                                        </div>
+                                    </td>
+                                </tr>
                                 {% endfor %}
-                            </tbody>
-                        </table>
-                        <script>
-                            if (document.getElementById('table-ferias-{{ funcionario.id }}').getElementsByTagName('tbody')[0].children.length === 0) {
-                                document.getElementById('table-ferias-{{ funcionario.id }}').style.display = 'none';
-                                document.write('<div class="empty-state">Nenhum registro de férias encontrado.</div>');
-                            }
-                        </script>
-                    {% endwith %}
-                </div>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                    <script>
+                         if (document.getElementById('table-ferias-{{ funcionario.id }}').getElementsByTagName('tbody')[0].children.length === 0) {
+                            document.getElementById('table-ferias-{{ funcionario.id }}').style.display = 'none';
+                            document.write('<div style="text-align: center; padding: 20px; color: var(--text-muted); font-size: 14px;">Nenhum registro de férias encontrado.</div>');
+                        }
+                    </script>
+                {% endwith %}
             </div>
         </div>
         {% empty %}
-        <div class="empty-state">Nenhum funcionário cadastrado.</div>
+        <div style="text-align: center; padding: 40px; color: var(--text-muted);">
+            Nenhum funcionário encontrado.
+        </div>
         {% endfor %}
-    </main>
+    </div>
 </div>
 
 <div id="modalPeriodo" class="modal-overlay">
     <div class="modal-window">
-        <form method="POST" id="formPeriodo" action="{% url 'ferias:registrar_periodo' %}">
+        <form method="POST" action="{% url 'ferias:registrar_periodo' %}">
             {% csrf_token %}
             <div class="modal-header">
-                <h3 class="modal-title" id="titlePeriodo">Novo Período Aquisitivo</h3>
-                <button type="button" class="btn-close" onclick="closeModal('modalPeriodo')">✕</button>
+                <h3 class="modal-title">Novo Período Aquisitivo</h3>
+                <button type="button" style="background:none; border:none; font-size:20px; cursor:pointer;" onclick="closeModal('modalPeriodo')">✕</button>
             </div>
             <div class="modal-body">
                 {% for field in form_periodo %}
-                <div class="form-group">
+                <div class="form-group" id="div_{{ field.name }}">
                     <label>{{ field.label }}</label>
                     {{ field }}
-                    {% if field.errors %}<div style="color:red; font-size:11px">{{ field.errors.0 }}</div>{% endif %}
+                    {% if field.errors %}<small style="color:var(--danger)">{{ field.errors.0 }}</small>{% endif %}
                 </div>
                 {% endfor %}
             </div>
             <div class="modal-footer">
-                <button type="button" class="rh-btn rh-btn-ghost" onclick="closeModal('modalPeriodo')">Cancelar</button>
-                <button type="submit" class="rh-btn rh-btn-primary">Salvar</button>
+                <button type="button" class="btn-ghost-sm" onclick="closeModal('modalPeriodo')">Cancelar</button>
+                <button type="submit" class="btn-action-sm">Salvar Período</button>
             </div>
         </form>
     </div>
@@ -334,25 +410,27 @@
 
 <div id="modalFerias" class="modal-overlay">
     <div class="modal-window">
-        <form method="POST" id="formFerias" action="{% url 'ferias:registrar_ferias' %}">
+        <form method="POST" action="{% url 'ferias:registrar_ferias' %}">
             {% csrf_token %}
             <div class="modal-header">
-                <h3 class="modal-title" id="titleFerias">Registrar Férias Tiradas</h3>
-                <button type="button" class="btn-close" onclick="closeModal('modalFerias')">✕</button>
+                <h3 class="modal-title">Registrar Férias</h3>
+                <button type="button" style="background:none; border:none; font-size:20px; cursor:pointer;" onclick="closeModal('modalFerias')">✕</button>
             </div>
             <div class="modal-body">
-                <p style="font-size:13px; color:var(--muted); margin-bottom:16px">Selecione o período aquisitivo de onde os dias serão descontados.</p>
+                <p style="font-size:13px; color:var(--text-muted); margin-bottom:16px; background:#f0f9ff; padding:10px; border-radius:6px; border:1px solid #bae6fd;">
+                    <strong>Dica:</strong> Verifique se o período selecionado possui saldo suficiente.
+                </p>
                 {% for field in form_ferias %}
-                <div class="form-group">
+                <div class="form-group" id="div_{{ field.name }}">
                     <label>{{ field.label }}</label>
                     {{ field }}
-                    {% if field.errors %}<div style="color:red; font-size:11px">{{ field.errors.0 }}</div>{% endif %}
+                    {% if field.errors %}<small style="color:var(--danger)">{{ field.errors.0 }}</small>{% endif %}
                 </div>
                 {% endfor %}
             </div>
             <div class="modal-footer">
-                <button type="button" class="rh-btn rh-btn-ghost" onclick="closeModal('modalFerias')">Cancelar</button>
-                <button type="submit" class="rh-btn rh-btn-primary">Salvar</button>
+                <button type="button" class="btn-ghost-sm" onclick="closeModal('modalFerias')">Cancelar</button>
+                <button type="submit" class="btn-action-sm">Salvar Registro</button>
             </div>
         </form>
     </div>
@@ -360,139 +438,186 @@
 
 <div id="modalDelete" class="modal-overlay">
     <div class="modal-window" style="max-width: 400px;">
-        <form method="POST" id="formDelete" action="">
+        <form method="POST" action="">
             {% csrf_token %}
             <div class="modal-header">
-                <h3 class="modal-title" id="titleDelete">Confirmar Exclusão</h3>
-                <button type="button" class="btn-close" onclick="closeModal('modalDelete')">✕</button>
+                <h3 class="modal-title">Confirmar Exclusão</h3>
+                <button type="button" style="background:none; border:none; font-size:20px; cursor:pointer;" onclick="closeModal('modalDelete')">✕</button>
             </div>
-            <div class="modal-body">
-                <p style="color: #475569;">Tem certeza que deseja remover este item? Esta ação não pode ser desfeita.</p>
+            <div class="modal-body" style="text-align: center; padding: 30px;">
+                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2" style="margin-bottom: 15px;"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+                <p id="deleteMsg">Tem certeza que deseja excluir este item? Esta ação é irreversível.</p>
             </div>
-            <div class="modal-footer">
-                <button type="button" class="rh-btn rh-btn-ghost" onclick="closeModal('modalDelete')">Cancelar</button>
-                <button type="submit" class="rh-btn rh-btn-danger">Sim, Excluir</button>
+            <div class="modal-footer" style="justify-content: center;">
+                <button type="button" class="btn-ghost-sm" onclick="closeModal('modalDelete')">Cancelar</button>
+                <button type="submit" class="btn-action-sm" style="background: var(--danger);">Sim, Excluir</button>
             </div>
         </form>
     </div>
 </div>
 
 <script>
-    // Controle dos Modais
-    function openModal(modalId) {
-        document.getElementById(modalId).classList.add('open');
+    /* --- LÓGICA DE MODAIS E INTERAÇÃO --- */
+
+    function openModal(id) {
+        document.getElementById(id).classList.add('open');
         document.body.style.overflow = 'hidden';
     }
-
-    function closeModal(modalId) {
-        document.getElementById(modalId).classList.remove('open');
+    
+    function closeModal(id) {
+        document.getElementById(id).classList.remove('open');
         document.body.style.overflow = '';
     }
 
-    document.querySelectorAll('.modal-overlay').forEach(modal => {
-        modal.addEventListener('click', function(e) {
-            if (e.target === this) closeModal(this.id);
+    // Fechar ao clicar fora
+    document.querySelectorAll('.modal-overlay').forEach(overlay => {
+        overlay.addEventListener('click', (e) => {
+            if(e.target === overlay) closeModal(overlay.id);
         });
     });
 
-    // Controle do Menu 3 Pontos
-    function toggleMenu(menuId) {
-        // Fecha outros menus antes de abrir este
-        document.querySelectorAll('.dropdown-content').forEach(menu => {
-            if (menu.id !== menuId) menu.classList.remove('show');
+    // Menus Dropdown (3 pontos)
+    function toggleMenu(id) {
+        // Fecha todos antes de abrir o atual
+        document.querySelectorAll('.dropdown-content').forEach(d => {
+            if(d.id !== id) d.classList.remove('show');
         });
-        const menu = document.getElementById(menuId);
+        const menu = document.getElementById(id);
         if(menu) menu.classList.toggle('show');
     }
-
-    // Fecha menu ao clicar fora
-    window.onclick = function(event) {
-        if (!event.target.closest('.dots-btn')) {
-            document.querySelectorAll('.dropdown-content').forEach(menu => {
-                menu.classList.remove('show');
-            });
+    
+    // Fechar dropdowns ao clicar fora
+    window.addEventListener('click', (e) => {
+        if (!e.target.closest('.action-menu')) {
+            document.querySelectorAll('.dropdown-content').forEach(d => d.classList.remove('show'));
         }
-    }
+    });
 
-    // Modal de Criação (Reset)
-    function openCreateModal(modalId, urlAction, title) {
-        const modal = document.getElementById(modalId);
+    /* --- FUNÇÕES DE AÇÃO (PREENCHIMENTO AUTOMÁTICO) --- */
+
+    // 1. Criar Período (Preenche o funcionário automaticamente)
+    function openCreatePeriodo(funcionarioId) {
+        const modal = document.getElementById('modalPeriodo');
         const form = modal.querySelector('form');
         form.reset();
-        form.action = urlAction;
-        modal.querySelector('.modal-title').innerText = title;
-        openModal(modalId);
+        form.action = "{% url 'ferias:registrar_periodo' %}";
+        modal.querySelector('.modal-title').innerText = "Novo Período Aquisitivo";
+        
+        // Seleciona o funcionário no select (ID padrão do Django é id_funcionario)
+        const selectFunc = document.getElementById('id_funcionario');
+        if(selectFunc) {
+            selectFunc.value = funcionarioId;
+            // Opcional: Bloquear o select para evitar mudança acidental
+            // selectFunc.style.pointerEvents = 'none'; 
+            // selectFunc.style.background = '#f1f5f9';
+        }
+        openModal('modalPeriodo');
     }
 
-    // Modal de Exclusão
-    function openDeleteModal(urlAction, title) {
-        const modal = document.getElementById('modalDelete');
-        modal.querySelector('form').action = urlAction;
-        if(title) document.getElementById('titleDelete').innerText = title;
-        openModal('modalDelete');
+    // 2. Criar Férias (Preenche o período automaticamente)
+    function openCreateFerias(periodoId) {
+        const modal = document.getElementById('modalFerias');
+        const form = modal.querySelector('form');
+        form.reset();
+        form.action = "{% url 'ferias:registrar_ferias' %}";
+        modal.querySelector('.modal-title').innerText = "Registrar Férias";
+
+        // Seleciona o período no select (ID padrão id_periodo)
+        const selectPeriodo = document.getElementById('id_periodo');
+        if(selectPeriodo) {
+            selectPeriodo.value = periodoId;
+        }
+        openModal('modalFerias');
     }
 
-    // Modal de Edição (Período)
-    function openEditPeriodo(pk, urlAction, funcId, start, end, days) {
+    // 3. Editar Período
+    function openEditPeriodo(pk, url, funcId, start, end, days) {
+        const modal = document.getElementById('modalPeriodo');
+        const form = modal.querySelector('form');
+        form.action = url;
+        modal.querySelector('.modal-title').innerText = "Editar Período";
+        
         document.getElementById('id_funcionario').value = funcId;
         document.getElementById('id_data_inicio').value = start;
         document.getElementById('id_data_fim').value = end;
         document.getElementById('id_dias_direito').value = days;
-
-        const modal = document.getElementById('modalPeriodo');
-        modal.querySelector('form').action = urlAction;
-        modal.querySelector('.modal-title').innerText = "Editar Período Aquisitivo";
+        
         openModal('modalPeriodo');
     }
 
-    // Modal de Edição (Férias)
-    function openEditFerias(pk, urlAction, periodoId, days, faltas, obs) {
+    // 4. Editar Férias
+    function openEditFerias(pk, url, periodoId, days, faltas, obs) {
+        const modal = document.getElementById('modalFerias');
+        const form = modal.querySelector('form');
+        form.action = url;
+        modal.querySelector('.modal-title').innerText = "Editar Férias";
+
         document.getElementById('id_periodo').value = periodoId;
         document.getElementById('id_dias_tirados').value = days;
         if(document.getElementById('id_faltas_justificadas_descontadas'))
-            document.getElementById('id_faltas_justificadas_descontadas').value = faltas;
+             document.getElementById('id_faltas_justificadas_descontadas').value = faltas;
         document.getElementById('id_observacoes').value = obs;
 
-        const modal = document.getElementById('modalFerias');
-        modal.querySelector('form').action = urlAction;
-        modal.querySelector('.modal-title').innerText = "Editar Férias";
         openModal('modalFerias');
     }
 
-    // Funções Utilitárias (Abas, Busca, Saldos)
-    function switchTab(tabElement, contentId) {
-        const card = tabElement.closest('.employee-card');
+    // 5. Excluir
+    function openDeleteModal(url, msg) {
+        const modal = document.getElementById('modalDelete');
+        modal.querySelector('form').action = url;
+        if(msg) document.querySelector('#deleteMsg').innerText = `Deseja excluir: ${msg}?`;
+        openModal('modalDelete');
+    }
+
+    /* --- UTILITÁRIOS --- */
+    function switchTab(el, id) {
+        const card = el.closest('.employee-card');
         card.querySelectorAll('.rh-tab').forEach(t => t.classList.remove('active'));
         card.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
-        tabElement.classList.add('active');
-        document.getElementById(contentId).classList.add('active');
+        el.classList.add('active');
+        document.getElementById(id).classList.add('active');
     }
 
     function filterEmployees() {
-        const query = document.getElementById('searchInput').value.toLowerCase();
+        const term = document.getElementById('searchInput').value.toLowerCase();
         document.querySelectorAll('.employee-card').forEach(card => {
-            card.style.display = card.getAttribute('data-name').includes(query) ? 'block' : 'none';
+            const name = card.getAttribute('data-name');
+            card.style.display = name.includes(term) ? 'block' : 'none';
         });
     }
 
+    // Calcular Saldos Totais no load
     document.addEventListener("DOMContentLoaded", function() {
-        const saldosPorFuncionario = {};
+        const saldos = {};
         document.querySelectorAll('.calc-saldo').forEach(el => {
             const empId = el.getAttribute('data-emp');
-            const valor = parseFloat(el.innerText.replace(',', '.')) || 0;
-            if (!saldosPorFuncionario[empId]) saldosPorFuncionario[empId] = 0;
-            saldosPorFuncionario[empId] += valor;
+            const val = parseFloat(el.innerText.replace(',', '.'));
+            if(!saldos[empId]) saldos[empId] = 0;
+            saldos[empId] += val;
         });
-        for (const [empId, total] of Object.entries(saldosPorFuncionario)) {
-            const displayEl = document.getElementById(`saldo-total-${empId}`);
-            if(displayEl) {
-                displayEl.innerText = total + " dias";
-                if(total < 0) displayEl.style.color = 'var(--danger)';
+
+        for (const [id, total] of Object.entries(saldos)) {
+            const el = document.getElementById(`saldo-display-${id}`);
+            if(el) {
+                el.innerText = total + " dias";
+                if(total < 0) {
+                    el.classList.add('negative');
+                    el.innerText += " (!)";
+                }
             }
         }
-        document.querySelectorAll('.saldo-value').forEach(el => {
-            if(el.innerText === '--') el.innerText = '0 dias';
-        });
+    });
+
+document.addEventListener("DOMContentLoaded", function() {
+        // Verifica se o backend mandou abrir algum modal (via contexto da view)
+        {% if abrir_modal %}
+            openModal('{{ abrir_modal }}');
+        {% endif %}
+
+        // OU: Verifica se o form de férias tem erros renderizados
+        {% if form_ferias.errors %}
+            openModal('modalFerias');
+        {% endif %}
     });
 </script>
 {% endblock %}

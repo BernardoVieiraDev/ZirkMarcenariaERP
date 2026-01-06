@@ -1,0 +1,27 @@
+<form method="POST" action="{{ action_url }}">
+    {% csrf_token %}
+    
+    <div class="modal-header">
+        <h3 class="modal-title">{{ titulo }}</h3>
+        <button type="button" class="btn-close" onclick="closeActionModal()">✕</button>
+    </div>
+
+    <div class="modal-body">
+        {% for field in form %}
+        <div class="form-group">
+            <label>{{ field.label }}</label>
+            {{ field }}
+            {% if field.errors %}
+                <div style="color: #e11d48; font-size: 12px; margin-top: 4px;">
+                    {{ field.errors.0 }}
+                </div>
+            {% endif %}
+        </div>
+        {% endfor %}
+    </div>
+
+    <div class="modal-footer">
+        <button type="button" class="btn-ghost" onclick="closeActionModal()">Cancelar</button>
+        <button type="submit" class="rh-btn-primary">Salvar</button>
+    </div>
+</form>

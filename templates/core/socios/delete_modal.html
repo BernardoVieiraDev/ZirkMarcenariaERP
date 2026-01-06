@@ -1,0 +1,19 @@
+<form method="POST" action="{{ action_url }}">
+    {% csrf_token %}
+    <div class="modal-header">
+        <h3 class="modal-title" style="color: #e11d48;">Excluir Lançamento?</h3>
+        <button type="button" class="btn-close" onclick="closeActionModal()">✕</button>
+    </div>
+    <div class="modal-body">
+        <p style="color: #475569; font-size: 14px;">
+            Tem certeza que deseja remover o lançamento de <strong>{{ object.categoria.nome }}</strong> no valor de <strong>R$ {{ object.valor }}</strong>?
+        </p>
+        <p style="color: #64748b; font-size: 13px; margin-top: 10px;">
+            Esta ação não pode ser desfeita.
+        </p>
+    </div>
+    <div class="modal-footer">
+        <button type="button" class="btn-ghost" onclick="closeActionModal()">Cancelar</button>
+        <button type="submit" class="rh-btn-primary" style="background: #e11d48;">Sim, Excluir</button>
+    </div>
+</form>

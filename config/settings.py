@@ -1,21 +1,53 @@
+import os
 from pathlib import Path
 import django.utils.encoding
-# Correção de compatibilidade para django-fernet-fields
+from dotenv import load_dotenv  # <--- NOVO: Importa a lib
+
+# Carrega variáveis do arquivo .env (se existir)
+load_dotenv()
+
+# Correção de compatibilidade
 django.utils.encoding.force_text = django.utils.encoding.force_str
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-# Quick-start development settings - unsuitable for production
-# See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
+# --- SEGURANÇA DAS CHAVES (Agora vindo do ambiente) ---
+# Se não encontrar no ambiente (ex: local sem .env), usa uma chave insegura apenas para rodar,
+# mas no servidor TEM QUE TER a variável configurada.
+SECRET_KEY = os.getenv('DJANGO_SECRET_KEY', 'chave-insegura-apenas-para-desenvolvimento-local-123')
 
-# SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = "django-insecure-t&059x1p(n6=+#u3vdr0gn^y79+26x48j(ss47ou(!^n#o8t+e"
+# Chave de Criptografia (Fernet)
+fernet_key_env = os.getenv('DJANGO_FERNET_KEY')
+if fernet_key_env:
+    FERNET_KEYS = [fernet_key_env]
+else:
+    # Chave de fallback APENAS para dev local. Em produção, use a variável de ambiente!
+    FERNET_KEYS = ['pPz3-FoPxGNLD9SglRd-0L65svR4TA3WqoqPFEgrYeg=']
 
-# SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
 
-ALLOWED_HOSTS = []
+# --- CONFIGURAÇÃO DE AMBIENTE ---
+# Detecta se estamos em produção verificando se as variáveis do banco PostgreSQL existem
+DB_NAME = os.getenv('DB_NAME')
+DB_USER = os.getenv('DB_USER')
+DB_PASSWORD = os.getenv('DB_PASSWORD')
+DB_HOST = os.getenv('DB_HOST')
+
+IS_PRODUCTION = all([DB_NAME, DB_USER, DB_PASSWORD, DB_HOST])
+
+if IS_PRODUCTION:
+    DEBUG = False
+    ALLOWED_HOSTS = ['*'] # No PythonAnywhere isso é seguro pois o host é validado pelo Nginx
+    
+    # --- SEGURANÇA HTTPS (CRÍTICO PARA PRODUÇÃO) ---
+    SECURE_SSL_REDIRECT = True      # Redireciona tudo para HTTPS
+    SESSION_COOKIE_SECURE = True    # Cookie de sessão só via HTTPS
+    CSRF_COOKIE_SECURE = True       # Cookie de proteção CSRF só via HTTPS
+    SECURE_BROWSER_XSS_FILTER = True
+else:
+    DEBUG = True
+    ALLOWED_HOSTS = []
+
 
 # Application definition
 INSTALLED_APPS = [
@@ -36,7 +68,7 @@ INSTALLED_APPS = [
     'apps.relatorios.apps.RelatoriosConfig',
     'apps.rescisao.apps.RescisaoConfig',
     'apps.socios.apps.SociosConfig',
-
+    'apps.financeiro.fluxo.apps.FluxoConfig',
 ]
 
 MIDDLEWARE = [
@@ -47,14 +79,13 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
-    # Middleware customizado deve ficar por último ou após o AuthenticationMiddleware
     "config.middleware.LoginRequiredMiddleware", 
 ]
-LOGIN_URL = '/'             # A raiz será a tela de login
-LOGIN_REDIRECT_URL = '/dashboard/'  # Para onde vai após logar
-LOGOUT_REDIRECT_URL = '/'   # Para onde vai após sair
 
-# Defina o caminho das URLs para o novo nome de pasta (config)
+LOGIN_URL = '/'
+LOGIN_REDIRECT_URL = '/dashboard/'
+LOGOUT_REDIRECT_URL = '/'
+
 ROOT_URLCONF = "config.urls"
 
 TEMPLATES = [
@@ -72,55 +103,51 @@ TEMPLATES = [
     },
 ]
 
-# Alteração no WSGI para o novo nome da pasta
 WSGI_APPLICATION = "config.wsgi.application"
 
-# Database
-# https://docs.djangoproject.com/en/5.2/ref/settings/#databases
-DATABASES = {
-    "default": {
-        "ENGINE": "django.db.backends.sqlite3",
-        "NAME": BASE_DIR / "db.sqlite3",
+# --- BANCO DE DADOS HÍBRIDO ---
+if IS_PRODUCTION:
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.postgresql',
+            'NAME': DB_NAME,
+            'USER': DB_USER,
+            'PASSWORD': DB_PASSWORD,
+            'HOST': DB_HOST,
+            'PORT': os.getenv('DB_PORT', '5432'),
+        }
     }
-}
+else:
+    print("⚠️  Ambiente LOCAL detectado: Usando SQLite.")
+    DATABASES = {
+        "default": {
+            "ENGINE": "django.db.backends.sqlite3",
+            "NAME": BASE_DIR / "db.sqlite3",
+        }
+    }
 
 # Password validation
-# https://docs.djangoproject.com/en/5.2/ref/settings/#auth-password-validators
 AUTH_PASSWORD_VALIDATORS = [
-    {
-        "NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator",
-    },
-    {
-        "NAME": "django.contrib.auth.password_validation.MinimumLengthValidator",
-    },
-    {
-        "NAME": "django.contrib.auth.password_validation.CommonPasswordValidator",
-    },
-    {
-        "NAME": "django.contrib.auth.password_validation.NumericPasswordValidator",
-    },
+    { "NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator", },
+    { "NAME": "django.contrib.auth.password_validation.MinimumLengthValidator", },
+    { "NAME": "django.contrib.auth.password_validation.CommonPasswordValidator", },
+    { "NAME": "django.contrib.auth.password_validation.NumericPasswordValidator", },
 ]
 
 # Internationalization
-# https://docs.djangoproject.com/en/5.2/topics/i18n/
 LANGUAGE_CODE = "pt-br"
 TIME_ZONE = 'America/Sao_Paulo'
 USE_I18N = True
 USE_L10N = True  
 USE_TZ = True
 
-# Static files (CSS, JavaScript, Images)
-# https://docs.djangoproject.com/en/5.2/howto/static-files/
+# Static files
 STATIC_URL = '/static/'
+STATIC_ROOT = BASE_DIR / "staticfiles"
 STATICFILES_DIRS = [BASE_DIR / 'static']
 
+# Arquivos de Mídia
+MEDIA_URL = '/media/'
+MEDIA_ROOT = BASE_DIR / 'media'
 
-STATIC_ROOT = BASE_DIR / "staticfiles"
-
-# Default primary key field type
-# https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
-
-FERNET_KEYS = [
-    'pPz3-FoPxGNLD9SglRd-0L65svR4TA3WqoqPFEgrYeg=',
-]

@@ -26,4 +26,6 @@ path('recibos/', views.listar_recibos, name='listar_recibos'),
     path('recibos/registrar/', views.registrar_recibo, name='registrar_recibo'),
     path('recibos/editar/<int:pk>/', views.editar_recibo, name='editar_recibo'),
     path('recibos/deletar/<int:pk>/', views.deletar_recibo, name='deletar_recibo'),
+
+
 ]

@@ -5,198 +5,292 @@
 
 {% block content %}
 <style>
+    /* === DESIGN SYSTEM (Baseado no Dashboard) === */
     :root {
-        --bg: #f8fafc; --card: #ffffff; 
-        --primary: #1976d2; 
-        --text-main: #1e293b; 
-        --text-muted: #64748b; 
-        --border: #e2e8f0; --radius: 12px;
-        --danger-text: #b91c1c;
-        /* Cores de Alerta */
-        --success: #166534; --success-bg: #dcfce7;
-        --danger: #991b1b; --danger-bg: #fee2e2;
+        --font-sans: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+        
+        --slate-50: #f8fafc;
+        --slate-100: #f1f5f9;
+        --slate-200: #e2e8f0;
+        --slate-300: #cbd5e1;
+        --slate-400: #94a3b8;
+        --slate-500: #64748b;
+        --slate-600: #475569;
+        --slate-900: #0f172a;
+        
+        --blue-50: #eff6ff;
+        --blue-100: #dbeafe;
+        --blue-500: #3b82f6;
+        --blue-600: #2563eb;
+        
+        --green-50: #ecfdf5;
+        --green-600: #059669;
+        
+        --red-50: #fef2f2;
+        --red-500: #ef4444;
+        
+        --white: #ffffff;
+        
+        /* Cores dos Cards de Topo */
+        --bg-blue-original: #1e3a5f;
     }
-    
-    .rh-container { max-width: 1200px; margin: 0 auto; padding: 24px 0; font-family: Inter, system-ui, sans-serif; color: var(--text-main); }
-    
-    .font-semibold { font-weight: 600; }
+
+    .dash-container {
+        font-family: var(--font-sans);
+        color: var(--slate-900);
+        padding-bottom: 60px;
+        max-width: 1200px;
+        margin: 0 auto;
+    }
 
     /* === HEADER === */
-    .page-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; flex-wrap: wrap; gap: 16px; }
+    .dash-header { 
+        margin-bottom: 32px; 
+        display: flex; 
+        justify-content: space-between; 
+        align-items: flex-end;
+        flex-wrap: wrap;
+        gap: 16px;
+    }
+    .dash-title { font-size: 24px; font-weight: 700; color: var(--slate-900); margin: 0; letter-spacing: -0.025em; }
+    .dash-subtitle { font-size: 14px; color: var(--slate-500); margin-top: 4px; }
+
+    /* Botões */
+    .btn-primary {
+        background-color: var(--blue-500);
+        color: white;
+        padding: 10px 20px;
+        border-radius: 10px;
+        font-weight: 600;
+        font-size: 14px;
+        border: none;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        transition: all 0.2s;
+        text-decoration: none;
+        box-shadow: 0 4px 6px -1px rgba(59, 130, 246, 0.2);
+    }
+    .btn-primary:hover { 
+        background-color: var(--blue-600); 
+        transform: translateY(-1px);
+    }
+
+    .btn-ghost { 
+        background: white; border: 1px solid var(--slate-300); color: var(--slate-600); 
+        padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 14px;
+        transition: all 0.2s;
+    }
+    .btn-ghost:hover { background-color: var(--slate-100); color: var(--slate-900); }
+
+    /* === STATS CARDS === */
+    .top-stats-grid { 
+        display: grid; 
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); 
+        gap: 16px; 
+        margin-bottom: 32px; 
+    }
+
+    .top-card {
+        border-radius: 16px; 
+        padding: 24px;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        color: white;
+        transition: transform 0.2s;
+    }
+    .top-card:hover { transform: translateY(-2px); }
     
-    .header-title h1 { font-size: 26px; font-weight: 700; color: #1e293b; margin: 0; letter-spacing: -0.5px; }
-    .header-title p { font-size: 14px; color: var(--text-muted); margin: 4px 0 0 0; }
+    .bg-blue-original { background-color: var(--bg-blue-original); }
 
-    /* Botão Novo */
-    .btn-new {
-        background: linear-gradient(180deg, var(--primary), #1565c0);
-        color: white; padding: 10px 20px; border-radius: 8px; text-decoration: none;
-        font-weight: 600; font-size: 14px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        display: inline-flex; align-items: center; gap: 8px; transition: transform 0.1s;
-        border: none; cursor: pointer;
-    }
-    .btn-new:hover { transform: translateY(-1px); filter: brightness(1.1); }
+    .top-label { font-size: 14px; font-weight: 500; opacity: 0.95; margin-bottom: 8px; }
+    .top-value { font-size: 30px; font-weight: 700; letter-spacing: -1px; line-height: 1; }
+    .top-sub { font-size: 13px; margin-top: 6px; opacity: 0.85; }
+    .top-icon { width: 48px; height: 48px; background: rgba(255,255,255,0.2); border-radius: 12px; display: flex; align-items: center; justify-content: center; }
 
-    /* === MENSAGENS / ALERTAS === */
-    .alert-box { 
-        padding: 12px 16px; border-radius: 8px; margin-bottom: 20px; font-size: 14px; 
-        border: 1px solid transparent; display: flex; align-items: center; justify-content: space-between;
-        box-shadow: 0 2px 5px rgba(0,0,0,0.05);
-    }
-    .alert-success { background: var(--success-bg); color: var(--success); border-color: #bbf7d0; }
-    .alert-error { background: var(--danger-bg); color: var(--danger); border-color: #fecaca; }
-    .alert-warning { background: #ffedd5; color: #9a3412; border-color: #fed7aa; }
-    .alert-info { background: #eff6ff; color: #1e40af; border-color: #dbeafe; }
-
-    /* === PAINEL DA TABELA === */
-    .content-panel {
-        background: white; border: 1px solid var(--border); border-radius: var(--radius);
-        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.02); overflow: visible;
+    /* === TABELA & SEARCH (Standard Card) === */
+    .standard-card {
+        background-color: var(--white);
+        border: 1px solid var(--slate-200);
+        border-radius: 16px;
+        box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05);
+        overflow: hidden;
     }
 
-    .toolbar { padding: 16px; border-bottom: 1px solid var(--border); background: #fff; display: flex; align-items: center; justify-content: space-between; }
-    .search-input { width: 100%; max-width: 350px; padding: 10px 16px; border-radius: 8px; border: 1px solid var(--border); font-size: 14px; }
-    
-    .count-badge { background: #f1f5f9; padding: 4px 10px; border-radius: 20px; font-size: 12px; color: #64748b; font-weight: 600; }
+    /* Barra de Busca */
+    .search-bar-row { 
+        padding: 20px 24px; 
+        border-bottom: 1px solid var(--slate-100); 
+        background-color: var(--white); 
+    }
+    .rh-search { position: relative; max-width: 400px; }
+    .rh-search input { 
+        width: 100%; 
+        padding: 10px 16px 10px 40px; 
+        border-radius: 10px; 
+        border: 1px solid var(--slate-300); 
+        font-size: 14px; 
+        color: var(--slate-900);
+        background-color: var(--slate-50);
+        transition: all 0.2s;
+    }
+    .rh-search svg {
+        position: absolute; left: 12px; top: 50%; transform: translateY(-50%);
+        color: var(--slate-400); pointer-events: none;
+    }
+    .rh-search input:focus { 
+        outline: none; 
+        border-color: var(--blue-500); 
+        background-color: #fff; 
+        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+    }
 
     /* Tabela */
-    .table-responsive { overflow-x: auto; min-height: 400px; }
+    .table-responsive { width: 100%; overflow-x: auto; }
     .rh-table { width: 100%; border-collapse: collapse; text-align: left; }
     
-    .rh-table thead th { 
-        background: #f8fafc; padding: 14px 20px; 
-        font-size: 12px; font-weight: 600; text-transform: uppercase; 
-        color: var(--text-muted); border-bottom: 1px solid var(--border); 
+    .rh-table thead { 
+        background-color: var(--slate-50);
+        border-bottom: 1px solid var(--slate-200);
+    }
+    .rh-table th { 
+        padding: 14px 24px; 
+        font-size: 12px; 
+        font-weight: 600; 
+        text-transform: uppercase; 
+        color: var(--slate-500); 
+        letter-spacing: 0.05em;
     }
     
-    .rh-table tbody td { 
-        padding: 16px 20px; font-size: 14px; vertical-align: middle; 
-        border-bottom: 1px solid #f1f5f9; color: var(--text-main); position: relative;
+    .rh-table td { 
+        padding: 16px 24px; 
+        font-size: 14px; 
+        vertical-align: middle; 
+        border-bottom: 1px solid var(--slate-100);
+        color: var(--slate-900);
     }
-    .rh-table tbody tr:hover { background: #f8fafc; }
+    .rh-table tr:last-child td { border-bottom: none; }
+    .rh-table tr:hover td { background-color: #fcfcfc; }
 
-    /* Avatar */
-    .col-profile { display: flex; align-items: center; gap: 12px; }
+    /* Elementos da Tabela */
+    .col-profile { display: flex; align-items: center; gap: 14px; }
     .avatar-circle { 
-        width: 40px; height: 40px; border-radius: 50%; 
-        background: #eff6ff; color: var(--primary); 
+        width: 42px; height: 42px; 
+        border-radius: 12px; 
+        background: var(--blue-50); 
+        color: var(--blue-600); 
+        border: 1px solid var(--blue-100);
         display: flex; align-items: center; justify-content: center; 
-        font-weight: 700; font-size: 14px; border: 1px solid #dbeafe; flex-shrink: 0; 
+        font-weight: 700; font-size: 14px; 
+        flex-shrink: 0; 
     }
-    
-    .profile-info div:first-child { font-weight: 600; color: var(--text-main); }
-    .profile-info div:last-child { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+    .text-main { font-weight: 600; color: var(--slate-900); }
+    .text-sub { font-size: 12px; color: var(--slate-500); margin-top: 2px; }
+    .text-val { font-weight: 600; font-variant-numeric: tabular-nums; }
 
-    /* Dados Bancários */
-    .bank-info { display: flex; flex-direction: column; gap: 2px; }
-    .bank-name { font-weight: 600; color: var(--text-main); font-size: 13px; }
-    .bank-details { font-size: 12px; color: var(--text-muted); }
-
-    /* === MENU DE AÇÕES === */
+    /* MENU DE AÇÕES */
     .action-menu { position: relative; display: inline-block; }
-    
     .dots-btn {
-        background: transparent; border: none; cursor: pointer; padding: 8px; border-radius: 50%;
-        color: var(--text-muted); transition: background 0.2s; display: flex; align-items: center; justify-content: center;
+        background: transparent; border: none; cursor: pointer; padding: 8px; border-radius: 8px;
+        color: var(--slate-400); transition: all 0.2s; display: flex; align-items: center; justify-content: center;
     }
-    .dots-btn:hover { background: #f1f5f9; color: var(--primary); }
+    .dots-btn:hover { background: var(--slate-100); color: var(--blue-500); }
     
     .dropdown-content {
-        display: none; position: absolute; right: 0; top: 100%; margin-top: 4px;
+        display: none; position: absolute; right: 0; top: 100%; margin-top: 4px; z-index: 50;
         background-color: white; min-width: 150px;
-        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
-        border-radius: 8px; border: 1px solid var(--border); z-index: 100;
-        overflow: hidden; animation: fadeIn 0.1s ease-out;
+        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        border-radius: 10px; border: 1px solid var(--slate-200); overflow: hidden;
     }
     .dropdown-content.show { display: block; }
-    
     .dropdown-content button {
-        color: var(--text-main); padding: 10px 16px; text-decoration: none;
-        display: flex; align-items: center; gap: 10px; font-size: 13px; width: 100%;
-        transition: background 0.1s; background: none; border: none; cursor: pointer; text-align: left;
+        background: none; border: none; cursor: pointer; text-align: left;
+        color: var(--slate-600); padding: 10px 16px; text-decoration: none; display: flex; align-items: center; gap: 10px; font-size: 13px; width: 100%; transition: background 0.1s;
     }
-    .dropdown-content button:hover { background-color: #f8fafc; color: var(--primary); }
-    .dropdown-content .delete-item:hover { background-color: #fef2f2; color: var(--danger-text); }
-    
-    @keyframes fadeIn { from { opacity: 0; transform: translateY(-5px); } to { opacity: 1; transform: translateY(0); } }
-    .empty-msg { text-align: center; padding: 40px; color: var(--text-muted); font-style: italic; }
+    .dropdown-content button:hover { background-color: var(--slate-50); color: var(--blue-600); }
+    .dropdown-content .delete-item:hover { background-color: var(--red-50); color: var(--red-500); }
 
-    /* === CSS MODAL (Global) === */
+    /* === MODAIS (Visual Dashboard Clean) === */
     .modal-overlay {
-        display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.75); 
-        z-index: 10000; overflow-y: auto; padding: 20px;
-        align-items: flex-start; justify-content: center; backdrop-filter: blur(3px);
+        display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.4); 
+        z-index: 1000; overflow-y: auto; padding: 20px;
+        align-items: flex-start; justify-content: center; backdrop-filter: blur(2px);
     }
     .modal-overlay.open { display: flex; }
     
     .modal-window {
-        background: white; width: 100%; max-width: 600px; margin: 30px auto; 
-        border-radius: 12px; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+        background: white; width: 100%; max-width: 600px; margin: 40px auto; 
+        border-radius: 16px; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
         display: flex; flex-direction: column; position: relative;
+        animation: modalFadeIn 0.2s ease-out;
     }
+    @keyframes modalFadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
     
-    .modal-header { padding: 20px 24px; border-bottom: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center; }
-    .modal-title { font-size: 18px; font-weight: 700; color: #1e293b; margin: 0; }
-    .btn-close { background: transparent; border: none; cursor: pointer; font-size: 24px; color: #94a3b8; padding: 4px; line-height: 1; }
-    .btn-close:hover { color: #0f172a; }
+    .modal-header {
+        padding: 24px; border-bottom: 1px solid var(--slate-100); display: flex; justify-content: space-between; align-items: center;
+        background: var(--slate-50); border-radius: 16px 16px 0 0;
+    }
+    .modal-title { font-size: 18px; font-weight: 700; color: var(--slate-900); margin: 0; }
+    .btn-close { background: transparent; border: none; cursor: pointer; font-size: 20px; color: var(--slate-400); transition: color 0.2s; }
+    .btn-close:hover { color: var(--slate-900); }
     
     .modal-body { padding: 24px; }
     
-    /* Estilos simples para o modal de criação local */
     .form-group { margin-bottom: 16px; }
-    .form-group label { display: block; font-size: 13px; font-weight: 600; color: #475569; margin-bottom: 6px; }
+    .form-group label { display: block; font-size: 13px; font-weight: 600; color: var(--slate-600); margin-bottom: 6px; }
     .form-group input, .form-group select, .form-group textarea { 
-        width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #cbd5e1; font-size: 14px; 
+        width: 100%; padding: 10px 12px; border-radius: 8px; border: 1px solid var(--slate-300); 
+        font-size: 14px; color: var(--slate-900); transition: border-color 0.15s;
     }
-    .form-group input:focus, .form-group select:focus { border-color: var(--primary); outline: none; }
+    .form-group input:focus, .form-group select:focus { 
+        border-color: var(--blue-500); outline: none; box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1); 
+    }
     
-    .modal-footer { padding: 16px 24px; border-top: 1px solid #e2e8f0; background: #f8fafc; border-radius: 0 0 12px 12px; display: flex; justify-content: flex-end; gap: 12px; }
-    .btn-ghost { background: white; border: 1px solid #cbd5e1; color: #475569; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: 600; }
-    .btn-ghost:hover { background: #f1f5f9; color: #1e293b; }
-    .rh-btn-primary { background: linear-gradient(180deg, var(--primary), #1565c0); color: white; padding: 10px 20px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 14px; border: none; cursor: pointer; }
+    .modal-footer { 
+        padding: 20px 24px; border-top: 1px solid var(--slate-100); background: var(--slate-50); 
+        border-radius: 0 0 16px 16px; display: flex; justify-content: flex-end; gap: 12px; 
+    }
+
+    .empty-msg { text-align: center; padding: 48px; color: var(--slate-400); }
 </style>
 
-<div class="rh-container">
+<div class="dash-container">
     
-    <header class="page-header">
-        <div class="header-title">
-            <h1>Arquitetas Parceiras</h1>
-            <p>Cadastro de profissionais e dados bancários para RT</p>
+    <div class="dash-header">
+        <div>
+            <h1 class="dash-title">Arquitetas Parceiras</h1>
+            <p class="dash-subtitle">Cadastro de profissionais e dados bancários para RT</p>
         </div>
         <div>
-            <button onclick="openModal('modalArquiteta')" class="btn-new">
+            <button onclick="openModal('modalArquiteta')" class="btn-primary">
                 <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
                 Nova Arquiteta
             </button>
         </div>
-    </header>
+    </div>
 
-    {# --- BLOCO DE MENSAGENS --- #}
-    {% if messages %}
-        <div id="messages-container">
-            {% for message in messages %}
-                <div class="alert-box alert-{{ message.tags }}">
-                    <span>{{ message }}</span>
-                    <button onclick="this.parentElement.remove()" style="background:none;border:none;cursor:pointer;color:inherit;font-weight:bold;">✕</button>
-                </div>
-            {% endfor %}
+    <div class="top-stats-grid">
+        <div class="top-card bg-blue-original">
+            <div>
+                <div class="top-label">Total Parceiras</div>
+                <div class="top-value">{{ arquitetas.count|default:"0" }}</div>
+                <div class="top-sub">Profissionais cadastrados</div>
+            </div>
+            <div class="top-icon">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+            </div>
         </div>
-        <script>
-            setTimeout(function() {
-                const msgs = document.querySelectorAll('.alert-box');
-                msgs.forEach(m => {
-                    m.style.transition = 'opacity 0.5s ease';
-                    m.style.opacity = '0';
-                    setTimeout(() => m.remove(), 500);
-                });
-            }, 5000);
-        </script>
-    {% endif %}
+    </div>
 
-    <div class="content-panel">
-        <div class="toolbar">
-            <input id="searchInput" class="search-input" type="search" placeholder="Buscar por nome, CPF ou banco..." onkeyup="filterTable()">
-            <span class="count-badge">{{ arquitetas.count }} Registros</span>
+    <div class="standard-card">
+        <div class="search-bar-row">
+            <div class="rh-search">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                <input id="searchInput" type="search" placeholder="Buscar por nome, CPF ou banco..." onkeyup="filterTable()">
+            </div>
         </div>
 
         <div class="table-responsive">
@@ -206,7 +300,7 @@
                         <th width="40%">Arquiteta</th>
                         <th width="20%">CPF</th>
                         <th width="30%">Dados Bancários</th>
-                        <th width="10%" style="text-align: right;">Ações</th>
+                        <th width="10%"></th>
                     </tr>
                 </thead>
                 <tbody id="tableBody">
@@ -217,21 +311,21 @@
                                 <div class="avatar-circle">
                                     {{ arquiteta.nome|slice:":2"|upper }}
                                 </div>
-                                <div class="profile-info">
-                                    <div class="search-name">{{ arquiteta.nome }}</div>
-                                    <div style="font-size: 11px;">Parceiro Cadastrado</div>
+                                <div>
+                                    <div class="text-main search-name">{{ arquiteta.nome }}</div>
+                                    <div class="text-sub">Parceiro Cadastrado</div>
                                 </div>
                             </div>
                         </td>
-                        <td style="color: var(--text-main);">
+                        <td class="text-main">
                             {{ arquiteta.cpf|default:"-" }}
                         </td>
                         <td>
-                            <div class="bank-info search-bank">
-                                <span class="bank-name">{{ arquiteta.banco|default:"Banco não informado" }}</span>
-                                <span class="bank-details" style="color: var(--text-muted);">
+                            <div class="search-bank">
+                                <div class="text-main">{{ arquiteta.banco|default:"Banco não informado" }}</div>
+                                <div class="text-sub">
                                     Ag: {{ arquiteta.agencia|default:"-" }} | CC: {{ arquiteta.conta|default:"-" }}
-                                </span>
+                                </div>
                             </div>
                         </td>
                         <td style="text-align: right;">
@@ -241,12 +335,13 @@
                                 </button>
                                 
                                 <div id="menu-{{ arquiteta.pk }}" class="dropdown-content">
-                                    {# Botões atualizados para chamar a função AJAX #}
                                     <button onclick="openRemoteModal('{% url 'comissionamento:arquiteta_edit' pk=arquiteta.pk %}')">
-                                        ✏️ Editar
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/></svg>
+                                        Editar
                                     </button>
                                     <button onclick="openRemoteModal('{% url 'comissionamento:arquiteta_delete' pk=arquiteta.pk %}')" class="delete-item">
-                                        🗑️ Excluir
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>
+                                        Excluir
                                     </button>
                                 </div>
                             </div>
@@ -273,22 +368,20 @@
             </div>
             
             <div class="modal-body">
-                <div style="display: grid; gap: 16px;">
-                    {% for field in form %}
-                    <div class="form-group">
-                        <label>{{ field.label }}</label>
-                        {{ field }}
-                        {% if field.errors %}
-                            <div style="color:var(--danger-text); font-size:11px; margin-top:2px;">{{ field.errors.0 }}</div>
-                        {% endif %}
-                    </div>
-                    {% endfor %}
+                {% for field in form %}
+                <div class="form-group">
+                    <label>{{ field.label }}</label>
+                    {{ field }}
+                    {% if field.errors %}
+                        <div style="color:var(--red-500); font-size:11px; margin-top:2px;">{{ field.errors.0 }}</div>
+                    {% endif %}
                 </div>
+                {% endfor %}
             </div>
             
             <div class="modal-footer">
                 <button type="button" class="btn-ghost" onclick="closeModal('modalArquiteta')">Cancelar</button>
-                <button type="submit" class="rh-btn-primary">Salvar Cadastro</button>
+                <button type="submit" class="btn-primary">Salvar Cadastro</button>
             </div>
         </form>
     </div>
@@ -296,12 +389,12 @@
 
 <div id="modalGeneric" class="modal-overlay">
     <div class="modal-window" id="modalGenericContent">
-        <div style="text-align:center; padding:40px; color:#64748b;">Carregando...</div>
+        <div style="text-align:center; padding:40px; color:var(--slate-400);">Carregando...</div>
     </div>
 </div>
 
 <script>
-    // --- Controle do Modal Local ---
+    // --- Controle de Modais ---
     function openModal(id) {
         document.getElementById(id).classList.add('open');
         document.body.style.overflow = 'hidden';
@@ -313,13 +406,16 @@
         document.body.style.overflow = '';
     }
 
-    // --- Controle do Modal Remoto (AJAX) ---
+    document.querySelectorAll('.modal-overlay').forEach(m => {
+        m.addEventListener('click', e => { if(e.target === m) closeModal(m.id); });
+    });
+
+    // --- Modal Remoto (AJAX) ---
     function openRemoteModal(url) {
         const modal = document.getElementById('modalGeneric');
         const content = document.getElementById('modalGenericContent');
         
-        // Limpa e mostra loading
-        content.innerHTML = '<div style="text-align:center; padding:40px; color:#64748b;">Carregando...</div>';
+        content.innerHTML = '<div style="text-align:center; padding:40px; color:var(--slate-400);">Carregando...</div>';
         modal.classList.add('open');
         document.body.style.overflow = 'hidden';
 
@@ -329,25 +425,25 @@
                 const parser = new DOMParser();
                 const doc = parser.parseFromString(html, 'text/html');
                 
-                // Tenta pegar o formulário completo (que já tem header/body/footer)
+                // Tenta pegar o formulário completo
                 let newContent = doc.querySelector('form');
                 
                 if (newContent) {
                     content.innerHTML = newContent.outerHTML;
-                    // Reexecuta scripts se houver
                     const scripts = content.getElementsByTagName("script");
                     for (let i = 0; i < scripts.length; i++) {
                         eval(scripts[i].innerText);
                     }
                 } else {
-                    // Fallback
+                    // Fallback para página de confirmação
+                    let fallback = doc.querySelector('.container') || doc.body;
                     content.innerHTML = `
                         <div class="modal-header">
                             <h3 class="modal-title">Ação</h3>
                             <button type="button" class="btn-close" onclick="closeModal('modalGeneric')">✕</button>
                         </div>
                         <div class="modal-body">
-                            ${doc.body.innerHTML}
+                            ${fallback.innerHTML}
                         </div>
                     `;
                 }
@@ -356,7 +452,7 @@
                 console.error(err);
                 content.innerHTML = `
                     <div class="modal-header">
-                        <h3 class="modal-title" style="color:red">Erro</h3>
+                        <h3 class="modal-title" style="color:var(--red-500)">Erro</h3>
                         <button type="button" class="btn-close" onclick="closeModal('modalGeneric')">✕</button>
                     </div>
                     <div class="modal-body">Erro de conexão. Tente novamente.</div>
@@ -364,25 +460,22 @@
             });
     }
 
-    // Fechar ao clicar fora
-    document.querySelectorAll('.modal-overlay').forEach(modal => {
-        modal.addEventListener('click', function(e) {
-            if (e.target === this) closeModal(this.id);
-        });
-    });
-
-    // Filtro da tabela
+    // --- Filtro da Tabela ---
     function filterTable() {
         const query = document.getElementById('searchInput').value.toLowerCase();
         const rows = document.querySelectorAll('.search-row');
         
         rows.forEach(row => {
-            const text = row.innerText.toLowerCase();
+            // Concatena textos relevantes para busca
+            const name = row.querySelector('.search-name').textContent.toLowerCase();
+            const bank = row.querySelector('.search-bank').textContent.toLowerCase();
+            const text = name + " " + bank;
+            
             row.style.display = text.includes(query) ? '' : 'none';
         });
     }
 
-    // Menu Dropdown
+    // --- Menu Dropdown ---
     function toggleMenu(menuId) {
         document.querySelectorAll('.dropdown-content').forEach(menu => {
             if (menu.id !== menuId) menu.classList.remove('show');

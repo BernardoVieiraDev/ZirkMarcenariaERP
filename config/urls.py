@@ -12,7 +12,7 @@ path('', auth_views.LoginView.as_view(
     ), name='login'),
 
     path('logout/', auth_views.LogoutView.as_view(), name='logout'),
-    
+    path('analytics/', include('apps.analytics.urls')),
     path('admin/', admin.site.urls),
     path('dashboard/',  include("apps.dashboard.urls")),
     path('rescisao/', include('apps.rescisao.urls')),
@@ -24,6 +24,7 @@ path('', auth_views.LoginView.as_view(
     path('comissionamento/', include('apps.comissionamento.urls')),
     path('relatorios/', include("apps.relatorios.urls")),
     path('socios/', include('apps.socios.urls')),
+    path('financeiro/fluxo/', include('apps.financeiro.fluxo.urls')),
 ]
 
 

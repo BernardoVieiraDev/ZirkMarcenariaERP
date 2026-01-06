@@ -1,90 +1,130 @@
-
 from django.db import models
 from django.db.models import Sum
+from decimal import Decimal
 
-
-class Receber(models.Model):
-    TIPO_CHOICES = [
-            ('VISTA', 'À Vista'),
-            ('PRAZO', 'A Prazo'),
-        ]
-        
-    tipo_recebimento = models.CharField(
-            max_length=10, 
-            choices=TIPO_CHOICES, 
-            default='PRAZO',
-            verbose_name="Classificação Gerencial"
-        )
-
-    forma_de_recebimento = models.CharField('Forma de recebimento', max_length=255, null=True)
-    data_vencimento = models.DateField('Data vencimento', null=True, blank=True)
-    cliente = models.CharField('Cliente', max_length=255, null=True)
-    categoria =  models.CharField('Categoria', max_length=255, null=True)
-    valor = models.DecimalField('Valor a ser recebido', max_digits=12, decimal_places=2, null=True)
-    valor_estoque = models.DecimalField('Valor em estoque', max_digits=12, decimal_places=2, null=True)
-    observacoes = models.CharField('Observações', max_length=255, blank=True)
-    data_pagamento = models.DateField('Data pagamento', null=True, blank=True)
-    status = models.CharField('Status', max_length=30, default='Agendado')
-
-
-    def __str__(self):
-        return f"{self.cliente} - {self.valor}"
-
-
+# --- Models de Apoio (Restaurados) ---
 
 class CaixaDiario(models.Model):
     TIPO_CHOICES = [
-        ('E', 'Entrada (+)'),
-        ('S', 'Saída (-)'),
+        ('E', 'Entrada'),
+        ('S', 'Saída'),
     ]
-
-    data = models.DateField('Data', default=models.functions.Now)
-    tipo = models.CharField('Tipo', max_length=1, choices=TIPO_CHOICES, default='S')
-    descricao = models.CharField('Histórico/Descrição', max_length=255)
-    valor = models.DecimalField('Valor (R$)', max_digits=12, decimal_places=2)
-    observacoes = models.TextField('Observações', blank=True, null=True)
-    
-    # Metadados para ordenação
-    created_at = models.DateTimeField(auto_now_add=True)
-
-    class Meta:
-        verbose_name = "Lançamento de Caixa"
-        verbose_name_plural = "Caixa Diário"
-        ordering = ['-data', '-created_at']
+    data = models.DateField()
+    historico = models.CharField(max_length=255)
+    tipo = models.CharField(max_length=1, choices=TIPO_CHOICES)
+    valor = models.DecimalField(max_digits=10, decimal_places=2)
 
     def __str__(self):
-        return f"{self.data} - {self.descricao} ({self.get_tipo_display()})"
-    
-
+        return f"{self.data} - {self.historico} - {self.valor}"
 
 class Banco(models.Model):
-    nome = models.CharField('Nome do Banco', max_length=100)
-    agencia = models.CharField('Agência', max_length=20, blank=True, null=True)
-    conta = models.CharField('Conta', max_length=30, blank=True, null=True)
-    saldo_inicial = models.DecimalField('Saldo Inicial da Conta', max_digits=12, decimal_places=2, default=0.00)
-    
+    nome = models.CharField(max_length=100)
+    agencia = models.CharField(max_length=20, blank=True, null=True)
+    conta = models.CharField(max_length=20, blank=True, null=True)
+    saldo_inicial = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal('0.00'))
+
     def __str__(self):
-        return f"{self.nome} (Ag: {self.agencia} / CC: {self.conta})"
+        return self.nome
 
 class MovimentoBanco(models.Model):
     TIPO_CHOICES = [
-        ('E', 'Entrada (+)'),
-        ('S', 'Saída (-)'),
+        ('E', 'Entrada'),
+        ('S', 'Saída'),
     ]
-
-    banco = models.ForeignKey(Banco, on_delete=models.CASCADE, verbose_name="Banco/Conta")
-    data = models.DateField('Data', default=models.functions.Now)
-    tipo = models.CharField('Tipo', max_length=1, choices=TIPO_CHOICES, default='S')
-    descricao = models.CharField('Histórico/Descrição', max_length=255)
-    valor = models.DecimalField('Valor (R$)', max_digits=12, decimal_places=2)
-    observacoes = models.TextField('Observações', blank=True, null=True)
-    
-    created_at = models.DateTimeField(auto_now_add=True)
-
-    class Meta:
-        verbose_name = "Movimento Bancário"
-        verbose_name_plural = "Movimentações Bancárias"
-        ordering = ['-data', '-created_at']
+    banco = models.ForeignKey(Banco, on_delete=models.CASCADE, related_name='movimentos')
+    data = models.DateField()
+    historico = models.CharField(max_length=255)
+    tipo = models.CharField(max_length=1, choices=TIPO_CHOICES)
+    valor = models.DecimalField(max_digits=10, decimal_places=2)
 
     def __str__(self):
-        return f"{self.banco} - {self.descricao} ({self.valor})"
+        return f"{self.banco} - {self.data} - {self.valor}"
+
+
+# --- Model Principal ---
+
+class Receber(models.Model):
+    TIPO_CHOICES = [
+        ('VISTA', 'À Vista'),
+        ('PRAZO', 'A Prazo'),
+    ]
+    
+    class FormaRecebimento(models.TextChoices):
+        DINHEIRO = 'DINHEIRO', 'Dinheiro'
+        PIX = 'PIX', 'Pix'
+        DEBITO = 'DEBITO', 'Cartão de Débito'
+        CREDITO = 'CREDITO', 'Cartão de Crédito'
+        BOLETO = 'BOLETO', 'Boleto'
+        TRANSFERENCIA = 'TRANSFERENCIA', 'Transferência'
+        OUTROS = 'OUTROS', 'Outros'
+
+
+    banco_destino = models.ForeignKey(
+        'Banco', 
+        on_delete=models.SET_NULL, 
+        null=True, 
+        blank=True, 
+        verbose_name="Conta Bancária (Destino)"
+    )
+    
+    # Campos de vínculo interno (para o sistema saber qual linha do extrato pertence a este recebimento)
+    movimento_banco = models.OneToOneField(
+        'MovimentoBanco', 
+        on_delete=models.SET_NULL, 
+        null=True, 
+        blank=True, 
+        related_name='recebimento_origem'
+    )
+    movimento_caixa = models.OneToOneField(
+        'CaixaDiario', 
+        on_delete=models.SET_NULL, 
+        null=True, 
+        blank=True, 
+        related_name='recebimento_origem'
+    )
+    # Campos Básicos
+    descricao = models.CharField("Descrição", max_length=255, blank=True, null=True)
+    cliente = models.CharField("Cliente", max_length=255, blank=True, null=True)
+    categoria = models.CharField("Categoria", max_length=255, blank=True, null=True)
+    
+    # Valores e Datas
+    valor = models.DecimalField("Valor Previsto", max_digits=10, decimal_places=2)
+    data_vencimento = models.DateField("Data de Vencimento")
+    
+    # Recebimento Real
+    valor_recebido = models.DecimalField(
+        "Valor Recebido", 
+        max_digits=10, 
+        decimal_places=2,
+        null=True, 
+        default=Decimal('0.00'), 
+        blank=True
+    )
+    data_recebimento = models.DateField("Data do Recebimento", blank=True, null=True)
+    
+    # Classificação
+    tipo_recebimento = models.CharField(
+        "Tipo de Recebimento",  # Alterado para algo mais claro.
+        max_length=10,
+        choices=TIPO_CHOICES,
+        default='VISTA'
+    )
+    
+    forma_recebimento = models.CharField(
+        "Forma de Pagamento",
+        max_length=20,
+        choices=FormaRecebimento.choices,
+        default=FormaRecebimento.OUTROS
+    )
+
+    status = models.CharField(
+        max_length=20, 
+        choices=[('Pendente', 'Pendente'), ('Recebido', 'Recebido')],
+        default='Pendente'
+    )
+    
+    observacoes = models.TextField("Observações", blank=True, null=True)
+
+    def __str__(self):
+        return f"{self.descricao} - {self.valor}"
+

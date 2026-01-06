@@ -1,12 +1,12 @@
 from datetime import datetime
-from django.shortcuts import render, redirect, get_object_or_404
+
 from django.db.models import Sum
 from django.http import HttpResponse  # Adicionar nos imports
-from django.shortcuts import redirect, render
+from django.shortcuts import get_object_or_404, redirect, render
 
 from .forms import LancamentoSocioForm, SocioForm  # <--- Importe o novo form
 from .models import CategoriaSocio, LancamentoSocio, Socio
-from .services import SocioExcelService 
+from .services import SocioExcelService
 
 
 def registrar_despesa(request):
@@ -14,12 +14,20 @@ def registrar_despesa(request):
         form = LancamentoSocioForm(request.POST)
         if form.is_valid():
             form.save()
-            # MUDAR O REDIRECT PARA O EXTRATO
             return redirect('socios:listar_lancamentos') 
     else:
         form = LancamentoSocioForm()
     
+    # Lógica para Modal Dinâmico
+    if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+        return render(request, 'core/socios/form_modal.html', {
+            'form': form,
+            'titulo': 'Novo Lançamento',
+            'action_url': request.path
+        })
+    
     return render(request, 'core/socios/registrar_despesa.html', {'form': form})
+
 def relatorio_anual(request):
     # 1. Filtros
     ano_selecionado = request.GET.get('ano', datetime.now().year)
@@ -143,7 +151,6 @@ def listar_lancamentos(request):
     }
     return render(request, 'core/socios/lista_lancamentos.html', context)
 
-
 def editar_lancamento(request, pk):
     lancamento = get_object_or_404(LancamentoSocio, pk=pk)
     
@@ -151,15 +158,21 @@ def editar_lancamento(request, pk):
         form = LancamentoSocioForm(request.POST, instance=lancamento)
         if form.is_valid():
             form.save()
-            # Volta para o extrato após editar
             return redirect('socios:listar_lancamentos')
     else:
-        # Abre o formulário preenchido com os dados atuais
         form = LancamentoSocioForm(instance=lancamento)
+    
+    # Lógica para Modal Dinâmico
+    if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+        return render(request, 'core/socios/form_modal.html', {
+            'form': form, 
+            'titulo': 'Editar Lançamento',
+            'action_url': request.path
+        })
     
     return render(request, 'core/socios/registrar_despesa.html', {
         'form': form, 
-        'titulo': 'Editar Lançamento' # Passamos um título para saber que é edição
+        'titulo': 'Editar Lançamento'
     })
 
 def excluir_lancamento(request, pk):
@@ -169,5 +182,11 @@ def excluir_lancamento(request, pk):
         lancamento.delete()
         return redirect('socios:listar_lancamentos')
     
-    # Renderiza uma telinha simples de confirmação
+    # Lógica para Modal Dinâmico
+    if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+        return render(request, 'core/socios/delete_modal.html', {
+            'object': lancamento,
+            'action_url': request.path
+        })
+    
     return render(request, 'core/socios/confirmar_exclusao.html', {'item': lancamento})

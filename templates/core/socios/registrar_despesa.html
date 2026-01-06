@@ -1,50 +1,245 @@
 {% extends 'core/base.html' %}
+{% load static %}
 
 {% block content %}
-<div class="container mt-4">
-    <div class="card">
-        <div class="col-md-6 mb-3">
-    <label>Sócio</label>
-    <div class="input-group">
-        {{ form.socio }}
-        <a href="{% url 'socios:cadastrar_socio' %}" class="btn btn-outline-primary" title="Adicionar Novo Sócio">
-            +
-        </a>
-    </div>
-    <div class="form-text">Selecione o sócio ou clique no + para criar um novo.</div>
-</div>
-        <div class="card-header bg-primary text-white">
-            <h4>Registrar Despesa/Receita de Sócio</h4>
+<style>
+    /* === Zirk Design System - Formulários === */
+    :root {
+        --text-dark: #0f172a;
+        --text-main: #334155;
+        --text-muted: #64748b;
+        --border-color: #e2e8f0;
+        --primary-blue: #1f6feb;
+        --primary-blue-hover: #1a5dbd;
+        --surface: #ffffff;
+    }
+
+    .page-container {
+        width: 100%;
+        padding: 0 20px;
+        font-family: Inter, -apple-system, sans-serif;
+        color: var(--text-main);
+    }
+
+    /* === Header === */
+    .page-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 32px;
+    }
+
+    .header-left { display: flex; align-items: center; gap: 14px; }
+    
+    .header-icon {
+        height: 48px; width: 48px;
+        background-color: #eff6ff;
+        border-radius: 12px;
+        display: flex; align-items: center; justify-content: center;
+        color: var(--primary-blue);
+        box-shadow: 0 2px 4px rgba(31, 111, 235, 0.05);
+        font-size: 20px;
+    }
+
+    .header-content h1 { font-size: 22px; font-weight: 700; color: var(--text-dark); margin: 0; }
+    .header-content p { font-size: 13px; color: var(--text-muted); margin: 0; }
+
+    /* === Card do Formulário === */
+    .zirk-card {
+        background: var(--surface);
+        border-radius: 16px;
+        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -2px rgba(0, 0, 0, 0.025);
+        border: 1px solid var(--border-color);
+        padding: 32px;
+    }
+
+    /* Labels e Inputs */
+    .zirk-label {
+        display: block;
+        font-size: 0.8rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        color: var(--text-muted);
+        margin-bottom: 8px;
+        letter-spacing: 0.025em;
+    }
+
+    /* Estilização Geral dos Inputs */
+    .zirk-card input, .zirk-card select, .zirk-card textarea {
+        display: block;
+        width: 100%;
+        padding: 10px 12px;
+        font-size: 0.95rem;
+        font-weight: 500;
+        line-height: 1.5;
+        color: var(--text-dark);
+        background-color: #fff;
+        border: 1px solid var(--border-color);
+        border-radius: 10px;
+        transition: all 0.2s ease-in-out;
+    }
+
+    .zirk-card input:focus, .zirk-card select:focus, .zirk-card textarea:focus {
+        border-color: var(--primary-blue);
+        outline: 0;
+        box-shadow: 0 0 0 4px rgba(31, 111, 235, 0.1);
+    }
+
+    /* Input Group Personalizado (Para o botão +) */
+    .zirk-input-group {
+        display: flex;
+        align-items: stretch;
+        width: 100%;
+    }
+    
+    .zirk-input-group select {
+        border-top-right-radius: 0;
+        border-bottom-right-radius: 0;
+        border-right: 0;
+    }
+
+    .btn-add-socio {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0 16px;
+        background-color: #f8fafc;
+        border: 1px solid var(--border-color);
+        border-left: 0;
+        border-top-right-radius: 10px;
+        border-bottom-right-radius: 10px;
+        color: var(--primary-blue);
+        text-decoration: none;
+        transition: all 0.2s;
+        font-weight: 600;
+        font-size: 18px;
+    }
+    .btn-add-socio:hover {
+        background-color: #eff6ff;
+        color: var(--primary-blue-hover);
+    }
+
+    /* Botões de Ação */
+    .actions-row {
+        display: flex;
+        justify-content: flex-end;
+        gap: 12px;
+        margin-top: 32px;
+        padding-top: 24px;
+        border-top: 1px solid var(--border-color);
+    }
+
+    .btn-zirk {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 10px 24px;
+        border-radius: 10px;
+        font-size: 14px;
+        font-weight: 600;
+        text-decoration: none;
+        transition: all 0.2s;
+        cursor: pointer;
+    }
+
+    .btn-save {
+        background: var(--primary-blue);
+        color: white;
+        border: none;
+        box-shadow: 0 4px 6px rgba(31, 111, 235, 0.2);
+    }
+    .btn-save:hover {
+        background: var(--primary-blue-hover);
+        transform: translateY(-1px);
+        box-shadow: 0 6px 8px rgba(31, 111, 235, 0.25);
+    }
+
+    .btn-cancel {
+        background: white;
+        color: var(--text-muted);
+        border: 1px solid var(--border-color);
+    }
+    .btn-cancel:hover {
+        background: #f8fafc;
+        color: var(--text-dark);
+        border-color: #cbd5e1;
+    }
+
+</style>
+
+<div class="page-container">
+    
+    <div class="page-header justify-content-center">
+        <div class="header-left">
+            <div class="header-icon">
+                <i class="fas fa-file-invoice-dollar"></i>
+            </div>
+            <div class="header-content">
+                <h1>Lançamento de Sócio</h1>
+                <p>Registre receitas ou despesas pessoais dos sócios</p>
+            </div>
         </div>
-        <div class="card-body">
-            <form method="post">
-                {% csrf_token %}
-                <div class="row">
-                    <div class="col-md-6 mb-3">
-                        <label>Sócio</label>
-                        {{ form.socio }}
+    </div>
+
+    <div class="row justify-content-center">
+        <div class="col-md-8 col-lg-6">
+            <div class="zirk-card">
+                <form method="post">
+                    {% csrf_token %}
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-4">
+                            <label class="zirk-label">Sócio</label>
+                            <div class="zirk-input-group">
+                                {{ form.socio }}
+                                <a href="{% url 'socios:cadastrar_socio' %}" class="btn-add-socio" title="Cadastrar Novo Sócio">
+                                    <i class="fas fa-plus"></i>
+                                </a>
+                            </div>
+                            <div class="form-text text-muted small mt-1" style="font-size: 11px;">
+                                Selecione ou crie um novo.
+                            </div>
+                        </div>
+
+                        <div class="col-md-6 mb-4">
+                            <label class="zirk-label">Data</label>
+                            {{ form.data }}
+                        </div>
                     </div>
-                    <div class="col-md-6 mb-3">
-                        <label>Data</label>
-                        {{ form.data }}
+
+                    <div class="row">
+                        <div class="col-md-6 mb-4">
+                            <label class="zirk-label">Categoria</label>
+                            {{ form.categoria }}
+                        </div>
+
+                        <div class="col-md-6 mb-4">
+                            <label class="zirk-label">Valor (R$)</label>
+                            <div style="position: relative;">
+                                <span style="position: absolute; left: 12px; top: 10px; color: #64748b; font-weight: 500;">R$</span>
+                                {{ form.valor }}
+                            </div>
+                            <style>#id_valor { padding-left: 35px !important; }</style>
+                        </div>
                     </div>
-                    <div class="col-md-6 mb-3">
-                        <label>Categoria (Selecione na lista)</label>
-                        {{ form.categoria }}
-                    </div>
-                    <div class="col-md-6 mb-3">
-                        <label>Valor (R$)</label>
-                        {{ form.valor }}
-                    </div>
-                    <div class="col-12 mb-3">
-                        <label>Observação</label>
+
+                    <div class="mb-4">
+                        <label class="zirk-label">Observação <small style="font-weight: 400; text-transform: none; color: #94a3b8;">(Opcional)</small></label>
                         {{ form.observacao }}
                     </div>
-                </div>
-                <button type="submit" class="btn btn-success">Salvar Lançamento</button>
-                <a href="{% url 'socios:relatorio_anual' %}" class="btn btn-secondary">Voltar</a>
-            </form>
+
+                    <div class="actions-row">
+                        <a href="{% url 'socios:relatorio_anual' %}" class="btn-zirk btn-cancel">
+                            Voltar
+                        </a>
+                        <button type="submit" class="btn-zirk btn-save">
+                            <i class="fas fa-check me-2"></i> Salvar Lançamento
+                        </button>
+                    </div>
+                </form>
+            </div>
         </div>
     </div>
+
 </div>
 {% endblock %}

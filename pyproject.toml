@@ -1,18 +1,21 @@
 [project]
 name = "zirk-rh-financeiro"
 version = "0.1.0"
-description = "Plataforma de RH e financeiro desenvolvida em Django para a Zirk Marcenaria, incluindo cadastro de funcionários, folha de pagamento, controle de contas a pagar e receber, cálculo de comissões de arquitetos e geração de relatórios em planilhas automatizadas."
+description = "Plataforma de RH e financeiro desenvolvida em Django para a Zirk Marcenaria."
 authors = [
     {name = "BernardoVieiraDev",email = "bernardovdev@gmail.com"}
 ]
 license = {text = "Proprietary"}
-requires-python = ">=3.13"
+requires-python = ">=3.12"  # <--- MUDADO DE 3.13 PARA 3.12
 dependencies = [
     "django",
     "xlsxwriter",
     "requests",
     "cryptography (>=46.0.3,<47.0.0)",
-    "django-fernet-fields (>=0.6,<0.7)"
+    "django-fernet-fields (>=0.6,<0.7)",
+    "psycopg2-binary (>=2.9.11,<3.0.0)",
+    "python-dotenv (>=1.2.1,<2.0.0)",
+    "python-dateutil (>=2.9.0.post0,<3.0.0)"
 ]
 
 [tool.poetry]
@@ -27,6 +30,3 @@ isort = "^6.0.1"
 [build-system]
 requires = ["poetry-core>=2.0.0,<3.0.0"]
 build-backend = "poetry.core.masonry.api"
-
-
-

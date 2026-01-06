@@ -1,233 +1,374 @@
 {% extends 'core/base.html' %}
 {% load humanize %}
+{% load static %}
 
 {% block title %}Movimento Bancário{% endblock %}
 
 {% block content %}
-<div class="container-fluid mt-4 mb-5">
+<style>
+    /* === Zirk Design System - Movimento Bancário === */
+    :root {
+        --text-dark: #0f172a;
+        --text-main: #334155;
+        --text-muted: #64748b;
+        --border-color: #e2e8f0;
+        --primary-blue: #1f6feb;
+        --primary-blue-hover: #1a5dbd;
+        --green-bg: #dcfce7; --green-text: #166534;
+        --red-bg: #fee2e2; --red-text: #b91c1c;
+        --row-hover: #f8fafc;
+    }
 
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <div>
-            <h2 class="text-secondary font-weight-bold mb-1"><i class="fas fa-university mr-2"></i>4. Movimento Bancário</h2>
-            <p class="text-muted mb-0">Controle de entradas e saídas por conta bancária</p>
-        </div>
-        <div>
-            <a href="{% url 'receber:bancos_list' %}" class="btn btn-outline-info shadow-sm mr-2">
-                <i class="fas fa-landmark mr-1"></i> Gerenciar Bancos
-            </a>
-            
-            <button type="button" class="btn btn-primary shadow-sm" data-bs-toggle="modal" data-bs-target="#modalLancamento">
-                <i class="fas fa-plus-circle mr-1"></i> Novo Movimento
-            </button>
-        </div>
-    </div>
+    .page-container { width: 100%; padding: 0 20px; font-family: Inter, -apple-system, sans-serif; color: var(--text-main); }
 
-    <div class="card bg-light mb-4 border-0 shadow-sm">
-        <div class="card-body py-3">
-            <div class="row align-items-center">
-                <div class="col-md-5">
-                    <form method="GET" id="formBanco" class="d-flex align-items-center">
-                        <input type="hidden" name="ano" value="{{ ano_atual }}">
-                        <input type="hidden" name="mes" value="{{ mes_atual }}">
-                        <label class="font-weight-bold mr-2 mb-0 text-dark">Conta:</label>
-                        <select name="banco_id" class="form-control font-weight-bold text-primary" onchange="this.form.submit()">
-                            {% for b in todos_bancos %}
-                                <option value="{{ b.id }}" {% if b.id == banco_selecionado.id %}selected{% endif %}>
-                                    {{ b.nome }} {% if b.agencia %}- Ag: {{ b.agencia }}{% endif %}
-                                </option>
-                            {% endfor %}
-                        </select>
-                    </form>
-                </div>
+    /* Header */
+    .page-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; flex-wrap: wrap; gap: 16px; }
+    .header-left { display: flex; align-items: center; gap: 14px; }
+    .header-icon { height: 48px; width: 48px; background-color: #eff6ff; border-radius: 12px; display: flex; align-items: center; justify-content: center; color: var(--primary-blue); font-size: 20px; }
+    .header-content h1 { font-size: 22px; font-weight: 700; color: var(--text-dark); margin: 0; }
+    .header-content p { font-size: 13px; color: var(--text-muted); margin: 0; }
 
-                <div class="col-md-7 text-right">
-                    <div class="btn-group shadow-sm" role="group">
-                        <a href="?banco_id={{ banco_selecionado.id }}&ano={{ ant_ano }}&mes={{ ant_mes }}" class="btn btn-white text-primary border">
-                            <i class="fas fa-chevron-left"></i> Anterior
-                        </a>
-                        <button type="button" class="btn btn-primary disabled font-weight-bold px-4" style="min-width: 200px;">
-                            {{ data_ref|date:"F / Y"|upper }}
-                        </button>
-                        <a href="?banco_id={{ banco_selecionado.id }}&ano={{ prox_ano }}&mes={{ prox_mes }}" class="btn btn-white text-primary border">
-                            Próximo <i class="fas fa-chevron-right"></i>
-                        </a>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
+    /* Barra de Controles */
+    .controls-bar {
+        display: flex; justify-content: space-between; align-items: center;
+        background: white; padding: 10px 16px;
+        border-radius: 12px; border: 1px solid var(--border-color);
+        box-shadow: 0 1px 3px rgba(0,0,0,0.03); margin-bottom: 24px;
+        flex-wrap: wrap; gap: 16px;
+    }
 
-    <div class="row mb-4">
-        <div class="col-xl-3 col-md-6 mb-4">
-            <div class="card border-left-secondary shadow h-100 py-2">
-                <div class="card-body">
-                    <div class="row no-gutters align-items-center">
-                        <div class="col mr-2">
-                            <div class="text-xs font-weight-bold text-secondary text-uppercase mb-1">Saldo Anterior</div>
-                            <div class="h5 mb-0 font-weight-bold text-gray-800">R$ {{ saldo_anterior|floatformat:2|intcomma }}</div>
-                        </div>
-                        <div class="col-auto"><i class="fas fa-history fa-2x text-gray-300"></i></div>
-                    </div>
-                </div>
-            </div>
-        </div>
+    /* Seletor de Banco */
+    .bank-selector-form { display: flex; align-items: center; gap: 10px; margin-right: auto; }
+    .bank-label { font-weight: 600; font-size: 13px; color: var(--text-dark); text-transform: uppercase; }
+    .bank-select {
+        border: 1px solid var(--border-color); border-radius: 8px; padding: 6px 12px;
+        font-size: 14px; font-weight: 600; color: var(--primary-blue);
+        background-color: #f8fafc; outline: none; cursor: pointer; transition: all 0.2s;
+    }
+    .bank-select:focus { border-color: var(--primary-blue); background: white; }
 
-        <div class="col-xl-3 col-md-6 mb-4">
-            <div class="card border-left-success shadow h-100 py-2">
-                <div class="card-body">
-                    <div class="row no-gutters align-items-center">
-                        <div class="col mr-2">
-                            <div class="text-xs font-weight-bold text-success text-uppercase mb-1">+ Entradas ({{ data_ref|date:"M" }})</div>
-                            <div class="h5 mb-0 font-weight-bold text-success">R$ {{ total_entradas|floatformat:2|intcomma }}</div>
-                        </div>
-                        <div class="col-auto"><i class="fas fa-arrow-up fa-2x text-gray-300"></i></div>
-                    </div>
-                </div>
-            </div>
-        </div>
+    /* Navegação de Data */
+    .date-nav { display: flex; align-items: center; gap: 8px; background: #f8fafc; padding: 4px; border-radius: 8px; border: 1px solid var(--border-color); }
+    .btn-nav-date { width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; border-radius: 6px; border: none; background: white; color: var(--text-muted); cursor: pointer; transition: all 0.2s; box-shadow: 0 1px 2px rgba(0,0,0,0.05); text-decoration: none; }
+    .btn-nav-date:hover { color: var(--primary-blue); transform: translateY(-1px); }
+    .current-date { padding: 0 16px; font-weight: 700; color: var(--text-dark); font-size: 14px; text-transform: uppercase; letter-spacing: 0.5px; min-width: 140px; text-align: center; }
 
-        <div class="col-xl-3 col-md-6 mb-4">
-            <div class="card border-left-danger shadow h-100 py-2">
-                <div class="card-body">
-                    <div class="row no-gutters align-items-center">
-                        <div class="col mr-2">
-                            <div class="text-xs font-weight-bold text-danger text-uppercase mb-1">- Saídas ({{ data_ref|date:"M" }})</div>
-                            <div class="h5 mb-0 font-weight-bold text-danger">R$ {{ total_saidas|floatformat:2|intcomma }}</div>
-                        </div>
-                        <div class="col-auto"><i class="fas fa-arrow-down fa-2x text-gray-300"></i></div>
-                    </div>
-                </div>
-            </div>
-        </div>
+    /* Botões */
+    .actions-group { display: flex; gap: 10px; align-items: center; }
+    .btn-zirk { display: inline-flex; align-items: center; gap: 8px; padding: 8px 16px; border-radius: 8px; font-size: 13px; font-weight: 600; text-decoration: none; border: 1px solid transparent; transition: all 0.2s; cursor: pointer; }
+    .btn-new { background: var(--primary-blue); color: white; } .btn-new:hover { background: #1a5dbd; color: white; }
+    .btn-manage { background: white; border-color: var(--border-color); color: var(--text-main); } .btn-manage:hover { background: #f1f5f9; border-color: #cbd5e1; }
 
-        <div class="col-xl-3 col-md-6 mb-4">
-            <div class="card border-left-primary shadow h-100 py-2 bg-light">
-                <div class="card-body">
-                    <div class="row no-gutters align-items-center">
-                        <div class="col mr-2">
-                            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">Saldo Atual (Banco)</div>
-                            <div class="h4 mb-0 font-weight-bold text-primary">R$ {{ saldo_atual|floatformat:2|intcomma }}</div>
-                        </div>
-                        <div class="col-auto"><i class="fas fa-university fa-2x text-primary"></i></div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <div class="card shadow mb-4">
-        <div class="card-header py-3">
-            <h6 class="m-0 font-weight-bold text-primary">Extrato: {{ banco_selecionado.nome }}</h6>
-        </div>
-        <div class="card-body">
-            <div class="table-responsive">
-                <table class="table table-bordered table-hover" width="100%" cellspacing="0">
-                    <thead class="thead-light">
-                        <tr>
-                            <th style="width: 10%;">Data</th>
-                            <th>Histórico / Descrição</th>
-                            <th style="width: 10%;">Tipo</th>
-                            <th style="width: 15%;">Valor (R$)</th>
-                            <th style="width: 5%;">Ações</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for item in movimentacoes %}
-                        <tr>
-                            <td class="align-middle">{{ item.data|date:"d/m/Y" }}</td>
-                            <td class="align-middle">
-                                <span class="font-weight-bold">{{ item.descricao }}</span>
-                                {% if item.observacoes %}
-                                    <br><small class="text-muted">{{ item.observacoes }}</small>
-                                {% endif %}
-                            </td>
-                            <td class="align-middle text-center">
-                                {% if item.tipo == 'E' %}
-                                    <span class="badge bg-success text-white">Crédito</span>
-                                {% else %}
-                                    <span class="badge bg-danger text-white">Débito</span>
-                                {% endif %}
-                            </td>
-                            <td class="align-middle font-weight-bold {% if item.tipo == 'E' %}text-success{% else %}text-danger{% endif %}">
-                                {% if item.tipo == 'S' %}- {% endif %}
-                                {{ item.valor|floatformat:2|intcomma }}
-                            </td>
-                            <td class="align-middle text-center" style="white-space: nowrap;">
+    /* Cards de Métricas */
+    .metrics-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; margin-bottom: 24px; }
+    .metric-card { background: white; border: 1px solid var(--border-color); border-radius: 12px; padding: 20px; display: flex; align-items: flex-start; justify-content: space-between; box-shadow: 0 2px 4px rgba(0,0,0,0.02); transition: transform 0.2s; }
+    .metric-card:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
+    .metric-info { display: flex; flex-direction: column; gap: 4px; }
+    .metric-label { font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-muted); }
+    .metric-value { font-size: 20px; font-weight: 700; color: var(--text-dark); }
+    .metric-icon { width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 18px; }
     
-    <a href="{% url 'receber:movimento_banco_edit' item.pk %}" class="btn btn-sm btn-outline-primary border-0" title="Editar">
-        <i class="fas fa-pen"></i>
-    </a>
+    .card-gray .metric-icon { background: #f1f5f9; color: #64748b; }
+    .card-green .metric-icon { background: #dcfce7; color: #166534; } .card-green .metric-value { color: #166534; }
+    .card-red .metric-icon { background: #fee2e2; color: #b91c1c; } .card-red .metric-value { color: #b91c1c; }
+    .card-blue { border-color: #bfdbfe; background: #eff6ff; } .card-blue .metric-icon { background: white; color: var(--primary-blue); } .card-blue .metric-value { color: var(--primary-blue); }
 
-    <form action="{% url 'receber:movimento_banco_delete' item.pk %}" method="POST" onsubmit="return confirm('Excluir este lançamento?');" style="display:inline;">
-        {% csrf_token %}
-        <button type="submit" class="btn btn-sm btn-outline-danger border-0" title="Excluir">
-            <i class="fas fa-trash-alt"></i>
-        </button>
-    </form>
-</td>
-                            <td class="align-middle text-center">
-                                <form action="{% url 'receber:movimento_banco_delete' item.pk %}" method="POST" onsubmit="return confirm('Excluir este lançamento?');">
-                                    {% csrf_token %}
-                                    <button type="submit" class="btn btn-sm btn-outline-danger border-0">
-                                        <i class="fas fa-trash-alt"></i>
-                                    </button>
-                                </form>
-                            </td>
-                        </tr>
-                        {% empty %}
-                        <tr>
-                            <td colspan="5" class="text-center text-muted py-5">
-                                <i class="fas fa-file-invoice-dollar fa-3x mb-3 text-gray-300"></i>
-                                <p>Nenhuma movimentação para este banco neste mês.</p>
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
+    /* Tabela */
+    .list-panel { background: white; border-radius: 12px; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05); border: 1px solid var(--border-color); overflow: hidden; }
+    .table-container { width: 100%; overflow-x: auto; }
+    .clean-table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+    .clean-table thead th { background: #f8fafc; color: var(--text-muted); font-weight: 600; text-transform: uppercase; font-size: 11px; padding: 16px; text-align: left; border-bottom: 1px solid var(--border-color); letter-spacing: 0.5px; }
+    .clean-table tbody td { padding: 16px; border-bottom: 1px solid var(--border-color); color: var(--text-main); vertical-align: middle; }
+    .clean-table tbody tr:last-child td { border-bottom: none; }
+    .clean-table tbody tr:hover td { background: var(--row-hover); }
+
+    /* Badges e Botões da Tabela */
+    .badge-tipo { padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: 700; text-transform: uppercase; }
+    .badge-entrada { background: var(--green-bg); color: var(--green-text); }
+    .badge-saida { background: var(--red-bg); color: var(--red-text); }
+    .val-entrada { color: var(--green-text); font-weight: 600; }
+    .val-saida { color: var(--red-text); font-weight: 600; }
+    
+    .btn-icon-action { background: transparent; border: none; color: #94a3b8; cursor: pointer; transition: all 0.2s; padding: 8px; border-radius: 6px; }
+    .btn-icon-action:hover { background: #f1f5f9; color: var(--primary-blue); }
+    .btn-icon-delete:hover { background: #fef2f2; color: var(--red-text); }
+
+    /* === CSS DO MODAL (Zirk) === */
+    .zirk-modal-content { border: none; border-radius: 16px; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25); overflow: hidden; font-family: Inter, -apple-system, sans-serif; }
+    .zirk-modal-header { background: #ffffff; padding: 24px 24px 12px 24px; display: flex; justify-content: space-between; align-items: center; }
+    .zirk-modal-title { font-size: 1.25rem; font-weight: 700; color: #1e293b; display: flex; align-items: center; gap: 12px; margin: 0; }
+    .zirk-icon-box { width: 40px; height: 40px; background-color: #eff6ff; color: #1f6feb; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 18px; }
+    /* Cor para edição */
+    .zirk-icon-box.edit-mode { background-color: #fff7ed; color: #ea580c; } 
+
+    .zirk-modal-body { padding: 12px 24px 32px 24px; background-color: #ffffff; }
+    .zirk-label { display: block; font-size: 0.75rem; font-weight: 700; text-transform: uppercase; color: #64748b; margin-bottom: 6px; letter-spacing: 0.05em; }
+    
+    .zirk-modal-body input, .zirk-modal-body select, .zirk-modal-body textarea { 
+        display: block; width: 100%; padding: 10px 12px; font-size: 0.95rem; font-weight: 500; 
+        color: #0f172a; background-color: #fff; border: 1px solid #e2e8f0; border-radius: 8px; transition: all 0.2s; 
+    }
+    .zirk-modal-body input:focus, .zirk-modal-body select:focus { border-color: #1f6feb; outline: 0; box-shadow: 0 0 0 4px rgba(31, 111, 235, 0.1); }
+    
+    .zirk-modal-footer { background-color: #f8fafc; padding: 16px 24px; border-top: 1px solid #e2e8f0; display: flex; justify-content: flex-end; gap: 12px; }
+    .btn-zirk-cancel { background: #ffffff; color: #64748b; border: 1px solid #e2e8f0; padding: 8px 16px; border-radius: 8px; font-weight: 600; font-size: 14px; transition: all 0.2s; }
+    .btn-zirk-cancel:hover { background: #f1f5f9; color: #334155; }
+    .btn-zirk-save { background: #1f6feb; color: white; border: none; padding: 8px 24px; border-radius: 8px; font-weight: 600; font-size: 14px; box-shadow: 0 2px 5px rgba(31, 111, 235, 0.3); transition: all 0.2s; }
+    .btn-zirk-save:hover { background: #1a5dbd; transform: translateY(-1px); }
+</style>
+
+<div class="page-container">
+    
+    <div class="page-header">
+        <div class="header-left">
+            <div class="header-icon">
+                <i class="fas fa-university"></i>
             </div>
+            <div class="header-content">
+                <h1>Movimento Bancário</h1>
+                <p>Controle de entradas e saídas por conta bancária</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="controls-bar">
+        <form method="GET" id="formBanco" class="bank-selector-form">
+            <input type="hidden" name="ano" value="{{ ano_atual }}">
+            <input type="hidden" name="mes" value="{{ mes_atual }}">
+            <label class="bank-label">Conta:</label>
+            <select name="banco_id" class="bank-select" onchange="this.form.submit()">
+                {% for b in todos_bancos %}
+                    <option value="{{ b.id }}" {% if b.id == banco_selecionado.id %}selected{% endif %}>
+                        {{ b.nome }} {% if b.agencia %}- Ag: {{ b.agencia }}{% endif %}
+                    </option>
+                {% endfor %}
+            </select>
+        </form>
+
+        <div class="d-flex align-items-center gap-3">
+            <div class="date-nav">
+                <a href="?banco_id={{ banco_selecionado.id }}&ano={{ ant_ano }}&mes={{ ant_mes }}" class="btn-nav-date" title="Mês Anterior"><i class="fas fa-chevron-left"></i></a>
+                <div class="current-date"><i class="far fa-calendar-alt me-2 text-muted"></i>{{ data_ref|date:"F / Y"|upper }}</div>
+                <a href="?banco_id={{ banco_selecionado.id }}&ano={{ prox_ano }}&mes={{ prox_mes }}" class="btn-nav-date" title="Próximo Mês"><i class="fas fa-chevron-right"></i></a>
+            </div>
+
+            <div class="actions-group">
+                <a href="{% url 'receber:bancos_list' %}" class="btn-zirk btn-manage"><i class="fas fa-landmark"></i> Gerenciar Bancos</a>
+                <button type="button" class="btn-zirk btn-new" data-bs-toggle="modal" data-bs-target="#modalLancamento"><i class="fas fa-plus"></i> Novo Movimento</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="metrics-grid">
+        <div class="metric-card card-gray">
+            <div class="metric-info"><span class="metric-label">Saldo Anterior</span><span class="metric-value">R$ {{ saldo_anterior|floatformat:2|intcomma }}</span></div>
+            <div class="metric-icon"><i class="fas fa-history"></i></div>
+        </div>
+        <div class="metric-card card-green">
+            <div class="metric-info"><span class="metric-label">+ Entradas ({{ data_ref|date:"M" }})</span><span class="metric-value">R$ {{ total_entradas|floatformat:2|intcomma }}</span></div>
+            <div class="metric-icon"><i class="fas fa-arrow-up"></i></div>
+        </div>
+        <div class="metric-card card-red">
+            <div class="metric-info"><span class="metric-label">- Saídas ({{ data_ref|date:"M" }})</span><span class="metric-value">R$ {{ total_saidas|floatformat:2|intcomma }}</span></div>
+            <div class="metric-icon"><i class="fas fa-arrow-down"></i></div>
+        </div>
+        <div class="metric-card card-blue">
+            <div class="metric-info"><span class="metric-label">Saldo Atual (Banco)</span><span class="metric-value">R$ {{ saldo_atual|floatformat:2|intcomma }}</span></div>
+            <div class="metric-icon"><i class="fas fa-university"></i></div>
+        </div>
+    </div>
+
+    <div class="list-panel">
+        <div class="table-container">
+            <table class="clean-table">
+                <thead>
+                    <tr>
+                        <th width="12%">Data</th>
+                        <th>Histórico / Descrição</th>
+                        <th width="10%" class="text-center">Tipo</th>
+                        <th width="15%" class="text-end">Valor (R$)</th>
+                        <th width="10%" class="text-center">Ações</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in movimentacoes %}
+                    <tr>
+                        <td style="color: var(--text-muted); font-weight: 500;">{{ item.data|date:"d/m/Y" }}</td>
+                        <td style="font-weight: 600; color: var(--text-dark);">{{ item.historico }}</td>
+                        <td class="text-center">
+                            {% if item.tipo == 'E' %}
+                                <span class="badge-tipo badge-entrada">Crédito</span>
+                            {% else %}
+                                <span class="badge-tipo badge-saida">Débito</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-end font-weight-bold">
+                            {% if item.tipo == 'E' %}
+                                <span class="val-entrada">+ {{ item.valor|floatformat:2|intcomma }}</span>
+                            {% else %}
+                                <span class="val-saida">- {{ item.valor|floatformat:2|intcomma }}</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-center">
+                            <button type="button" 
+                                    class="btn-icon-action" 
+                                    data-bs-toggle="modal" 
+                                    data-bs-target="#modalEditar"
+                                    data-url="{% url 'receber:movimento_banco_edit' item.pk %}"
+                                    data-data="{{ item.data|date:'Y-m-d' }}" 
+                                    data-tipo="{{ item.tipo }}"
+                                    data-valor="{{ item.valor|stringformat:'.2f' }}"
+                                    data-historico="{{ item.historico }}"
+                                    data-banco-id="{{ banco_selecionado.id }}">
+                                <i class="fas fa-pen"></i>
+                            </button>
+
+                            <form action="{% url 'receber:movimento_banco_delete' item.pk %}" method="POST" onsubmit="return confirm('Excluir este lançamento?');" style="display:inline;">
+                                {% csrf_token %}
+                                <button type="submit" class="btn-icon-action btn-icon-delete" title="Excluir">
+                                    <i class="far fa-trash-alt"></i>
+                                </button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="5" style="text-align: center; padding: 60px;">
+                            <div style="color: #cbd5e1; display: flex; flex-direction: column; align-items: center; gap: 12px;">
+                                <i class="fas fa-file-invoice-dollar fa-3x"></i>
+                                <span style="font-size: 16px; font-weight: 500; color: var(--text-muted);">Nenhuma movimentação para este banco neste mês.</span>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
         </div>
     </div>
 </div>
 
 <div class="modal fade" id="modalLancamento" tabindex="-1" aria-hidden="true">
-  <div class="modal-dialog">
-    <div class="modal-content">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content zirk-modal-content">
       <form method="POST">
           {% csrf_token %}
-          <div class="modal-header bg-primary text-white">
-            <h5 class="modal-title">Novo Movimento: {{ banco_selecionado.nome }}</h5>
-            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+          <div class="zirk-modal-header">
+            <h5 class="zirk-modal-title">
+                <div class="zirk-icon-box"><i class="fas fa-university"></i></div>
+                Novo Movimento
+            </h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
           </div>
-          <div class="modal-body">
+          <div class="zirk-modal-body">
+            <input type="hidden" name="banco" value="{{ banco_selecionado.id }}">
+            
             <div class="mb-3">
-                <label class="form-label">Data</label>
+                <label class="zirk-label">Data</label>
                 {{ form.data }}
             </div>
             <div class="row">
                 <div class="col-6 mb-3">
-                    <label class="form-label">Tipo</label>
+                    <label class="zirk-label">Tipo</label>
                     {{ form.tipo }}
                 </div>
                 <div class="col-6 mb-3">
-                    <label class="form-label">Valor (R$)</label>
+                    <label class="zirk-label">Valor (R$)</label>
                     {{ form.valor }}
                 </div>
             </div>
-            <div class="mb-3">
-                <label class="form-label">Histórico</label>
-                {{ form.descricao }}
-            </div>
-            <div class="mb-3">
-                <label class="form-label">Observações</label>
-                {{ form.observacoes }}
+            <div class="mb-0">
+                <label class="zirk-label">Histórico</label>
+                {{ form.historico }}
             </div>
           </div>
-          <div class="modal-footer">
-            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-            <button type="submit" class="btn btn-primary">Salvar</button>
+          <div class="zirk-modal-footer">
+            <button type="button" class="btn btn-zirk-cancel" data-bs-dismiss="modal">Cancelar</button>
+            <button type="submit" class="btn btn-zirk-save"><i class="fas fa-check me-2"></i> Salvar</button>
           </div>
       </form>
     </div>
   </div>
 </div>
+
+<div class="modal fade" id="modalEditar" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content zirk-modal-content">
+      <form method="POST" id="formEditar">
+          {% csrf_token %}
+          
+          <div class="zirk-modal-header">
+            <h5 class="zirk-modal-title">
+                <div class="zirk-icon-box edit-mode"><i class="fas fa-pen"></i></div>
+                Editar Movimento
+            </h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          
+          <div class="zirk-modal-body">
+            <input type="hidden" name="banco" id="edit_banco_id">
+            
+            <div class="mb-3">
+                <label class="zirk-label">Data</label>
+                <input type="date" name="data" id="edit_data" required class="form-control">
+            </div>
+            
+            <div class="row">
+                <div class="col-6 mb-3">
+                    <label class="zirk-label">Tipo</label>
+                    <select name="tipo" id="edit_tipo" class="form-control">
+                        <option value="E">Entrada (Crédito)</option>
+                        <option value="S">Saída (Débito)</option>
+                    </select>
+                </div>
+                <div class="col-6 mb-3">
+                    <label class="zirk-label">Valor (R$)</label>
+                    <input type="number" name="valor" id="edit_valor" step="0.01" required class="form-control">
+                </div>
+            </div>
+            
+            <div class="mb-0">
+                <label class="zirk-label">Histórico</label>
+                <input type="text" name="historico" id="edit_historico" required class="form-control">
+            </div>
+          </div>
+          
+          <div class="zirk-modal-footer">
+            <button type="button" class="btn btn-zirk-cancel" data-bs-dismiss="modal">Cancelar</button>
+            <button type="submit" class="btn btn-zirk-save"><i class="fas fa-save me-2"></i> Salvar Alteração</button>
+          </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        var modalEditar = document.getElementById('modalEditar');
+        
+        modalEditar.addEventListener('show.bs.modal', function (event) {
+            // Botão que acionou o modal
+            var button = event.relatedTarget;
+            
+            // Extrai as informações dos atributos data-*
+            var url = button.getAttribute('data-url');
+            var data = button.getAttribute('data-data');
+            var tipo = button.getAttribute('data-tipo');
+            var valor = button.getAttribute('data-valor').replace(',', '.'); // Garante formato 1000.00
+            var historico = button.getAttribute('data-historico');
+            var bancoId = button.getAttribute('data-banco-id');
+            
+            // Atualiza o Action do Formulário
+            var form = modalEditar.querySelector('#formEditar');
+            form.action = url;
+            
+            // Preenche os campos
+            modalEditar.querySelector('#edit_data').value = data;
+            modalEditar.querySelector('#edit_tipo').value = tipo;
+            modalEditar.querySelector('#edit_valor').value = valor;
+            modalEditar.querySelector('#edit_historico').value = historico;
+            modalEditar.querySelector('#edit_banco_id').value = bancoId;
+        });
+    });
+</script>
+
 {% endblock %}

@@ -1,117 +1,407 @@
 {% extends 'core/base.html' %}
+{% load static %}
 
 {% block content %}
-<div class="container-fluid mt-4">
+<style>
+    /* === Variáveis de Cores e Fontes === */
+    :root {
+        --text-dark: #0f172a;
+        --text-main: #334155;
+        --text-muted: #64748b;
+        --border-color: #e2e8f0;
+        --bg-header-table: #f1f5f9;
+        --row-hover: #f8fafc;
+        
+        /* Cores dos Botões */
+        --btn-success-bg: #198754;
+        --btn-success-hover: #157347;
+        --btn-primary-bg: #0d6efd;
+        --btn-primary-hover: #0b5ed7;
+        --btn-outline-color: #6c757d;
+    }
+
+    /* Container Totalmente Expandido */
+    .page-container {
+        width: 100%;
+        padding: 0 20px;
+        font-family: Inter, -apple-system, sans-serif;
+        color: var(--text-main);
+    }
+
+    /* === Header === */
+    .page-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+        flex-wrap: wrap;
+        gap: 16px;
+    }
+
+    .header-left { display: flex; align-items: center; gap: 14px; }
     
-    <div class="d-flex justify-content-between align-items-center mb-4">
-    <div class="d-flex align-items-center gap-3">
-        <h3 class="mb-0 text-primary">
-            <i class="fas fa-table"></i> Despesas Pessoais
-        </h3>
-        
-        <form method="get" class="d-flex align-items-center gap-2">
+    .header-icon {
+        height: 42px; width: 42px;
+        background-color: #eff6ff;
+        border-radius: 10px;
+        display: flex; align-items: center; justify-content: center;
+        color: #1f6feb;
+        box-shadow: 0 2px 4px rgba(31, 111, 235, 0.05);
+    }
+
+    .header-content h1 { font-size: 22px; font-weight: 700; color: var(--text-dark); margin: 0; }
+    .header-content p { font-size: 13px; color: var(--text-muted); margin: 0; }
+
+    /* === Barra de Ações === */
+    .actions-bar {
+        display: flex;
+        gap: 10px;
+        align-items: center;
+        background: white;
+        padding: 8px 12px;
+        border-radius: 8px;
+        border: 1px solid var(--border-color);
+        box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+    }
+
+    /* Estilo compartilhado para Select e Input */
+    .custom-control {
+        border: 1px solid var(--border-color);
+        border-radius: 6px;
+        padding: 6px 10px;
+        font-size: 13px;
+        color: var(--text-dark);
+        background-color: #fff;
+        font-weight: 600;
+        outline: none;
+        transition: border-color 0.2s;
+    }
+    
+    .custom-control:focus {
+        border-color: #1f6feb;
+    }
+
+    .custom-select {
+        cursor: pointer;
+    }
+    
+    /* Estilo específico para o Input Number */
+    .custom-input-number {
+        width: 80px; /* Largura fixa para o ano */
+        cursor: text;
+    }
+    
+    /* Remove as setas padrão do input number em alguns navegadores se desejar, 
+       mas para "aumentar algo" geralmente mantemos elas visíveis */
+
+    /* === Botões (Compactos) === */
+    .btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        padding: 6px 12px;
+        font-size: 13px;
+        font-weight: 600;
+        border-radius: 6px;
+        text-decoration: none;
+        transition: all 0.2s ease-in-out;
+        cursor: pointer;
+        border: 1px solid transparent;
+        line-height: 1.4;
+    }
+
+    .btn svg { width: 14px; height: 14px; }
+
+    .btn-success { background-color: var(--btn-success-bg); border-color: var(--btn-success-bg); color: #fff; }
+    .btn-success:hover { background-color: var(--btn-success-hover); border-color: var(--btn-success-hover); color: #fff; }
+
+    .btn-primary { background-color: var(--btn-primary-bg); border-color: var(--btn-primary-bg); color: #fff; }
+    .btn-primary:hover { background-color: var(--btn-primary-hover); border-color: var(--btn-primary-hover); color: #fff; }
+
+    .btn-outline-secondary { color: var(--btn-outline-color); border-color: var(--btn-outline-color); background-color: transparent; }
+    .btn-outline-secondary:hover { color: #fff; background-color: var(--btn-outline-color); }
+
+    /* === Painel da Tabela === */
+    .list-panel {
+        background: white;
+        border-radius: 10px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+        border: 1px solid var(--border-color);
+        padding: 0;
+        overflow: hidden;
+    }
+
+    .table-container {
+        width: 100%;
+        overflow-x: auto;
+    }
+
+    /* === Tabela Compacta === */
+    .rh-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 12px;
+    }
+
+    /* Cabeçalho */
+    .rh-table thead th {
+        background: var(--bg-header-table);
+        position: sticky;
+        top: 0;
+        z-index: 10;
+        padding: 10px 6px;
+        font-weight: 700;
+        text-transform: uppercase;
+        color: var(--text-dark);
+        border-bottom: 2px solid #cbd5e1;
+        text-align: center;
+        white-space: nowrap;
+    }
+
+    .rh-table thead th:first-child {
+        text-align: left;
+        padding-left: 16px;
+        border-right: 1px solid var(--border-color);
+        left: 0;
+        z-index: 11;
+        background: var(--bg-header-table);
+    }
+
+    .rh-table thead th.th-total {
+        background-color: #e2e8f0;
+        border-left: 1px solid #cbd5e1;
+    }
+
+    /* Células */
+    .rh-table tbody td {
+        padding: 8px 6px;
+        border-bottom: 1px solid var(--border-color);
+        vertical-align: middle;
+        white-space: nowrap;
+    }
+
+    .rh-table tbody tr:hover td { background-color: var(--row-hover); }
+
+    /* Linha de Grupo - AGORA INTERATIVA */
+    .group-row {
+        cursor: pointer;
+        transition: background-color 0.15s;
+    }
+    
+    .group-row:hover td {
+        background-color: #e2e8f0 !important;
+    }
+
+    .group-row td {
+        background-color: #f1f5f9;
+        color: #0f172a;
+        font-weight: 700;
+        font-size: 11px;
+        text-transform: uppercase;
+        padding-top: 8px;
+        padding-bottom: 8px;
+        letter-spacing: 0.5px;
+        user-select: none;
+    }
+
+    /* Valores */
+    .cell-value {
+        text-align: right;
+        font-variant-numeric: tabular-nums;
+        font-size: 12px;
+    }
+
+    .val-positive { color: #0f172a; font-weight: 600; }
+    .val-zero { color: #cbd5e1; font-weight: 400; }
+    
+    .cell-total {
+        background-color: #f8fafc;
+        font-weight: 800;
+        color: #0f172a;
+        text-align: right;
+        border-left: 1px solid var(--border-color);
+    }
+
+    .icon-small { 
+        font-size: 10px; 
+        margin-right: 6px; 
+        opacity: 0.8;
+        transition: transform 0.2s ease;
+        display: inline-block;
+        width: 10px;
+    }
+
+    .d-none-row { display: none; }
+
+</style>
+
+<div class="page-container">
+    
+    <div class="page-header">
+        <div class="header-left">
+            <div class="header-icon">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg>
+            </div>
+            <div class="header-content">
+                <h1>Despesas Pessoais</h1>
+                <p>Relatório anual consolidado</p>
+            </div>
+        </div>
+
+        <div class="actions-bar">
+            <button onclick="toggleAllGroups()" class="btn btn-outline-secondary" style="border:1px solid #e2e8f0; margin-right: 8px;">
+                <i class="fas fa-expand-arrows-alt"></i> Alternar Todos
+            </button>
+
+            <form method="get" class="d-flex align-items-center gap-2 m-0">
+                <input type="number" 
+                       name="ano" 
+                       value="{{ ano }}" 
+                       class="custom-control custom-input-number" 
+                       min="2000" 
+                       max="2100" 
+                       onchange="this.form.submit()"
+                       title="Selecione o ano">
+
+                <select name="socio" class="custom-control custom-select" onchange="this.form.submit()">
+                    <option value="" {% if not socio_atual %}selected{% endif %}>Todos os Sócios</option>
+                    {% for s in socios %}
+                        <option value="{{ s.id }}" {% if socio_atual == s.id %}selected{% endif %}>{{ s.nome }}</option>
+                    {% endfor %}
+                </select>
+            </form>
+
+            <div style="width: 1px; height: 24px; background: #e2e8f0; margin: 0 6px;"></div>
+
+            <a href="{% url 'socios:listar_lancamentos' %}" class="btn btn-outline-secondary">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+                Extrato
+            </a>
             
-            <select name="ano" class="form-select form-select-sm fw-bold border-primary text-primary" 
-                    style="width: 100px;" onchange="this.form.submit()">
-                <option value="2024" {% if ano == 2024 %}selected{% endif %}>2024</option>
-                <option value="2025" {% if ano == 2025 %}selected{% endif %}>2025</option>
-                <option value="2026" {% if ano == 2026 %}selected{% endif %}>2026</option>
-            </select>
+            <a href="{% url 'socios:exportar_excel' %}?ano={{ ano }}&socio={{ socio_atual|default:'' }}" class="btn btn-success">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+                Excel
+            </a>
 
-            <select name="socio" class="form-select form-select-sm fw-bold border-dark" 
-                    style="min-width: 150px;" onchange="this.form.submit()">
-                <option value="" {% if not socio_atual %}selected{% endif %}>Todos os Sócios</option>
-                {% for s in socios %}
-                    <option value="{{ s.id }}" {% if socio_atual == s.id %}selected{% endif %}>
-                        {{ s.nome }}
-                    </option>
-                {% endfor %}
-            </select>
-
-        </form>
+                        <a href="{% url 'socios:cadastrar_socio' %}" class="btn btn-primary" title="Cadastrar novo sócio">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="8.5" cy="7" r="4"></circle><line x1="20" y1="8" x2="20" y2="14"></line><line x1="23" y1="11" x2="17" y2="11"></line></svg>
+                Sócio
+            </a>
+            
+            <a href="{% url 'socios:registrar_despesa' %}" class="btn btn-primary">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                Novo
+            </a>
+        </div>
     </div>
 
-    <div class="btn-group">
-        <a href="{% url 'socios:listar_lancamentos' %}" class="btn btn-outline-secondary btn-sm">
-            <i class="fas fa-list"></i> Extrato
-        </a>
-        
-        <a href="{% url 'socios:exportar_excel' %}?ano={{ ano }}&socio={{ socio_atual|default:'' }}" 
-           class="btn btn-success btn-sm">
-            <i class="fas fa-file-excel"></i> Baixar Excel
-        </a>
-        
-        <a href="{% url 'socios:registrar_despesa' %}" class="btn btn-primary btn-sm">
-            <i class="fas fa-plus"></i> Novo Lançamento
-        </a>
-    </div>
-</div>
-    </div>
+    <div class="list-panel">
+        <div class="table-container">
+            <table class="rh-table">
+                <thead>
+                    <tr>
+                        <th style="min-width: 180px;">CATEGORIA / ITEM</th>
+                        {% for m in meses %}
+                            <th style="min-width: 65px;">{{ m }}</th>
+                        {% endfor %}
+                        <th class="th-total" style="min-width: 90px;">TOTAL</th>
+                    </tr>
+                </thead>
 
-    <div class="card shadow-sm border-0">
-        <div class="card-body p-0">
-            <div class="table-responsive">
-                <table class="table table-bordered table-hover table-sm mb-0" style="font-size: 0.85rem;">
-                    
-                    <thead class="table-dark text-center sticky-top" style="top: 0;">
-                        <tr>
-                            <th class="py-2" style="width: 20%; text-align: left; padding-left: 15px;">CATEGORIA / ITEM</th>
-                            {% for m in meses %}
-                                <th class="py-2" style="width: 5.5%;">{{ m }}</th>
-                            {% endfor %}
-                            <th class="py-2 bg-secondary" style="width: 8%;">TOTAL</th>
+                <tbody>
+                    {% for grupo_nome, itens in relatorio.items %}
+                        <tr class="group-row" onclick="toggleGroup('{{ forloop.counter }}', this)">
+                            <td colspan="14">
+                                <i class="fas fa-caret-down icon-small"></i> 
+                                {{ grupo_nome }}
+                                <span style="font-weight: 400; color: #64748b; font-size: 10px; margin-left: 8px;">
+                                    ({{ itens|length }} itens)
+                                </span>
+                            </td>
                         </tr>
-                    </thead>
+                        
+                        {% for item in itens %}
+                        <tr class="group-item-{{ forloop.parentloop.counter }}">
+                            <td style="padding-left: 16px; font-weight: 600; color: #334155; overflow: hidden; text-overflow: ellipsis;">
+                                {{ item.nome|truncatechars:25 }}
+                            </td>
 
-                    <tbody>
-                        {% for grupo_nome, itens in relatorio.items %}
-                            
-                            <tr style="background-color: #e9ecef;">
-                                <td colspan="14" class="fw-bold text-uppercase py-2 ps-3 text-dark">
-                                    <i class="fas fa-caret-right me-1"></i> {{ grupo_nome }}
-                                </td>
-                            </tr>
-                            
-                            {% for item in itens %}
-                            <tr>
-                                <td class="ps-4 text-muted fw-bold">{{ item.nome }}</td>
-
-                                {% for valor in item.valores %}
-                                    <td class="text-end text-nowrap">
-                                        {% if valor > 0 %}
-                                            <span style="color: #333;">{{ valor|floatformat:2 }}</span>
-                                        {% else %}
-                                            <span class="text-light-gray" style="color: #ccc;">-</span>
-                                        {% endif %}
-                                    </td>
-                                {% endfor %}
-
-                                <td class="text-end fw-bold text-nowrap" style="background-color: #f8f9fa;">
-                                    {% if item.total > 0 %}
-                                        R$ {{ item.total|floatformat:2 }}
+                            {% for valor in item.valores %}
+                                <td class="cell-value">
+                                    {% if valor > 0 %}
+                                        <span class="val-positive">{{ valor|floatformat:2 }}</span>
                                     {% else %}
-                                        -
+                                        <span class="val-zero">-</span>
                                     {% endif %}
                                 </td>
-                            </tr>
                             {% endfor %}
 
-                        {% empty %}
-                            <tr>
-                                <td colspan="14" class="text-center py-5">
-                                    <p class="text-muted mb-0">Nenhuma categoria encontrada no banco de dados.</p>
-                                    <small>Rode o comando: <code>python manage.py carregar_categorias</code></small>
-                                </td>
-                            </tr>
+                            <td class="cell-value cell-total">
+                                {% if item.total > 0 %}
+                                    R$ {{ item.total|floatformat:2 }}
+                                {% else %}
+                                    -
+                                {% endif %}
+                            </td>
+                        </tr>
                         {% endfor %}
-                    </tbody>
-                </table>
-            </div>
+
+                    {% empty %}
+                        <tr>
+                            <td colspan="14" style="text-align: center; padding: 40px; color: var(--text-muted);">
+                                <span>Nenhum dado encontrado.</span>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
         </div>
     </div>
     
-    <div class="mt-3 text-end text-muted small">
-        <i class="fas fa-info-circle"></i> Valores exibidos em Reais (R$).
+    <div class="mt-2 text-end text-muted small" style="opacity: 0.8; font-size: 11px;">
+        <i class="fas fa-info-circle me-1"></i> Valores em R$. Clique na categoria para expandir/recolher.
     </div>
+
 </div>
+
+<script>
+    function toggleGroup(groupId, element) {
+        const rows = document.querySelectorAll(`.group-item-${groupId}`);
+        const icon = element.querySelector('.icon-small');
+        
+        let isClosing = false;
+        rows.forEach(row => {
+            if (!row.classList.contains('d-none-row')) isClosing = true;
+        });
+
+        rows.forEach(row => {
+            if (isClosing) row.classList.add('d-none-row');
+            else row.classList.remove('d-none-row');
+        });
+
+        if (isClosing) {
+            icon.classList.remove('fa-caret-down');
+            icon.classList.add('fa-caret-right');
+        } else {
+            icon.classList.remove('fa-caret-right');
+            icon.classList.add('fa-caret-down');
+        }
+    }
+
+    function toggleAllGroups() {
+        const firstGroup = document.querySelector('.group-row');
+        if(!firstGroup) return;
+        
+        const firstIcon = firstGroup.querySelector('.icon-small');
+        const isClosed = firstIcon.classList.contains('fa-caret-right');
+        
+        const allHeaders = document.querySelectorAll('.group-row');
+        allHeaders.forEach(header => {
+            const icon = header.querySelector('.icon-small');
+            if (isClosed && icon.classList.contains('fa-caret-right')) header.click();
+            else if (!isClosed && icon.classList.contains('fa-caret-down')) header.click();
+        });
+    }
+</script>
 {% endblock %}

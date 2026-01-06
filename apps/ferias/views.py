@@ -6,7 +6,8 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_POST
 from django.urls import reverse
 from apps.funcionarios.models import Funcionario
-
+from django.http import JsonResponse
+from decimal import Decimal, ROUND_HALF_UP
 from .forms import FeriasForm, RecibosContabilidadeForm, PagamentoFeriasForm, PeriodoAquisitivoForm
 from .models import Ferias, RecibosContabilidade, PagamentoFerias, PeriodoAquisitivo
 from .services import FeriasExcelService
@@ -64,6 +65,8 @@ def deletar_periodo(request, pk):
     return redirect('ferias:listar_funcionarios')
 
 
+# Em zirk_rh_financeiro/apps/ferias/views.py
+
 def registrar_ferias(request):
     if request.method == 'POST':
         form = FeriasForm(request.POST)
@@ -76,8 +79,29 @@ def registrar_ferias(request):
                 form.add_error(None, str(e))
     else:
         form = FeriasForm()
-    return render(request, 'core/ferias/registrar_ferias.html', {'form': form})
 
+    # --- CORREÇÃO: Se o formulário for inválido (ou for GET), recarrega o dashboard ---
+    
+    # Se houver erros, precisamos reconstruir o contexto da lista de funcionários
+    if form.errors:
+        funcionarios = (
+            Funcionario.objects
+            .select_related("banco_horas")
+            .prefetch_related("periodos_aquisitivos__ferias_registradas")
+            .order_by("nome")
+        )
+        # Cria o form de período vazio para não quebrar o outro modal
+        form_periodo = PeriodoAquisitivoForm()
+        
+        return render(request, "core/ferias/listar_funcionarios.html", {
+            "funcionarios": funcionarios,
+            "form_periodo": form_periodo,
+            "form_ferias": form,  # Passa o form COM ERROS
+            "abrir_modal": "modalFerias" # Sinalizador para o template abrir o modal
+        })
+
+    # Caso seja um GET direto para essa URL (opcional, ou mantem o comportamento antigo)
+    return render(request, 'core/ferias/registrar_ferias.html', {'form': form})
 def editar_ferias(request, pk):
     registro = get_object_or_404(Ferias, pk=pk)
     if request.method == 'POST':
@@ -215,9 +239,16 @@ def registrar_recibo(request):
         form = RecibosContabilidadeForm()
     return render(request, 'core/ferias/registrar_recibo.html', {'form': form}) # Fallback se não usar modal
 
+
 def editar_recibo(request, pk):
     recibo = get_object_or_404(RecibosContabilidade, pk=pk)
-    form = RecibosContabilidadeForm(request.POST or None, instance=recibo)
+    
+    # ADICIONADO: auto_id="id_edit_%s" para evitar conflito de IDs com o modal de criação
+    form = RecibosContabilidadeForm(
+        request.POST or None, 
+        instance=recibo, 
+        auto_id="id_edit_%s"
+    )
 
     if request.method == 'POST':
         if form.is_valid():
@@ -225,7 +256,6 @@ def editar_recibo(request, pk):
             messages.success(request, "Recibo atualizado.")
             return redirect('ferias:listar_recibos')
     
-    # Retorna apenas o form para o modal se for AJAX
     if request.headers.get('x-requested-with') == 'XMLHttpRequest':
         return render(request, 'core/ferias/form_modal_recibo.html', {
             'form': form,
@@ -235,13 +265,24 @@ def editar_recibo(request, pk):
     
     return redirect('ferias:listar_recibos')
 
-@require_POST
 def deletar_recibo(request, pk):
     recibo = get_object_or_404(RecibosContabilidade, pk=pk)
-    recibo.delete()
-    messages.success(request, "Recibo deletado.")
-    return redirect('ferias:listar_recibos')
 
+    # Se for POST, executa a exclusão
+    if request.method == 'POST':
+        recibo.delete()
+        messages.success(request, "Recibo deletado.")
+        return redirect('ferias:listar_recibos')
+
+    # Se for GET (AJAX), retorna o modal de confirmação
+    if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+        return render(request, 'core/ferias/delete_modal.html', {
+            'object': recibo,
+            # O template delete_modal usa request.path no action, o que funcionará corretamente
+        })
+    
+    # Fallback
+    return redirect('ferias:listar_recibos')
 # View auxiliar para o modal de exclusão (opcional, igual ao padrão que você já usa)
 def confirmar_delete_recibo(request, pk):
     recibo = get_object_or_404(RecibosContabilidade, pk=pk)
@@ -251,3 +292,30 @@ def confirmar_delete_recibo(request, pk):
             'delete_url': reverse('ferias:deletar_recibo', kwargs={'pk': pk})
         })
     return redirect('ferias:listar_recibos')
+
+def calcular_valor_ferias_api(request):
+    """
+    API para calcular automaticamente 1/3 de férias com base no salário.
+    Recebe: funcionario_id (GET)
+    Retorna: JSON {'valor': '1234.56'}
+    """
+    funcionario_id = request.GET.get('funcionario_id')
+    
+    if not funcionario_id:
+        return JsonResponse({'valor': None})
+
+    try:
+        funcionario = Funcionario.objects.get(pk=funcionario_id)
+        # Tenta pegar salário da Marcenaria ou Contabilidade
+        if hasattr(funcionario, 'dados_trabalhistas'):
+            salario = funcionario.dados_trabalhistas.salario
+            if salario:
+                # Cálculo de 1/3
+                valor = salario / Decimal("3.0")
+                valor_formatado = valor.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+                return JsonResponse({'valor': str(valor_formatado)})
+    
+    except Funcionario.DoesNotExist:
+        pass
+    
+    return JsonResponse({'valor': 0})

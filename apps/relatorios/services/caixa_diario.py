@@ -133,12 +133,21 @@ class CaixaDiarioExcelService:
         }
 
     @staticmethod
-    def gerar_relatorio(movimentacoes, resumo_dados, ano, mes):
-        output = io.BytesIO()
-        workbook = xlsxwriter.Workbook(output, {'in_memory': True})
+    def gerar_relatorio(movimentacoes, resumo_dados, ano, mes, workbook=None):
+        output = None
+        should_close = False
+
+        # --- Lógica de Correção para Pacote ---
+        if workbook is None:
+            output = io.BytesIO()
+            workbook = xlsxwriter.Workbook(output, {'in_memory': True})
+            should_close = True
+        
+        # Cria a aba
         ws = workbook.add_worksheet("Caixa Diário")
         ws.hide_gridlines(2)
         
+        # Define formatos usando o workbook ATUAL (existente ou novo)
         fmt = CaixaDiarioExcelService._define_formats(workbook)
 
         # Configuração de Colunas (Layout Lado a Lado)
@@ -160,7 +169,7 @@ class CaixaDiarioExcelService:
         ws.write(row, 0, "RESUMO DO MÊS", fmt['section_title'])
         row += 1
         
-        # Cria um layout de cards simples nas primeiras linhas
+        # Cards simples de resumo
         # Saldo Anterior
         ws.write(row, 0, "Saldo Anterior", fmt['resumo_label'])
         ws.write(row, 1, resumo_dados['saldo_anterior'], fmt['resumo_value'])
@@ -195,16 +204,20 @@ class CaixaDiarioExcelService:
         mapa_movimentacoes = {}
         ultimo_dia = calendar.monthrange(ano, mes)[1]
         
+        # Inicializa todos os dias do mês
         for dia in range(1, ultimo_dia + 1):
             data_atual = date(ano, mes, dia)
             mapa_movimentacoes[data_atual] = {'E': [], 'S': []}
 
         for item in movimentacoes:
             if item.data in mapa_movimentacoes:
-                # Formata a descrição: "Desc (Obs)" se houver obs
-                desc = item.descricao
-                if item.observacoes:
-                    desc += f" ({item.observacoes})"
+                # Usa 'historico' conforme corrigido
+                desc = item.historico
+                
+                # 'observacoes' com getattr seguro
+                obs = getattr(item, 'observacoes', None)
+                if obs:
+                    desc += f" ({obs})"
                 
                 # Armazena tupla (descrição, valor)
                 mapa_movimentacoes[item.data][item.tipo].append((desc, item.valor))
@@ -217,8 +230,8 @@ class CaixaDiarioExcelService:
             entradas = dados['E']
             saidas = dados['S']
             
-            # Descobre quantas linhas esse dia vai ocupar (o maior entre qtd entradas e saídas)
-            n_linhas = max(len(entradas), len(saidas), 1) # Pelo menos 1 linha pra mostrar o dia vazio
+            # Descobre quantas linhas esse dia vai ocupar
+            n_linhas = max(len(entradas), len(saidas), 1) 
             
             # Se for dia vazio, imprime traços
             if not entradas and not saidas:
@@ -230,7 +243,6 @@ class CaixaDiarioExcelService:
                 row += 1
                 continue
 
-            # Se tiver dados, itera as linhas necessárias
             # Mescla a célula da data se houver mais de uma linha
             if n_linhas > 1:
                 ws.merge_range(row, 0, row + n_linhas - 1, 0, data_atual, fmt['cell_date'])
@@ -244,7 +256,6 @@ class CaixaDiarioExcelService:
                     ws.write(row, 1, desc, fmt['cell_desc_in'])
                     ws.write(row, 2, val, fmt['cell_val_in'])
                 else:
-                    # Espaço vazio na coluna de entrada (mas com formatação para manter a cor)
                     ws.write(row, 1, "", fmt['cell_desc_in'])
                     ws.write(row, 2, "", fmt['cell_val_in'])
 
@@ -254,17 +265,23 @@ class CaixaDiarioExcelService:
                     ws.write(row, 3, desc, fmt['cell_desc_out'])
                     ws.write(row, 4, val, fmt['cell_val_out'])
                 else:
-                    # Espaço vazio na coluna de saída
                     ws.write(row, 3, "", fmt['cell_desc_out'])
                     ws.write(row, 4, "", fmt['cell_val_out'])
                 
                 row += 1
 
-        # Linha final para fechar a borda inferior visualmente
+        # Linha final para fechar a borda inferior
         border_top = workbook.add_format({'top': 1, 'top_color': '#BDC3C7'})
         for col in range(5):
             ws.write(row, col, "", border_top)
 
-        workbook.close()
-        output.seek(0)
-        return output
+        # --- CORREÇÃO FINAL: Só fecha se criou o workbook aqui ---
+        if should_close:
+            workbook.close()
+            output.seek(0)
+            return output
+        
+        return None
+    
+
+

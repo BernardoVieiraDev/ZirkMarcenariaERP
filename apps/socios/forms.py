@@ -9,7 +9,7 @@ class LancamentoSocioForm(forms.ModelForm):
         model = LancamentoSocio
         fields = ['socio', 'data', 'categoria', 'valor', 'observacao']
         widgets = {
-            'data': forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
+            'data': forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}, format='%Y-%m-%d'),
             'valor': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
             'observacao': forms.TextInput(attrs={'class': 'form-control'}),
             'socio': forms.Select(attrs={'class': 'form-select'}),

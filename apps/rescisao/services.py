@@ -253,7 +253,7 @@ class RescisaoExcelService:
 
         # Assinaturas
         data_hoje = date.today().strftime('%d/%m/%Y')
-        ws.merge_range(row, 0, row, 4, f"Belo Horizonte, {data_hoje}", fmt['ass'])
+        ws.merge_range(row, 0, row, 4, f"{data_hoje}", fmt['ass'])
         row += 4
 
         ws.merge_range(row, 0, row, 1, "", fmt['linha_ass'])

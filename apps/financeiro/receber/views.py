@@ -1,5 +1,4 @@
 import calendar
-# ... (Mantenha os imports existentes e adicione os abaixo se faltarem)
 from datetime import date, datetime, timedelta
 from decimal import Decimal
 from itertools import chain
@@ -17,12 +16,10 @@ from apps.financeiro.pagar.models import (Boleto, Cheque, ComissaoArquiteto,
                                           GastoVeiculoConsorcio,
                                           PrestacaoEmprestimo)
 
-from .forms import (BancoForm, CaixaDiarioForm,  # Adicione CaixaDiarioForm
+from .forms import (BancoForm, CaixaDiarioForm,
                     MovimentoBancoForm, ReceberForm)
-from .models import (Banco, CaixaDiario,  # Adicione CaixaDiario
+from .models import (Banco, CaixaDiario,
                      MovimentoBanco, Receber)
-
-# zirk_rh_financeiro/apps/financeiro/receber/views.py
 
 
 # --- VIEWS DE CRUD PADRÃO (Lista, Criar, Editar, Excluir) ---
@@ -30,13 +27,15 @@ from .models import (Banco, CaixaDiario,  # Adicione CaixaDiario
 def receber_list(request):
     receber = Receber.objects.all().order_by('data_vencimento')
     
-    # Adicione estas linhas:
+    # === CORREÇÃO: Cálculo do Total Acumulado ===
+    total = receber.aggregate(s=Coalesce(Sum('valor'), Decimal(0)))['s']
+    
     form = ReceberForm() 
     
-    # Passe o 'form' no dicionário de contexto
     return render(request, 'core/financeiro/receber/list.html', {
         'receber': receber,
-        'form': form 
+        'form': form,
+        'total': total  # Passando o total para o template
     })
 
 def receber_create(request):
@@ -230,7 +229,6 @@ def relatorio_vendas(request):
     })
 
 
-
 def caixa_diario_view(request):
     # 1. Definição do Período (Mês/Ano)
     hoje = date.today()
@@ -269,7 +267,7 @@ def caixa_diario_view(request):
     movimentacoes = CaixaDiario.objects.filter(
         data__year=ano, 
         data__month=mes
-    ).order_by('-data', '-created_at')
+    ).order_by('-data', '-id')
 
     # Totais do mês
     total_entradas_mes = movimentacoes.filter(tipo='E').aggregate(s=Coalesce(Sum('valor'), Decimal(0)))['s']
@@ -314,23 +312,8 @@ def caixa_diario_delete(request, pk):
         item.delete()
         return redirect(f'/receber/caixa-diario/?ano={ano}&mes={mes}')
     
-    # Se quiser uma pagina de confirmação, crie um template. 
-    # Aqui vou deletar direto se for POST, ou renderizar um confirm simples.
     return render(request, 'core/financeiro/receber/delete.html', {'receber': item}) 
 
-
-def bancos_list(request):
-    """ View auxiliar para gerenciar os bancos antes de ver o extrato """
-    bancos = Banco.objects.all()
-    if request.method == 'POST':
-        form = BancoForm(request.POST)
-        if form.is_valid():
-            form.save()
-            return redirect('receber:movimento_banco')
-    else:
-        form = BancoForm()
-    
-    return render(request, 'core/financeiro/receber/banco_list.html', {'bancos': bancos, 'form': form})
 
 def movimento_banco_view(request):
     # 1. Identificar qual Banco estamos visualizando
@@ -395,7 +378,7 @@ def movimento_banco_view(request):
         banco=banco_selecionado,
         data__year=ano, 
         data__month=mes
-    ).order_by('-data', '-created_at')
+    ).order_by('-data', '-id')
 
     total_entradas_mes = movimentacoes.filter(tipo='E').aggregate(s=Coalesce(Sum('valor'), Decimal(0)))['s']
     total_saidas_mes = movimentacoes.filter(tipo='S').aggregate(s=Coalesce(Sum('valor'), Decimal(0)))['s']

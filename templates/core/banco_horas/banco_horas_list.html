@@ -20,60 +20,89 @@
     .header-content p { font-size: 14px; color: var(--muted); margin: 2px 0 0 0; }
     
     .top-section { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; flex-wrap: wrap; gap: 16px; }
+    .top-actions { display: flex; align-items: center; gap: 12px; }
 
     /* Botão Principal */
     .rh-btn-primary { background: linear-gradient(180deg, var(--primary), #0f66c3); color: white; padding: 10px 20px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 14px; border: none; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); transition: filter 0.2s; }
     .rh-btn-primary:hover { filter: brightness(1.1); }
 
-    /* Tabela */
-    .list-panel { background: var(--card); border-radius: var(--radius); border: 1px solid var(--border); overflow: visible; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); }
+    /* Toggle View Buttons */
+    .view-switcher { background: #e2e8f0; padding: 4px; border-radius: 8px; display: flex; gap: 2px; }
+    .view-btn { border: none; background: transparent; padding: 8px; border-radius: 6px; cursor: pointer; color: var(--muted); display: flex; align-items: center; justify-content: center; transition: all 0.2s; }
+    .view-btn:hover { color: var(--primary); }
+    .view-btn.active { background: white; color: var(--primary); box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+
+    /* Container Geral da Lista */
+    .list-panel { background: var(--card); border-radius: var(--radius); border: 1px solid var(--border); overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); }
     
-    .toolbar { padding: 16px; border-bottom: 1px solid var(--border); }
+    .toolbar { padding: 16px; border-bottom: 1px solid var(--border); background: white; }
     .rh-search input { width: 100%; max-width: 350px; padding: 10px 16px; border-radius: 8px; border: 1px solid var(--border); font-size: 14px; }
 
+    /* --- TABELA (LIST VIEW) --- */
     .rh-table { width: 100%; border-collapse: collapse; text-align: left; }
     .rh-table th { padding: 14px 20px; font-size: 12px; font-weight: 600; text-transform: uppercase; color: var(--muted); background: #f8fafc; border-bottom: 1px solid var(--border); }
     .rh-table td { padding: 16px 20px; font-size: 14px; vertical-align: middle; border-bottom: 1px solid #f1f5f9; position: relative; }
     .rh-table tr:hover { background: #f8fafc; }
 
-    /* Estilos de Saldo */
-    .saldo-pill { display: inline-block; padding: 4px 12px; border-radius: 20px; font-weight: 700; font-size: 14px; min-width: 80px; text-align: center; }
-    .saldo-pos { background: #dcfce7; color: #15803d; }
-    .saldo-neg { background: #fee2e2; color: #b91c1c; }
-    .saldo-neutral { background: #f1f5f9; color: #64748b; }
+    /* --- GRADE (GRID VIEW) --- */
+    .grid-container { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px; padding: 20px; background: #f8fafc; }
+    
+    .grid-card { background: white; border: 1px solid var(--border); border-radius: 12px; padding: 20px; position: relative; transition: transform 0.2s, box-shadow 0.2s; display: flex; flex-direction: column; }
+    .grid-card:hover { transform: translateY(-3px); box-shadow: 0 10px 20px -5px rgba(0,0,0,0.1); border-color: #cbd5e1; }
+    
+    .card-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 15px; }
+    .card-avatar { width: 42px; height: 42px; background: #eff6ff; color: var(--primary); border-radius: 10px; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 18px; }
+    
+    .card-name { font-size: 16px; font-weight: 700; color: #1e293b; margin-bottom: 4px; line-height: 1.2; }
+    .card-meta { font-size: 12px; color: var(--muted); }
+    
+    .card-body { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 10px 0; }
+    .card-saldo-label { font-size: 12px; text-transform: uppercase; color: var(--muted); font-weight: 600; margin-bottom: 4px; }
+    .card-saldo-value { font-size: 28px; font-weight: 800; letter-spacing: -0.5px; }
+    
+    .card-actions { border-top: 1px solid #f1f5f9; margin-top: 15px; padding-top: 15px; display: flex; justify-content: flex-end; gap: 8px; }
+    .btn-icon-sm { padding: 6px; border-radius: 6px; border: 1px solid #e2e8f0; background: white; color: var(--muted); cursor: pointer; transition: all 0.2s; }
+    .btn-icon-sm:hover { background: #f1f5f9; color: var(--primary); border-color: #cbd5e1; }
+    .btn-icon-sm.delete:hover { color: #ef4444; background: #fef2f2; }
 
-    /* Menu 3 Pontos */
+    /* Estilos de Saldo Compartilhados */
+    .saldo-pill { display: inline-block; padding: 4px 12px; border-radius: 20px; font-weight: 700; font-size: 14px; min-width: 80px; text-align: center; }
+    .saldo-text { font-weight: 700; }
+    .pos { color: #16a34a; }
+    .neg { color: #dc2626; }
+    .neu { color: #64748b; }
+    
+    .saldo-pill.pos { background: #dcfce7; color: #15803d; }
+    .saldo-pill.neg { background: #fee2e2; color: #b91c1c; }
+    .saldo-pill.neu { background: #f1f5f9; color: #64748b; }
+
+    /* Utilitários */
+    .hidden { display: none !important; }
+    .empty-msg { text-align: center; padding: 40px; color: var(--muted); width: 100%; grid-column: 1 / -1; }
+
+    /* Menu 3 Pontos (Tabela) */
     .action-menu { position: relative; display: inline-block; }
     .dots-btn { background: transparent; border: none; cursor: pointer; padding: 8px; border-radius: 50%; color: var(--muted); transition: background 0.2s; display: flex; align-items: center; justify-content: center; }
     .dots-btn:hover { background: #eef2ff; color: var(--primary); }
     
-    .dropdown-content { display: none; position: absolute; right: 0; top: 100%; margin-top: 4px; background-color: white; min-width: 160px; box-shadow: 0 10px 30px rgba(0,0,0,0.15); border-radius: 8px; border: 1px solid var(--border); z-index: 9999; overflow: hidden; animation: fadeIn 0.1s ease-out; }
+    .dropdown-content { display: none; position: absolute; right: 0; top: 100%; margin-top: 4px; background-color: white; min-width: 160px; box-shadow: 0 10px 30px rgba(0,0,0,0.15); border-radius: 8px; border: 1px solid var(--border); z-index: 999; overflow: hidden; animation: fadeIn 0.1s ease-out; }
     .dropdown-content.show { display: block; }
     
     .dropdown-content a { color: #334155; padding: 10px 16px; text-decoration: none; display: flex; align-items: center; gap: 8px; font-size: 13px; width: 100%; transition: background 0.1s; }
     .dropdown-content a:hover { background-color: #f8fafc; color: var(--primary); }
 
-    @keyframes fadeIn { from { opacity: 0; transform: translateY(-5px); } to { opacity: 1; transform: translateY(0); } }
-    .empty-msg { text-align: center; padding: 40px; color: var(--muted); }
-
-    /* --- MODAL --- */
+    /* --- MODAIS --- */
     .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.75); z-index: 1000; overflow-y: auto; padding: 20px; align-items: flex-start; justify-content: center; backdrop-filter: blur(3px); }
     .modal-overlay.open { display: flex; }
-    
     .modal-window { background: white; width: 100%; max-width: 500px; margin: 30px auto; border-radius: 12px; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25); display: flex; flex-direction: column; position: relative; }
-    
     .modal-header { padding: 20px 24px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
     .modal-title { font-size: 18px; font-weight: 700; color: #1e293b; margin: 0; }
     .btn-close { background: transparent; border: none; cursor: pointer; font-size: 24px; color: #94a3b8; padding: 4px; line-height: 1; }
     .btn-close:hover { color: #0f172a; }
-    
     .modal-body { padding: 24px; }
-    
     .form-group { margin-bottom: 16px; }
     .form-group label { display: block; font-size: 13px; font-weight: 600; color: #475569; margin-bottom: 6px; }
     .form-group input, .form-group select { width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #cbd5e1; font-size: 14px; }
-    .form-group input:focus, .form-group select:focus { border-color: var(--primary); outline: none; }
-    
     .modal-footer { padding: 16px 24px; border-top: 1px solid var(--border); background: #f8fafc; border-radius: 0 0 12px 12px; display: flex; justify-content: flex-end; gap: 12px; }
     .btn-ghost { background: white; border: 1px solid #cbd5e1; color: #475569; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: 600; }
     .btn-ghost:hover { background: #f1f5f9; color: #1e293b; }
@@ -92,10 +121,21 @@
             </div>
         </div>
 
-        <button onclick="openModal()" class="rh-btn-primary">
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
-            Novo Lançamento
-        </button>
+        <div class="top-actions">
+            <div class="view-switcher">
+                <button class="view-btn active" id="btnList" onclick="switchView('list')" title="Visualização em Lista">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+                </button>
+                <button class="view-btn" id="btnGrid" onclick="switchView('grid')" title="Visualização em Grade">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+                </button>
+            </div>
+
+            <button onclick="openModal()" class="rh-btn-primary">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
+                Novo Lançamento
+            </button>
+        </div>
     </div>
 
     <div class="list-panel">
@@ -103,8 +143,8 @@
             <input id="searchHours" class="rh-search input" type="search" placeholder="Buscar funcionário..." onkeyup="filterHours()" style="width: 100%; padding: 10px 16px; border-radius: 8px; border: 1px solid var(--border);">
         </div>
 
-        <div class="table-responsive">
-            <table class="rh-table" id="hoursTable">
+        <div id="listView" class="table-responsive">
+            <table class="rh-table">
                 <thead>
                     <tr>
                         <th width="40%">Funcionário</th>
@@ -113,17 +153,17 @@
                         <th width="10%" style="text-align: right;">Ações</th>
                     </tr>
                 </thead>
-                <tbody>
+                <tbody id="tableBody">
                     {% for banco in bancos %}
-                    <tr class="search-row">
+                    <tr class="search-item" data-name="{{ banco.funcionario.nome|lower }}">
                         <td class="col-name" style="font-weight: 600; color: #334155;">{{ banco.funcionario.nome }}</td>
                         <td>
                             {% if banco.saldo > 0 %}
-                                <span class="saldo-pill saldo-pos">+{{ banco.saldo|floatformat:2 }}h</span>
+                                <span class="saldo-pill pos">+{{ banco.saldo|floatformat:2 }}h</span>
                             {% elif banco.saldo < 0 %}
-                                <span class="saldo-pill saldo-neg">{{ banco.saldo|floatformat:2 }}h</span>
+                                <span class="saldo-pill neg">{{ banco.saldo|floatformat:2 }}h</span>
                             {% else %}
-                                <span class="saldo-pill saldo-neutral">0.00h</span>
+                                <span class="saldo-pill neu">0.00h</span>
                             {% endif %}
                         </td>
                         <td style="color: var(--muted); font-size: 14px;">
@@ -152,6 +192,52 @@
                     {% endfor %}
                 </tbody>
             </table>
+        </div>
+
+        <div id="gridView" class="grid-container hidden">
+            {% for banco in bancos %}
+            <div class="grid-card search-item" data-name="{{ banco.funcionario.nome|lower }}">
+                <div class="card-header">
+                    <div class="card-avatar">
+                        {{ banco.funcionario.nome|slice:":1" }}
+                    </div>
+                    <div style="text-align: right;">
+                        <div class="card-meta">Atualizado</div>
+                        <div style="font-size: 12px; font-weight: 500;">{{ banco.atualizado_em|date:"d/m/Y" }}</div>
+                    </div>
+                </div>
+                
+                <div style="margin-bottom: 10px;">
+                    <div class="card-name">{{ banco.funcionario.nome }}</div>
+                    <div class="card-meta">Saldo Acumulado</div>
+                </div>
+
+                <div class="card-body">
+                    {% if banco.saldo > 0 %}
+                        <div class="card-saldo-value pos">+{{ banco.saldo|floatformat:2 }}h</div>
+                        <div class="card-saldo-label">Crédito</div>
+                    {% elif banco.saldo < 0 %}
+                        <div class="card-saldo-value neg">{{ banco.saldo|floatformat:2 }}h</div>
+                        <div class="card-saldo-label">Débito</div>
+                    {% else %}
+                        <div class="card-saldo-value neu">0.00h</div>
+                        <div class="card-saldo-label">Zerado</div>
+                    {% endif %}
+                </div>
+
+                <div class="card-actions">
+                    <button class="btn-icon-sm" title="Editar" onclick="openActionModal('{% url 'banco_horas:banco_horas_edit' pk=banco.pk %}')">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                    </button>
+                    <button class="btn-icon-sm delete" title="Excluir" onclick="openActionModal('{% url 'banco_horas:banco_horas_delete' pk=banco.pk %}')">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>
+                    </button>
+                </div>
+            </div>
+            {% empty %}
+            <div class="empty-msg">Nenhum banco de horas encontrado.</div>
+            {% endfor %}
+            <div id="noResults" class="empty-msg hidden">Nenhum resultado encontrado para a busca.</div>
         </div>
     </div>
 </div>
@@ -191,7 +277,67 @@
 </div>
 
 <script>
-    // --- Funções Originais (Mantidas) ---
+    // --- LÓGICA DE VISUALIZAÇÃO (LISTA/GRADE) ---
+    function switchView(view) {
+        const listView = document.getElementById('listView');
+        const gridView = document.getElementById('gridView');
+        const btnList = document.getElementById('btnList');
+        const btnGrid = document.getElementById('btnGrid');
+
+        if (view === 'grid') {
+            listView.classList.add('hidden');
+            gridView.classList.remove('hidden');
+            btnList.classList.remove('active');
+            btnGrid.classList.add('active');
+            localStorage.setItem('bancoHorasView', 'grid');
+        } else {
+            gridView.classList.add('hidden');
+            listView.classList.remove('hidden');
+            btnGrid.classList.remove('active');
+            btnList.classList.add('active');
+            localStorage.setItem('bancoHorasView', 'list');
+        }
+    }
+
+    // Carregar preferência salva
+    document.addEventListener('DOMContentLoaded', () => {
+        const savedView = localStorage.getItem('bancoHorasView');
+        if (savedView) {
+            switchView(savedView);
+        }
+    });
+
+    // --- FILTRO DE BUSCA UNIFICADO ---
+    function filterHours() {
+        const query = document.getElementById('searchHours').value.toLowerCase().trim();
+        const items = document.querySelectorAll('.search-item');
+        let visibleCount = 0;
+
+        items.forEach(item => {
+            const name = item.getAttribute('data-name');
+            if (name && name.includes(query)) {
+                item.classList.remove('hidden');
+                // Se for linha de tabela, removemos o style display:none que pode ter sido aplicado
+                if (item.tagName === 'TR') item.style.display = ''; 
+                visibleCount++;
+            } else {
+                item.classList.add('hidden');
+                if (item.tagName === 'TR') item.style.display = 'none';
+            }
+        });
+
+        // Controle de mensagem "sem resultados" na grade
+        const noResults = document.getElementById('noResults');
+        if (noResults) {
+            if (visibleCount === 0 && query !== '') {
+                noResults.classList.remove('hidden');
+            } else {
+                noResults.classList.add('hidden');
+            }
+        }
+    }
+
+    // --- FUNÇÕES DE MODAL EXISTENTES ---
     function openModal() {
         document.getElementById('modalLancamento').classList.add('open');
         document.body.style.overflow = 'hidden';
@@ -205,18 +351,6 @@
     document.getElementById('modalLancamento').addEventListener('click', function(e) {
         if (e.target === this) closeModal();
     });
-
-    function filterHours() {
-        const query = document.getElementById('searchHours').value.toLowerCase();
-        const rows = document.querySelectorAll('.search-row');
-        rows.forEach(row => {
-            const name = row.querySelector('.col-name');
-            if (name) {
-                const text = name.innerText.toLowerCase();
-                row.style.display = text.includes(query) ? '' : 'none';
-            }
-        });
-    }
 
     function toggleMenu(menuId) {
         document.querySelectorAll('.dropdown-content').forEach(menu => {
@@ -234,28 +368,21 @@
         }
     }
 
-    // --- NOVA LÓGICA: MODAL DINÂMICO (EDITAR/EXCLUIR) ---
-
+    // Modal Dinâmico
     function openActionModal(url) {
         const modal = document.getElementById('modalAcoes');
         const contentDiv = document.getElementById('modalAcoesContent');
         
-        // Abre o modal
         modal.classList.add('open');
         document.body.style.overflow = 'hidden';
         contentDiv.innerHTML = '<div style="padding: 40px; text-align: center; color: var(--muted);">Carregando formulário...</div>';
 
-        // Busca o conteúdo
-        fetch(url, {
-            headers: { 'X-Requested-With': 'XMLHttpRequest' }
-        })
+        fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
         .then(response => {
             if (!response.ok) throw new Error('Erro ao carregar');
             return response.text();
         })
-        .then(html => {
-            contentDiv.innerHTML = html;
-        })
+        .then(html => { contentDiv.innerHTML = html; })
         .catch(error => {
             contentDiv.innerHTML = `<div style="padding: 20px; color: red;">Erro ao carregar: ${error.message}</div>`;
         });
@@ -269,7 +396,6 @@
         }, 200);
     }
 
-    // Fecha modal de ações ao clicar fora
     document.getElementById('modalAcoes').addEventListener('click', function(e) {
         if (e.target === this) closeActionModal();
     });

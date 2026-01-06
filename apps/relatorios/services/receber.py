@@ -4,37 +4,26 @@ from decimal import Decimal
 from datetime import datetime
 
 class ReceberExcelService:
+    # ... (manter as constantes de cores e método _define_formats iguais) ...
     # --- Paleta de Cores Profissional (Clean & Corporate) ---
-    
-    # Título Principal
-    COR_TITULO_BG = '#2C3E50'       # Azul Petróleo Escuro
-    COR_TITULO_TEXTO = '#FFFFFF'    # Branco
-    
-    # Cabeçalhos de Tabela
-    COR_HEADER_BG = '#34495E'       # Azul Petróleo
-    COR_HEADER_TEXT = '#FFFFFF'     # Branco
-    
-    # Separadores de Mês
-    COR_MES_BG = '#95A5A6'          # Cinza Azulado Médio
-    COR_MES_TEXT = '#FFFFFF'        # Branco
-    
-    # Totais e Rodapés
-    COR_TOTAL_BG = '#F4F6F7'        # Cinza Azulado Claro
-    COR_TOTAL_TEXT = '#2C3E50'      # Azul Escuro
-    
-    # Linhas e Bordas
-    COR_LINHA_DIVISORIA = '#BDC3C7' # Cinza Médio (Bordas estruturais)
-    COR_LINHA_SUAVE = '#E0E0E0'     # Cinza Claro (Linhas de dados)
+    COR_TITULO_BG = '#2C3E50'
+    COR_TITULO_TEXTO = '#FFFFFF'
+    COR_HEADER_BG = '#34495E'
+    COR_HEADER_TEXT = '#FFFFFF'
+    COR_MES_BG = '#95A5A6'
+    COR_MES_TEXT = '#FFFFFF'
+    COR_TOTAL_BG = '#F4F6F7'
+    COR_TOTAL_TEXT = '#2C3E50'
+    COR_LINHA_DIVISORIA = '#BDC3C7'
+    COR_LINHA_SUAVE = '#E0E0E0'
 
     @classmethod
     def _define_formats(cls, workbook: xlsxwriter.Workbook):
+        # ... (manter implementação original do _define_formats) ...
         font_base = {'font_name': 'Calibri', 'valign': 'vcenter', 'font_size': 10}
-        
-        # Borda inferior suave para linhas de dados
         bottom_line = {'bottom': 1, 'bottom_color': cls.COR_LINHA_SUAVE}
         
         return {
-            # --- TÍTULO PRINCIPAL ---
             'main_title': workbook.add_format({
                 **font_base, 'bold': True, 'font_size': 18, 'align': 'center',
                 'font_color': cls.COR_TITULO_TEXTO, 'bg_color': cls.COR_TITULO_BG,
@@ -48,15 +37,11 @@ class ReceberExcelService:
                 'left': 1, 'left_color': cls.COR_TITULO_BG,
                 'right': 1, 'right_color': cls.COR_TITULO_BG,
             }),
-
-            # --- TÍTULOS DE SEÇÃO (Resumo) ---
             'section_title': workbook.add_format({
                 **font_base, 'bold': True, 'font_size': 14, 'align': 'left',
                 'font_color': cls.COR_TITULO_BG,
                 'bottom': 1, 'bottom_color': cls.COR_LINHA_DIVISORIA
             }),
-
-            # --- CABEÇALHOS DE TABELA ---
             'header_table': workbook.add_format({
                 **font_base, 'bold': True, 'font_size': 11, 'align': 'center',
                 'fg_color': cls.COR_HEADER_BG, 'font_color': cls.COR_HEADER_TEXT,
@@ -67,15 +52,11 @@ class ReceberExcelService:
                 'fg_color': cls.COR_HEADER_BG, 'font_color': cls.COR_HEADER_TEXT,
                 'border': 1, 'border_color': cls.COR_HEADER_BG
             }),
-
-            # --- SEPARADOR DE MÊS (ALTERADO: Font Size 16) ---
             'month_title': workbook.add_format({
                 **font_base, 'bold': True, 'font_size': 16, 'align': 'left', 'indent': 1,
                 'fg_color': cls.COR_MES_BG, 'font_color': cls.COR_MES_TEXT,
                 'border': 1, 'border_color': cls.COR_MES_BG
             }),
-
-            # --- DADOS ---
             'data_text': workbook.add_format({
                 **font_base, 'align': 'left', 'indent': 1, 
                 'font_color': '#333333', **bottom_line
@@ -88,8 +69,6 @@ class ReceberExcelService:
                 **font_base, 'align': 'right', 
                 'num_format': '#,##0.00', 'font_color': '#333333', **bottom_line
             }),
-
-            # --- TOTAIS ---
             'total_label': workbook.add_format({
                 **font_base, 'bold': True, 'align': 'right', 
                 'bg_color': cls.COR_TOTAL_BG, 'font_color': cls.COR_TOTAL_TEXT,
@@ -103,8 +82,6 @@ class ReceberExcelService:
                 'top': 1, 'top_color': cls.COR_LINHA_DIVISORIA,
                 'bottom': 1, 'bottom_color': cls.COR_LINHA_DIVISORIA
             }),
-            
-            # Formatos específicos para o Resumo
             'summary_text': workbook.add_format({
                 **font_base, 'align': 'left', 'indent': 1, 
                 'border': 1, 'border_color': cls.COR_LINHA_DIVISORIA
@@ -117,9 +94,13 @@ class ReceberExcelService:
         }
 
     @staticmethod
-    def gerar_relatorio_receber(dados_queryset, workbook=None):
+    def gerar_relatorio_receber(dados_queryset, workbook=None, ano=None):
         output = None
         should_close = False
+
+        # Define o ano atual se não for informado
+        if ano is None:
+            ano = datetime.now().year
 
         if workbook is None:
             output = io.BytesIO()
@@ -127,6 +108,14 @@ class ReceberExcelService:
             should_close = True
 
         try:
+            # CORREÇÃO PRINCIPAL: 
+            # 1. Converter QuerySet para lista para permitir múltiplas iterações
+            # 2. Filtrar pelo ano selecionado para garantir integridade do relatório (evita misturar jan/2024 com jan/2025)
+            dados_lista = [
+                item for item in dados_queryset 
+                if item.data_vencimento and item.data_vencimento.year == ano
+            ]
+
             ws = workbook.add_worksheet("Contas a Receber")
             ws.hide_gridlines(2) # Visual limpo
             
@@ -144,9 +133,10 @@ class ReceberExcelService:
 
             row = 1
 
-            # --- 2. Título Principal ---
+            # --- 2. Título Principal (AGORA DINÂMICO) ---
             ws.set_row(row, 35)
-            ws.merge_range(row, 0, row, 7, "RELATÓRIO DE CONTAS A RECEBER 2025", fmt['main_title'])
+            # Usa o ano definido na variável
+            ws.merge_range(row, 0, row, 7, f"RELATÓRIO DE CONTAS A RECEBER {ano}", fmt['main_title'])
             
             # Barra Sólida Abaixo do Título
             ws.set_row(row + 1, 5) 
@@ -160,7 +150,7 @@ class ReceberExcelService:
             resumo_categorias = {}
             total_geral_resumo = Decimal('0.00')
             
-            for item in dados_queryset:
+            for item in dados_lista:
                 cat_nome = item.categoria if item.categoria else "Outros"
                 valor = item.valor if item.valor else Decimal('0.00')
                 
@@ -197,7 +187,7 @@ class ReceberExcelService:
 
             headers = [
                 "Forma de recebimento", "Data vencimento", "Cliente", "Categoria",
-                "Valor a receber", "Valor em estoque", "Observações", "Data do pagamento"
+                "Valor a receber", "Valor em estoque", "Observações", "Data do recebimento"
             ]
 
             meses = [
@@ -207,12 +197,13 @@ class ReceberExcelService:
             ]
 
             for mes_num, mes_nome in meses:
+                # Loop filtrando a lista já processada
                 itens_mes = [
-                    d for d in dados_queryset 
+                    d for d in dados_lista 
                     if d.data_vencimento and d.data_vencimento.month == mes_num
                 ]
 
-                # Título do Mês (Altura Aumentada para 35 devido à fonte 16)
+                # Título do Mês
                 ws.set_row(row, 35) 
                 ws.merge_range(row, 0, row, 7, mes_nome, fmt['month_title'])
                 row += 1
@@ -236,9 +227,9 @@ class ReceberExcelService:
                     ws.set_row(row, 20) 
                     
                     valor = item.valor if item.valor else Decimal('0.00')
-                    estoque = item.valor_estoque if item.valor_estoque else Decimal('0.00')
+                    estoque = Decimal('0.00')
                     
-                    ws.write(row, 0, item.forma_de_recebimento or '-', fmt['data_text'])
+                    ws.write(row, 0, item.forma_recebimento or '-', fmt['data_text'])
                     ws.write(row, 1, item.data_vencimento, fmt['data_date'])
                     ws.write(row, 2, item.cliente or '-', fmt['data_text'])
                     ws.write(row, 3, item.categoria or '-', fmt['data_text'])
@@ -246,8 +237,8 @@ class ReceberExcelService:
                     ws.write(row, 5, estoque, fmt['data_money'])
                     ws.write(row, 6, item.observacoes or '', fmt['data_text'])
                     
-                    if item.data_pagamento:
-                        ws.write(row, 7, item.data_pagamento, fmt['data_date'])
+                    if item.data_recebimento:
+                        ws.write(row, 7, item.data_recebimento, fmt['data_date'])
                     else:
                         ws.write(row, 7, '-', fmt['data_text'])
 
@@ -263,7 +254,6 @@ class ReceberExcelService:
                 ws.write(row, 6, "", fmt['total_label'])
                 ws.write(row, 7, "", fmt['total_label'])
 
-                # Espaço entre meses (Aumentado para 4 saltos = 3 linhas vazias)
                 row += 4 
 
             # Rodapé final

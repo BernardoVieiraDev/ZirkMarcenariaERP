@@ -1,22 +1,18 @@
 # minha_app/forms.py
 
-from decimal import \
-    Decimal  # Boas práticas de precisão, embora menos crítico em Forms do que Models
-
+from decimal import Decimal
 from django import forms
 
 # Importa todos os modelos necessários
 from .models import (Boleto, Cheque, ComissaoArquiteto, Emprestimo,
-                     FaturaCartao, GastoContabilidade, GastoGasolina,
-                     GastoGeral, GastoImovel, GastoUtilidade,
-                     GastoVeiculoConsorcio, PagamentoFuncionario,
-                     Pessoa, PrestacaoEmprestimo, StatusPagamento, FolhaPagamento)
+                     FaturaCartao, FolhaPagamento, GastoContabilidade,
+                     GastoGasolina, GastoGeral, GastoImovel, GastoUtilidade,
+                     GastoVeiculoConsorcio, PagamentoFuncionario, Pessoa,
+                     PrestacaoEmprestimo, StatusPagamento, FormaPagamento)
 
 # ----------------------------------------------------
-# 1. ESCOLHA INICIAL DO TIPO DE GASTO (Para a UX dinâmica)
+# 1. ESCOLHA INICIAL DO TIPO DE GASTO
 # ----------------------------------------------------
-
-# Lista de todos os Modelos de Gasto a Pagar (o valor deve ser o nome da classe do modelo)
 GASTO_MODEL_CHOICES = [
     ('Boleto', 'Boleto'),
     ('GastoUtilidade', 'Água, Luz e Telefone'),
@@ -30,11 +26,9 @@ GASTO_MODEL_CHOICES = [
     ('GastoGasolina', 'Gastos com Gasolina'),
     ('FolhaPagamento', 'Folha de pagamento'),
     ('ComissaoArquiteto', 'Comissão Arquiteto'),
-
 ]
 
 class TipoGastoForm(forms.Form):
-    """Formulário inicial para o usuário selecionar a categoria do gasto."""
     categoria = forms.ChoiceField(
         choices=[('', '--- Selecione a Categoria ---')] + GASTO_MODEL_CHOICES,
         label='Categoria (Modelo Django)',
@@ -42,90 +36,97 @@ class TipoGastoForm(forms.Form):
         widget=forms.Select(attrs={'class': 'form-select', 'id': 'categoria-selector'})
     )
 
-
-
 # ----------------------------------------------------
-# 2. FORMULÁRIO BASE ABSTRATO (Herdado por modelos GastoBase)
+# 2. FORMULÁRIO BASE ABSTRATO (Refatorado)
 # ----------------------------------------------------
 
 class GastoBaseForm(forms.ModelForm):
     """
-    Formulário Base. Define campos e widgets comuns a todos os modelos que herdam de GastoBase.
-    Este formulário não será instanciado diretamente.
+    Formulário Base. 
+    REMOVIDOS: valor_pago, data_pagamento, juros (pois nem todos os filhos usam).
     """
     class Meta:
-        # A lista de campos é definida aqui para ser reusada pelos filhos.
         fields = [
             'descricao',
             'valor',
             'data_vencimento',
-            'data_pagamento',
-            'valor_pago',
-            'juros',
+            "banco_origem",
             'status',
+            'forma_pagamento',
             'observacoes',
         ]
         
         widgets = {
             'descricao': forms.TextInput(attrs={'class': 'form-control'}),
             'valor': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
-            'valor_pago': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
-            'juros': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
-            
+            'banco_origem': forms.Select(attrs={'class': 'form-select'}),
             'data_vencimento': forms.DateInput( 
                 attrs={'type': 'date', 'class': 'form-control'}, 
-                format='%Y-%m-%d' # Formato exigido pelo HTML5 input type="date"        
+                format='%Y-%m-%d'
                 ),         
-            
-            'data_pagamento': forms.DateInput(
-                attrs={'type': 'date', 'class': 'form-control'},
-                format='%Y-%m-%d' # Formato exigido pelo HTML5 input type="date"
-            ),            
-            
             'observacoes': forms.Textarea(attrs={'rows': 3, 'class': 'form-control'}),
             'status': forms.Select(attrs={'class': 'form-select'}),
+            'forma_pagamento': forms.Select(attrs={'class': 'form-select'}),
         }
     
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        # Aplica uma classe CSS padrão para todos os campos (pode ser usado para Bootstrap)
         for field_name, field in self.fields.items():
             if not field.widget.attrs.get('class'):
                  field.widget.attrs['class'] = 'form-control'
 
 
 # ----------------------------------------------------
-# 3. FORMULÁRIOS ESPECÍFICOS (Herança de GastoBaseForm)
+# 3. FORMULÁRIOS ESPECÍFICOS (Herança + Campos Extras)
 # ----------------------------------------------------
 
-# Campos: GastoBase + nota_fiscal
 class BoletoForm(GastoBaseForm):
+    """Adiciona de volta os campos de pagamento que foram retirados do base"""
     class Meta:
         model = Boleto 
-        fields = GastoBaseForm.Meta.fields + ['nota_fiscal']
-        widgets = GastoBaseForm.Meta.widgets
+        # Adiciona nota_fiscal E os campos de pagamento exclusivos
+        fields = GastoBaseForm.Meta.fields + ['nota_fiscal', 'valor_pago', 'data_pagamento', 'juros']
+        widgets = GastoBaseForm.Meta.widgets.copy()
+        
+        # Widgets extras
         widgets['nota_fiscal'] = forms.TextInput(attrs={'class': 'form-control'})
+        widgets['valor_pago'] = forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'})
+        widgets['juros'] = forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'})
+        widgets['data_pagamento'] = forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}, format='%Y-%m-%d')
 
 
-# Campos: GastoBase + tipo_cliente
+class GastoVeiculoConsorcioForm(GastoBaseForm):
+    """Adiciona de volta os campos de pagamento"""
+    class Meta:
+        model = GastoVeiculoConsorcio
+        fields = ['tipo_gasto', 'veiculo_referencia'] + GastoBaseForm.Meta.fields + ['valor_pago', 'data_pagamento', 'juros']
+        widgets = GastoBaseForm.Meta.widgets.copy()
+        
+        widgets['tipo_gasto'] = forms.Select(attrs={'class': 'form-select'})
+        widgets['veiculo_referencia'] = forms.TextInput(attrs={'class': 'form-control'})
+        widgets['valor_pago'] = forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'})
+        widgets['juros'] = forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'})
+        widgets['data_pagamento'] = forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}, format='%Y-%m-%d')
+
+
+# Os formulários abaixo NÃO recebem valor_pago/data_pagamento, 
+# pois usam 'valor' e 'data_vencimento' como dados efetivos.
+
 class GastoUtilidadeForm(GastoBaseForm):
     class Meta:
         model = GastoUtilidade
-        fields = ['tipo_cliente']+ GastoBaseForm.Meta.fields 
+        fields = ['tipo_cliente'] + GastoBaseForm.Meta.fields 
         widgets = GastoBaseForm.Meta.widgets
         widgets['tipo_cliente'] = forms.Select(attrs={'class': 'form-select'})
 
-
-# Campos: GastoBase + cartao
 class FaturaCartaoForm(GastoBaseForm):
     class Meta:
         model = FaturaCartao
-        # Manter a lógica de remoção da descrição:
         base_fields = GastoBaseForm.Meta.fields[:]
         fields = ['cartao'] + base_fields 
         widgets = GastoBaseForm.Meta.widgets
         widgets['cartao'] = forms.Select(attrs={'class': 'form-select'})
-# Campos: GastoBase + emprestimo, numero_parcela
+
 class PrestacaoEmprestimoForm(GastoBaseForm):
     class Meta:
         model = PrestacaoEmprestimo
@@ -133,17 +134,6 @@ class PrestacaoEmprestimoForm(GastoBaseForm):
         widgets = GastoBaseForm.Meta.widgets
         widgets['prestacao'] = forms.NumberInput(attrs={'class': 'form-control'})
 
-
-# Campos: GastoBase + -, veiculo_referencia
-class GastoVeiculoConsorcioForm(GastoBaseForm):
-    class Meta:
-        model = GastoVeiculoConsorcio
-        fields = ['tipo_gasto', 'veiculo_referencia']+GastoBaseForm.Meta.fields 
-        widgets = GastoBaseForm.Meta.widgets
-        widgets['tipo_gasto'] = forms.Select(attrs={'class': 'form-select'})
-        widgets['veiculo_referencia'] = forms.TextInput(attrs={'class': 'form-control'})
-
-# Campos: GastoBase + 
 class GastoContabilidadeForm(GastoBaseForm):
     class Meta:
         model = GastoContabilidade
@@ -151,8 +141,6 @@ class GastoContabilidadeForm(GastoBaseForm):
         widgets = GastoBaseForm.Meta.widgets
         widgets['tipo_gasto'] = forms.Select(attrs={'class': 'form-select'})
 
-
-# Campos: GastoBase + imovel, tipo_gasto
 class GastoImovelForm(GastoBaseForm):
     class Meta:
         model = GastoImovel
@@ -164,10 +152,9 @@ class GastoImovelForm(GastoBaseForm):
 
 
 # ----------------------------------------------------
-# 4. FORMULÁRIOS INDEPENDENTES (Modelos sem GastoBase)
+# 4. FORMULÁRIOS INDEPENDENTES (Sem mudanças drásticas, apenas manutenção)
 # ----------------------------------------------------
 
-# Modelo Cheque
 class ChequeForm(forms.ModelForm):
     class Meta:
         model = Cheque
@@ -175,24 +162,18 @@ class ChequeForm(forms.ModelForm):
         widgets = {
             'descricao': forms.TextInput(attrs={'class': 'form-control'}),
             'valor': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
-
-            'data_emissao': forms.DateInput(
-                attrs={'type': 'date', 'class': 'form-control'},
-                format='%Y-%m-%d' # Formato exigido pelo HTML5 input type="date"
-            ),      
-            
+            'data_emissao': forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}, format='%Y-%m-%d'),      
             'numero_cheque': forms.TextInput(attrs={'class': 'form-control'}),
             'status': forms.Select(attrs={'class': 'form-select'}),
             'tipo_entidade': forms.Select(attrs={'class': 'form-select'}),
         }
 
-
-# Modelo GastoGeral (e Gasolina, que é proxy)
 class GastoGeralForm(forms.ModelForm):
     class Meta:
         model = GastoGeral
         fields = '__all__'
         widgets = {
+            'credor': forms.TextInput(attrs={'class': 'form-control'}), 
             'descricao': forms.TextInput(attrs={'class': 'form-control'}),
             'data_gasto': forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}, format='%Y-%m-%d'),
             'valor_total': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
@@ -203,16 +184,14 @@ class GastoGeralForm(forms.ModelForm):
             'carro': forms.TextInput(attrs={'class': 'form-control'}),
             'cliente': forms.TextInput(attrs={'class': 'form-control'}),
             'tipo_pagamento': forms.Select(attrs={'class': 'form-control'}),
-            'status': forms.Select(attrs={'class': 'form-select'}), 
+            'status': forms.Select(attrs={'class': 'form-select'}),
+            'forma_pagamento': forms.Select(attrs={'class': 'form-select'}), 
         }
 
-# Modelo GastoGasolina (usa o mesmo form, mas você pode personalizá-lo se necessário)
 class GastoGasolinaForm(GastoGeralForm):
     class Meta(GastoGeralForm.Meta):
         model = GastoGasolina
-        # Não precisa redefinir fields, usa a mesma lógica de GastoGeralForm.
 
-# Modelo PagamentoFuncionario (RH)
 class PagamentoFuncionarioForm(forms.ModelForm):
     class Meta:
         model = PagamentoFuncionario
@@ -226,9 +205,9 @@ class PagamentoFuncionarioForm(forms.ModelForm):
             'empreitadas': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
             'decimo_terceiro': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
             'total_liquido': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
+            'forma_pagamento': forms.Select(attrs={'class': 'form-select'}),
         }
 
-# Modelo ComissaoArquiteto (RH)
 class ComissaoArquitetoForm(forms.ModelForm):
     class Meta:
         model = ComissaoArquiteto
@@ -238,75 +217,26 @@ class ComissaoArquitetoForm(forms.ModelForm):
             'data_pagamento': forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}, format='%Y-%m-%d'),
             'valor_comissao': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
             'observacoes': forms.Textarea(attrs={'rows': 3, 'class': 'form-control'}),
+            'forma_pagamento': forms.Select(attrs={'class': 'form-select'}),
         }
 
 class FolhaPagamentoForm(forms.ModelForm):
     class Meta:
         model = FolhaPagamento
         fields = [
-            'funcionario',
-            'data_referencia',
-            'salario_real',
-            'adiantamento',
-            'ferias_terco',
-            'empreitada',
-            'decimo_terceiro',
-            'vale',
-            'horas_extras_valor',
-            'observacoes'
+            'funcionario', 'data_referencia', 'salario_real', 'adiantamento',
+            'ferias_terco', 'empreitada', 'decimo_terceiro', 'vale',
+            'horas_extras_valor', 'observacoes'
         ]
         widgets = {
-            'funcionario': forms.Select(attrs={
-                'class': 'form-control select2',  # Adicione 'select2' se usar essa lib para busca
-                'placeholder': 'Selecione o funcionário'
-            }),
-            'data_referencia': forms.DateInput(attrs={
-                'type': 'date',
-                'class': 'form-control',},
-                format='%Y-%m-%d'),
-            'salario_real': forms.NumberInput(attrs={
-                'class': 'form-control money-mask', # Classe para máscaras de JS se tiver
-                'step': '0.01',
-                'placeholder': 'R$ 0,00'
-            }),
-            'adiantamento': forms.NumberInput(attrs={
-                'class': 'form-control money-mask',
-                'step': '0.01',
-                'placeholder': 'R$ 0,00'
-            }),
-            'ferias_terco': forms.NumberInput(attrs={
-                'class': 'form-control money-mask',
-                'step': '0.01',
-                'placeholder': 'R$ 0,00'
-            }),
-            'empreitada': forms.NumberInput(attrs={
-                'class': 'form-control money-mask',
-                'step': '0.01',
-                'placeholder': 'R$ 0,00'
-            }),
-            'decimo_terceiro': forms.NumberInput(attrs={
-                'class': 'form-control money-mask',
-                'step': '0.01',
-                'placeholder': 'R$ 0,00'
-            }),
-            'vale': forms.NumberInput(attrs={
-                'class': 'form-control money-mask',
-                'step': '0.01',
-                'placeholder': 'R$ 0,00'
-            }),
-            'horas_extras_valor': forms.NumberInput(attrs={
-                'class': 'form-control money-mask',
-                'step': '0.01',
-                'placeholder': 'R$ 0,00'
-            }),
-            'observacoes': forms.Textarea(attrs={
-                'class': 'form-control',
-                'rows': 3,
-                'placeholder': 'Observações adicionais sobre o pagamento...'
-            }),
+            'funcionario': forms.Select(attrs={'class': 'form-control select2', 'placeholder': 'Selecione o funcionário'}),
+            'data_referencia': forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}, format='%Y-%m-%d'),
+            'salario_real': forms.NumberInput(attrs={'class': 'form-control money-mask', 'step': '0.01'}),
+            'adiantamento': forms.NumberInput(attrs={'class': 'form-control money-mask', 'step': '0.01'}),
+            'ferias_terco': forms.NumberInput(attrs={'class': 'form-control money-mask', 'step': '0.01'}),
+            'empreitada': forms.NumberInput(attrs={'class': 'form-control money-mask', 'step': '0.01'}),
+            'decimo_terceiro': forms.NumberInput(attrs={'class': 'form-control money-mask', 'step': '0.01'}),
+            'vale': forms.NumberInput(attrs={'class': 'form-control money-mask', 'step': '0.01'}),
+            'horas_extras_valor': forms.NumberInput(attrs={'class': 'form-control money-mask', 'step': '0.01'}),
+            'observacoes': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
         }
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        # Opcional: Definir labels personalizados se não vierem do verbose_name do model
-        # self.fields['funcionario'].label = "Colaborador"

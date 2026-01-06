@@ -79,9 +79,14 @@ def rt_contrato_delete(request, pk):
 # --- VIEWS DE ARQUITETA (Sem alterações lógicas) ---
 def arquiteta_list(request):
     arquitetas = Arquiteta.objects.all().order_by('nome')
-    context = {'arquitetas': arquitetas, 'title': 'Cadastro de Arquitetas'}
-    return render(request, 'core/comissionamento/arquiteta_list.html', context)
+    form = ArquitetaForm()
 
+    context = {
+        'arquitetas': arquitetas,
+        'form': form,  
+        'title': 'Cadastro de Arquitetas'
+    }
+    return render(request, 'core/comissionamento/arquiteta_list.html', context)
 def arquiteta_create(request):
     if request.method == 'POST':
         form = ArquitetaForm(request.POST)

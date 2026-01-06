@@ -1,86 +1,368 @@
-{% extends 'core/base.html' %}
-{% load humanize %}
+{% extends "core/base.html" %}
+{% load static humanize %}
+
+{% block title %}Gerenciar Bancos{% endblock %}
 
 {% block content %}
-<div class="container mt-4">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h3>Gerenciar Contas Bancárias</h3>
-        <a href="{% url 'receber:movimento_banco' %}" class="btn btn-outline-secondary">
-            <i class="fas fa-arrow-left"></i> Voltar para Extrato
-        </a>
+<style>
+    /* === DESIGN SYSTEM (Consistente com o Dashboard) === */
+    :root {
+        --font-sans: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+        
+        --slate-50: #f8fafc;
+        --slate-100: #f1f5f9;
+        --slate-200: #e2e8f0;
+        --slate-300: #cbd5e1;
+        --slate-400: #94a3b8;
+        --slate-500: #64748b;
+        --slate-600: #475569;
+        --slate-900: #0f172a;
+        
+        --blue-50: #eff6ff;
+        --blue-100: #dbeafe;
+        --blue-500: #3b82f6;
+        --blue-600: #2563eb;
+        
+        --green-50: #ecfdf5;
+        --green-600: #059669;
+        
+        --red-50: #fef2f2;
+        --red-500: #ef4444;
+        
+        --white: #ffffff;
+    }
+
+    .dash-container {
+        font-family: var(--font-sans);
+        color: var(--slate-900);
+        padding-bottom: 60px;
+        max-width: 1200px;
+        margin: 0 auto;
+    }
+
+    /* === HEADER === */
+    .dash-header { 
+        margin-bottom: 32px; 
+        display: flex; 
+        justify-content: space-between; 
+        align-items: flex-end;
+        flex-wrap: wrap;
+        gap: 16px;
+    }
+    .dash-title { font-size: 24px; font-weight: 700; color: var(--slate-900); margin: 0; letter-spacing: -0.025em; }
+    .dash-subtitle { font-size: 14px; color: var(--slate-500); margin-top: 4px; }
+
+    /* Botões */
+    .btn-primary {
+        background-color: var(--blue-500);
+        color: white;
+        padding: 10px 20px;
+        border-radius: 10px;
+        font-weight: 600;
+        font-size: 14px;
+        border: none;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        transition: all 0.2s;
+        text-decoration: none;
+        box-shadow: 0 4px 6px -1px rgba(59, 130, 246, 0.2);
+    }
+    .btn-primary:hover { background-color: var(--blue-600); transform: translateY(-1px); }
+
+    .btn-ghost { 
+        background: white; border: 1px solid var(--slate-300); color: var(--slate-600); 
+        padding: 10px 20px; border-radius: 10px; cursor: pointer; font-weight: 600; font-size: 14px;
+        transition: all 0.2s; text-decoration: none; display: inline-flex; align-items: center; gap: 8px;
+    }
+    .btn-ghost:hover { background-color: var(--slate-50); color: var(--slate-900); border-color: var(--slate-400); }
+
+    /* === TABELA (Standard Card) === */
+    .standard-card {
+        background-color: var(--white);
+        border: 1px solid var(--slate-200);
+        border-radius: 16px;
+        box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05);
+        overflow: hidden;
+    }
+
+    .table-responsive { width: 100%; overflow-x: auto; }
+    .rh-table { width: 100%; border-collapse: collapse; text-align: left; }
+    
+    .rh-table thead { background-color: var(--slate-50); border-bottom: 1px solid var(--slate-200); }
+    .rh-table th { padding: 16px 24px; font-size: 12px; font-weight: 600; text-transform: uppercase; color: var(--slate-500); letter-spacing: 0.05em; }
+    
+    .rh-table td { padding: 16px 24px; font-size: 14px; vertical-align: middle; border-bottom: 1px solid var(--slate-100); color: var(--slate-900); }
+    .rh-table tr:last-child td { border-bottom: none; }
+    .rh-table tr:hover td { background-color: #fcfcfc; }
+
+    /* Elementos da Tabela */
+    .bank-name { font-weight: 600; color: var(--slate-900); font-size: 15px; }
+    .bank-info { font-size: 13px; color: var(--slate-500); margin-top: 2px; }
+    .text-val { font-weight: 600; font-variant-numeric: tabular-nums; color: var(--blue-600); }
+
+    /* MENU DE AÇÕES */
+    .action-menu { position: relative; display: inline-block; }
+    .dots-btn {
+        background: transparent; border: none; cursor: pointer; padding: 8px; border-radius: 8px;
+        color: var(--slate-400); transition: all 0.2s; display: flex; align-items: center; justify-content: center;
+    }
+    .dots-btn:hover { background: var(--slate-100); color: var(--blue-500); }
+    
+    .dropdown-content {
+        display: none; position: absolute; right: 0; top: 100%; margin-top: 4px; z-index: 50;
+        background-color: white; min-width: 150px;
+        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        border-radius: 10px; border: 1px solid var(--slate-200); overflow: hidden;
+    }
+    .dropdown-content.show { display: block; }
+    .dropdown-content a, .dropdown-content button {
+        color: var(--slate-600); padding: 10px 16px; text-decoration: none; display: flex; align-items: center; gap: 10px; font-size: 13px; width: 100%; transition: background 0.1s;
+        background: none; border: none; cursor: pointer; text-align: left;
+    }
+    .dropdown-content a:hover, .dropdown-content button:hover { background-color: var(--slate-50); color: var(--blue-600); }
+    .dropdown-content .delete-item:hover { background-color: var(--red-50); color: var(--red-500); }
+
+    /* === MODAIS === */
+    .modal-overlay {
+        display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.4); 
+        z-index: 1000; overflow-y: auto; padding: 20px;
+        align-items: flex-start; justify-content: center; backdrop-filter: blur(2px);
+    }
+    .modal-overlay.open { display: flex; }
+    
+    .modal-window {
+        background: white; width: 100%; max-width: 500px; margin: 40px auto; 
+        border-radius: 16px; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+        display: flex; flex-direction: column; position: relative;
+        animation: modalFadeIn 0.2s ease-out;
+    }
+    @keyframes modalFadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    
+    .modal-header {
+        padding: 24px; border-bottom: 1px solid var(--slate-100); display: flex; justify-content: space-between; align-items: center;
+        background: var(--slate-50); border-radius: 16px 16px 0 0;
+    }
+    .modal-title { font-size: 18px; font-weight: 700; color: var(--slate-900); margin: 0; }
+    .btn-close { background: transparent; border: none; cursor: pointer; font-size: 20px; color: var(--slate-400); transition: color 0.2s; }
+    .btn-close:hover { color: var(--slate-900); }
+    
+    .modal-body { padding: 24px; }
+    
+    .form-group { margin-bottom: 16px; }
+    .form-group label { display: block; font-size: 13px; font-weight: 600; color: var(--slate-600); margin-bottom: 6px; }
+    .form-group input, .form-group select, .form-group textarea { 
+        width: 100%; padding: 10px 12px; border-radius: 8px; border: 1px solid var(--slate-300); 
+        font-size: 14px; color: var(--slate-900); transition: border-color 0.15s;
+    }
+    .form-group input:focus, .form-group select:focus { 
+        border-color: var(--blue-500); outline: none; box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1); 
+    }
+    
+    .modal-footer { 
+        padding: 20px 24px; border-top: 1px solid var(--slate-100); background: var(--slate-50); 
+        border-radius: 0 0 16px 16px; display: flex; justify-content: flex-end; gap: 12px; 
+    }
+
+    .empty-msg { text-align: center; padding: 48px; color: var(--slate-400); }
+</style>
+
+<div class="dash-container">
+    
+    <div class="dash-header">
+        <div>
+            <h1 class="dash-title">Gerenciar Bancos</h1>
+            <p class="dash-subtitle">Contas bancárias e caixas</p>
+        </div>
+        <div style="display: flex; gap: 12px;">
+            <a href="{% url 'receber:movimento_banco' %}" class="btn-ghost">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+                Voltar para Extrato
+            </a>
+            <button onclick="openModal('modalBanco')" class="btn-primary">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                Adicionar Banco
+            </button>
+        </div>
     </div>
 
-    <div class="row mt-4">
-        <div class="col-md-4 mb-4">
-            <div class="card shadow border-left-primary">
-                <div class="card-header py-3">
-                    <h6 class="m-0 font-weight-bold text-primary">Adicionar Novo Banco</h6>
-                </div>
-                <div class="card-body">
-                    <form method="POST">
-                        {% csrf_token %}
-                        {% for field in form %}
-                            <div class="mb-3">
-                                <label class="form-label small font-weight-bold text-secondary">{{ field.label }}</label>
-                                {{ field }}
+    <div class="standard-card">
+        <div class="table-responsive">
+            <table class="rh-table">
+                <thead>
+                    <tr>
+                        <th width="40%">Banco / Instituição</th>
+                        <th width="30%">Agência / Conta</th>
+                        <th width="20%">Saldo Inicial</th>
+                        <th width="10%"></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for banco in bancos %}
+                    <tr>
+                        <td>
+                            <div class="bank-name">{{ banco.nome }}</div>
+                        </td>
+                        <td>
+                            <div class="bank-info">
+                                {% if banco.agencia %}Ag: {{ banco.agencia }}{% endif %}
+                                {% if banco.agencia and banco.conta %} | {% endif %}
+                                {% if banco.conta %}CC: {{ banco.conta }}{% endif %}
+                                {% if not banco.agencia and not banco.conta %} - {% endif %}
                             </div>
-                        {% endfor %}
-                        <button type="submit" class="btn btn-primary btn-block w-100">
-                            <i class="fas fa-save mr-1"></i> Salvar Banco
-                        </button>
-                    </form>
-                </div>
-            </div>
-        </div>
-
-        <div class="col-md-8">
-            <div class="card shadow">
-                <div class="card-header py-3">
-                    <h6 class="m-0 font-weight-bold text-secondary">Bancos Cadastrados</h6>
-                </div>
-                <div class="table-responsive">
-                    <table class="table table-hover mb-0">
-                        <thead class="thead-light">
-                            <tr>
-                                <th>Banco</th>
-                                <th>Agência / Conta</th>
-                                <th>Saldo Inicial (R$)</th>
-                                <th class="text-center">Ações</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for banco in bancos %}
-                                <tr>
-                                    <td class="align-middle font-weight-bold">{{ banco.nome }}</td>
-                                    <td class="align-middle small">
-                                        {% if banco.agencia %}Ag: {{ banco.agencia }}{% endif %}
-                                        {% if banco.conta %}<br>CC: {{ banco.conta }}{% endif %}
-                                    </td>
-                                    <td class="align-middle text-primary">
-                                        {{ banco.saldo_inicial|floatformat:2|intcomma }}
-                                    </td>
-                                    <td class="align-middle text-center">
-                                        <a href="{% url 'receber:banco_edit' banco.pk %}" class="btn btn-sm btn-outline-primary" title="Editar">
-                                            <i class="fas fa-edit"></i>
-                                        </a>
-                                        <form action="{% url 'receber:banco_delete' banco.pk %}" method="POST" class="d-inline" onsubmit="return confirm('ATENÇÃO: Excluir este banco apagará TODO o histórico de movimentações dele. Tem certeza?');">
-                                            {% csrf_token %}
-                                            <button type="submit" class="btn btn-sm btn-outline-danger border-0" title="Excluir">
-                                                <i class="fas fa-trash-alt"></i>
-                                            </button>
-                                        </form>
-                                    </td>
-                                </tr>
-                            {% empty %}
-                                <tr>
-                                    <td colspan="4" class="text-center text-muted py-4">Nenhum banco cadastrado.</td>
-                                </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
-            </div>
+                        </td>
+                        <td>
+                            <div class="text-val">R$ {{ banco.saldo_inicial|floatformat:2|intcomma }}</div>
+                        </td>
+                        <td style="text-align: right;">
+                            <div class="action-menu">
+                                <button class="dots-btn" onclick="toggleMenu('menu-{{ banco.pk }}')">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="1"/><circle cx="12" cy="5" r="1"/><circle cx="12" cy="19" r="1"/></svg>
+                                </button>
+                                
+                                <div id="menu-{{ banco.pk }}" class="dropdown-content">
+                                    <button onclick="openRemoteModal('{% url 'receber:banco_edit' banco.pk %}')">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/></svg>
+                                        Editar
+                                    </button>
+                                    
+                                    <button onclick="openRemoteModal('{% url 'receber:banco_delete' banco.pk %}')" class="delete-item">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>
+                                        Excluir
+                                    </button>
+                                </div>
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="4" class="empty-msg">Nenhum banco cadastrado.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
         </div>
     </div>
 </div>
+
+<div id="modalBanco" class="modal-overlay {% if form.errors %}open{% endif %}">
+    <div class="modal-window">
+        <form method="POST">
+            {% csrf_token %}
+            <div class="modal-header">
+                <h3 class="modal-title">Novo Banco</h3>
+                <button type="button" class="btn-close" onclick="closeModal('modalBanco')">✕</button>
+            </div>
+            <div class="modal-body">
+                {% for field in form %}
+                <div class="form-group">
+                    <label>{{ field.label }}</label>
+                    {{ field }}
+                    {% if field.errors %}
+                        <div style="color:var(--red-500); font-size:12px; margin-top:4px;">{{ field.errors.0 }}</div>
+                    {% endif %}
+                </div>
+                {% endfor %}
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn-ghost" onclick="closeModal('modalBanco')">Cancelar</button>
+                <button type="submit" class="btn-primary">Salvar Banco</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div id="modalGeneric" class="modal-overlay">
+    <div class="modal-window" id="modalGenericContent">
+        <div style="text-align:center; padding:40px; color:var(--slate-400);">Carregando...</div>
+    </div>
+</div>
+
+<script>
+    // --- Controle de Modais Locais ---
+    function openModal(id) {
+        document.getElementById(id).classList.add('open');
+        document.body.style.overflow = 'hidden';
+    }
+    
+    function closeModal(id) {
+        document.getElementById(id).classList.remove('open');
+        document.body.style.overflow = '';
+    }
+
+    // --- Modal Remoto (AJAX para Edit/Delete) ---
+    function openRemoteModal(url) {
+        const modal = document.getElementById('modalGeneric');
+        const content = document.getElementById('modalGenericContent');
+        
+        content.innerHTML = '<div style="text-align:center; padding:40px; color:var(--slate-400);">Carregando...</div>';
+        modal.classList.add('open');
+        document.body.style.overflow = 'hidden';
+
+        fetch(url)
+            .then(response => response.text())
+            .then(html => {
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(html, 'text/html');
+                
+                // Tenta pegar o formulário da página de resposta
+                let newContent = doc.querySelector('form');
+                
+                if (newContent) {
+                    content.innerHTML = newContent.outerHTML;
+                    // Re-ativa scripts se houver
+                    const scripts = content.getElementsByTagName("script");
+                    for (let i = 0; i < scripts.length; i++) {
+                        eval(scripts[i].innerText);
+                    }
+                } else {
+                    // Fallback para página de confirmação de exclusão ou erro
+                    let fallbackContent = doc.querySelector('.container') || doc.body;
+                    content.innerHTML = `
+                        <div class="modal-header">
+                            <h3 class="modal-title">Ação</h3>
+                            <button type="button" class="btn-close" onclick="closeModal('modalGeneric')">✕</button>
+                        </div>
+                        <div class="modal-body">
+                            ${fallbackContent.innerHTML}
+                        </div>
+                    `;
+                }
+            })
+            .catch(err => {
+                content.innerHTML = `
+                    <div class="modal-header">
+                        <h3 class="modal-title" style="color:var(--red-500)">Erro</h3>
+                        <button type="button" class="btn-close" onclick="closeModal('modalGeneric')">✕</button>
+                    </div>
+                    <div class="modal-body">Erro de conexão. Tente novamente.</div>
+                `;
+            });
+    }
+
+    // Fechar ao clicar fora
+    document.querySelectorAll('.modal-overlay').forEach(modal => {
+        modal.addEventListener('click', function(e) {
+            if (e.target === this) closeModal(this.id);
+        });
+    });
+
+    // Menu Dropdown
+    function toggleMenu(menuId) {
+        document.querySelectorAll('.dropdown-content').forEach(menu => {
+            if (menu.id !== menuId) menu.classList.remove('show');
+        });
+        const menu = document.getElementById(menuId);
+        if (menu) menu.classList.toggle('show');
+    }
+
+    window.onclick = function(event) {
+        if (!event.target.closest('.dots-btn')) {
+            document.querySelectorAll('.dropdown-content').forEach(menu => {
+                menu.classList.remove('show');
+            });
+        }
+    }
+</script>
 {% endblock %}

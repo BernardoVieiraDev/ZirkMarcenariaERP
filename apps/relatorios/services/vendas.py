@@ -18,10 +18,10 @@ class VendasExcelService:
     COR_PRAZO_BG = '#FEF9E7'        
     COR_PRAZO_TEXT = '#D35400'      
     
-    # Cores Compras (Vermelhos/Laranjas - para diferenciar visualmente)
-    COR_COMPRA_VISTA_BG = '#FADBD8' # Vermelho claro suave
+    # Cores Compras (Vermelhos/Laranjas)
+    COR_COMPRA_VISTA_BG = '#FADBD8' 
     COR_COMPRA_VISTA_TEXT = '#C0392B'
-    COR_COMPRA_PRAZO_BG = '#FDEBD0' # Laranja claro
+    COR_COMPRA_PRAZO_BG = '#FDEBD0' 
     COR_COMPRA_PRAZO_TEXT = '#E67E22'
 
     COR_TOTAL_BG = '#F4F6F7'        
@@ -30,17 +30,21 @@ class VendasExcelService:
 
     @classmethod
     def _define_formats(cls, workbook: xlsxwriter.Workbook):
+        # === PROTEÇÃO PARA CONSOLIDADO ===
+        # Se os formatos já foram criados neste workbook, retorna os existentes.
+        if hasattr(workbook, 'formats_vendas'):
+            return workbook.formats_vendas
+
         font_base = {'font_name': 'Calibri', 'valign': 'vcenter', 'font_size': 10}
         bottom_line = {'bottom': 1, 'bottom_color': '#E0E0E0'} 
         right_border = {'right': 1, 'right_color': cls.COR_LINHA_DIVISORIA}
 
-        # Format base creator helper
         def create_fmt(updates):
             f = font_base.copy()
             f.update(updates)
             return workbook.add_format(f)
 
-        return {
+        formats = {
             'main_title': create_fmt({
                 'bold': True, 'font_size': 18, 'align': 'center',
                 'font_color': cls.COR_TITULO_TEXTO, 'bg_color': cls.COR_TITULO_BG,
@@ -75,7 +79,7 @@ class VendasExcelService:
                 'fg_color': cls.COR_PRAZO_BG, 'font_color': cls.COR_PRAZO_TEXT,
                 'border': 1, 'border_color': cls.COR_LINHA_DIVISORIA
             }),
-            # --- Compras (Novos Estilos) ---
+            # --- Compras ---
             'header_compra_vista': create_fmt({
                 'bold': True, 'font_size': 11, 'align': 'center',
                 'fg_color': cls.COR_COMPRA_VISTA_BG, 'font_color': cls.COR_COMPRA_VISTA_TEXT,
@@ -127,6 +131,10 @@ class VendasExcelService:
                 'bottom': 2, 'bottom_color': cls.COR_TITULO_BG
             }),
         }
+        
+        # Salva no workbook para reutilização
+        workbook.formats_vendas = formats
+        return formats
 
     @staticmethod
     def _processar_dados_mes(dados, num_mes, termos_vista, tipo='venda'):
@@ -134,37 +142,45 @@ class VendasExcelService:
         val_vista = Decimal(0)
         val_prazo = Decimal(0)
         
-        # Filtra na memória
         itens_mes = []
         for d in dados:
-            # Lidar com diferentes nomes de campo de data (para Vendas e Compras)
             data_ref = getattr(d, 'data_vencimento', None)
             if not data_ref:
-                data_ref = getattr(d, 'data_gasto', None) # Caso seja GastoGeral/Gasolina
+                data_ref = getattr(d, 'data_gasto', None) # GastoGeral/Gasolina
+            if not data_ref:
+                data_ref = getattr(d, 'data_pagamento', None) # Comissões/Contratos
+            if not data_ref:
+                data_ref = getattr(d, 'data_referencia', None) # Folha
                 
             if data_ref and data_ref.month == num_mes:
                 itens_mes.append(d)
 
         for item in itens_mes:
-            # Lidar com diferentes nomes de campo de valor
+            # Tenta diferentes campos de valor
             valor = getattr(item, 'valor', None)
-            if valor is None: # Se não tem 'valor', tenta 'valor_total' (GastoGeral) ou 'valor_comissao'
-                valor = getattr(item, 'valor_total', None)
-            if valor is None:
-                valor = getattr(item, 'valor_comissao', None)
+            if valor is None: valor = getattr(item, 'valor_total', None)
+            if valor is None: valor = getattr(item, 'valor_comissao', None) # Comissões
+            if valor is None: valor = getattr(item, 'valor_pago', None) # Contratos
             
             valor = valor if valor else Decimal(0)
             
-            # Concatena campos de texto para busca de palavras-chave
+            # Identificação de VISTA vs PRAZO
+            forma_rec = getattr(item, 'forma_recebimento', getattr(item, 'forma_de_recebimento', ''))
+            tipo_rec = getattr(item, 'tipo_recebimento', '') # Campo explícito VISTA/PRAZO
+            
             texto_busca = (
-                f"{getattr(item, 'forma_de_recebimento', '')} "
-                f"{getattr(item, 'forma_principal_pagamento', '')} " # GastoGeral
+                f"{forma_rec} "
+                f"{tipo_rec} " 
+                f"{getattr(item, 'forma_principal_pagamento', '')} "
                 f"{getattr(item, 'observacoes', '')} "
                 f"{getattr(item, 'categoria', '')} "
                 f"{getattr(item, 'descricao', '')}"
             ).lower()
             
-            if any(t in texto_busca for t in termos_vista):
+            # Lógica de Classificação
+            eh_vista = any(t in texto_busca for t in termos_vista) or 'vista' in str(tipo_rec).lower()
+            
+            if eh_vista:
                 val_vista += valor
             else:
                 val_prazo += valor
@@ -174,6 +190,11 @@ class VendasExcelService:
 
     @staticmethod
     def gerar_relatorio_vendas(dados_receber, dados_pagar, workbook=None):
+        """
+        Gera o relatório DRE. 
+        Se workbook for passado, adiciona uma nova aba a ele (Consolidado).
+        Se workbook for None, cria um novo arquivo em memória (Download Individual).
+        """
         output = None
         should_close = False
 
@@ -338,11 +359,16 @@ class VendasExcelService:
                 row += 1
 
         except Exception as e:
+            # Em caso de erro, apenas printa (log) e relança para que a view trate
             print(f"Erro ao gerar relatório vendas/compras: {e}")
             raise e
         finally:
+            # Só fecha e retorna output se o workbook foi criado aqui (modo individual)
             if should_close and workbook:
                 workbook.close()
                 if output:
                     output.seek(0)
                     return output
+        
+        # Se workbook foi passado, retorna None (controle fica com a view)
+        return None

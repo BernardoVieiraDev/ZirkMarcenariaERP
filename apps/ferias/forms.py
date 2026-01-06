@@ -76,8 +76,8 @@ class PeriodoAquisitivoForm(forms.ModelForm):
         fields = ['funcionario', 'data_inicio', 'data_fim', 'dias_direito']
         widgets = {
             'funcionario': forms.Select(attrs={'class': 'form-select'}),
-            'data_inicio': forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
-            'data_fim': forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
+            'data_inicio': forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}, format='%Y-%m-%d'),
+            'data_fim': forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}, format='%Y-%m-%d'),
             'dias_direito': forms.NumberInput(attrs={'class': 'form-control'}),
         }
 
@@ -88,8 +88,8 @@ class PagamentoFeriasForm(forms.ModelForm):
         fields = ['funcionario', 'vencimento', 'valor_a_pagar', 'data_pagamento', 'observacoes']
         widgets = {
             'funcionario': forms.Select(attrs={'class': 'form-select'}),
-            'vencimento': forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
-            'data_pagamento': forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
+            'vencimento': forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}, format='%Y-%m-%d'),
+            'data_pagamento': forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}, format='%Y-%m-%d'),
             'valor_a_pagar': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
             'observacoes': forms.Textarea(attrs={'class': 'form-control', 'rows': 2}),
         }
@@ -102,14 +102,17 @@ class PagamentoFeriasForm(forms.ModelForm):
         self.fields['valor_a_pagar'].required = False
 
 
+# zirk_rh_financeiro/apps/ferias/forms.py
+
 class RecibosContabilidadeForm(forms.ModelForm):
     class Meta:
         model = RecibosContabilidade
         fields = ['funcionario', 'recibo_de_ferias_contabilidade', 'observacoes']
         widgets = {
             'funcionario': forms.Select(attrs={'class': 'form-select'}),
-            'recibo_de_ferias_contabilidade': forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
-            'observacoes': forms.Textarea(attrs={'class': 'form-control', 'rows': 2}),
+            'recibo_de_ferias_contabilidade': forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}, format='%Y-%m-%d'),
+            # ALTERADO: rows de 2 para 4 para facilitar a edição
+            'observacoes': forms.Textarea(attrs={'class': 'form-control', 'rows': 4}),
         }
         labels = {
             'recibo_de_ferias_contabilidade': 'Data do Recibo (Contábil)',

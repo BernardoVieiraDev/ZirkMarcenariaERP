@@ -12,22 +12,22 @@ class CategoriaSocio(models.Model):
     GRUPO_CHOICES = [
         ('RENDA_FAMILIAR', 'Renda Familiar'),
         ('HABITACAO', 'Habitação'),
+        ('SAUDE', 'Saúde'),
+        ('TRANSPORTE', 'Transporte'),
         ('AUTOMOVEL', 'Automóvel'),
         ('DESPESAS_PESSOAIS', 'Despesas Pessoais'),
-        ('SAUDE', 'Saúde'),
-        ('EDUCACAO', 'Educação'),
         ('LAZER', 'Lazer'),
         ('DEPENDENTES', 'Dependentes'),
-        ('INVESTIMENTOS', 'Investimentos/Dívidas'),
-        ('OUTROS', 'Outros'),
     ]
 
     grupo = models.CharField(max_length=50, choices=GRUPO_CHOICES)
-    nome = models.CharField(max_length=100) # Ex: Aluguel, Escola, IPTU
+    nome = models.CharField(max_length=100)
     
     class Meta:
-        ordering = ['grupo', 'nome']
-        unique_together = ('grupo', 'nome') # Evita duplicatas
+        # Ordenar por ID preserva a ordem de inserção do script (igual ao CSV)
+        # em vez de ordenar alfabeticamente.
+        ordering = ['id'] 
+        unique_together = ('grupo', 'nome')
 
     def __str__(self):
         return f"{self.get_grupo_display()} - {self.nome}"
