@@ -9,7 +9,6 @@ urlpatterns = [
     path('add/', views.receber_create, name='receber_add'),
     path('<int:pk>/edit/', views.receber_edit, name='receber_edit'),
     path('<int:pk>/delete/', views.receber_delete, name='receber_delete'),
-    path('relatorio-vendas/', views.relatorio_vendas, name='relatorio_vendas'),
     
     
     path('caixa-diario/', views.caixa_diario_view, name='caixa_diario'),

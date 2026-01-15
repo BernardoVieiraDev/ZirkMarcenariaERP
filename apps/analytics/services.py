@@ -1,9 +1,9 @@
 import datetime
 from decimal import Decimal
-from django.db.models import Sum, Value, F, DecimalField, Q
+from django.db.models import Sum, Value, F, DecimalField
 from django.db.models.functions import TruncMonth, Coalesce
 
-# Importação dos modelos financeiros existentes
+# Importação dos modelos
 from apps.financeiro.receber.models import Receber
 from apps.financeiro.pagar.models import (
     Boleto, FaturaCartao, PrestacaoEmprestimo, GastoVeiculoConsorcio, 
@@ -30,15 +30,9 @@ class FinancialDashboardService:
         ]
 
     def _get_model_fields(self, model):
-        """
-        Define dinamicamente os campos de Data e Valor para cada modelo,
-        protegendo valores nulos com Coalesce e definindo output_field explicitamente.
-        """
-        # Constante para zero decimal para evitar erro de Mixed Types
         zero = Value(Decimal('0'), output_field=DecimalField())
-
-        # 1. Campo de Data
         date_field = 'data_vencimento'
+        
         if model == FolhaPagamento: 
             date_field = 'data_referencia'
         elif model == ComissaoArquiteto: 
@@ -48,12 +42,7 @@ class FinancialDashboardService:
         elif hasattr(model, 'data_emissao'): 
             date_field = 'data_emissao'
 
-        # 2. Campo/Expressão de Valor
-        # Coalesce precisa de output_field=DecimalField() quando mistura campos Decimal com Value(0)
-        
         if model == FolhaPagamento:
-            # Soma de colunas que podem ser NULL
-            # Campos: salario_real, ferias_terco, empreitada, decimo_terceiro, horas_extras_valor
             value_expr = (
                 Coalesce(F('salario_real'), zero, output_field=DecimalField()) + 
                 Coalesce(F('ferias_terco'), zero, output_field=DecimalField()) + 
@@ -66,10 +55,8 @@ class FinancialDashboardService:
         elif hasattr(model, 'valor_total'):
             value_expr = Coalesce(F('valor_total'), zero, output_field=DecimalField())
         elif hasattr(model, 'valor_pago'):
-            # Usa valor_pago se existir, senão 0
             value_expr = Coalesce(F('valor_pago'), zero, output_field=DecimalField())
         else:
-            # Fallback padrão
             value_expr = Coalesce(F('valor'), zero, output_field=DecimalField())
 
         return date_field, value_expr
@@ -82,7 +69,6 @@ class FinancialDashboardService:
             'resultado': [0.0] * 12
         }
 
-        # 1. Receitas
         receitas_qs = Receber.objects.filter(
             data_vencimento__year=year,
             status__iexact='Recebido'
@@ -95,21 +81,16 @@ class FinancialDashboardService:
                 idx = entry['month'].month - 1
                 data['receitas'][idx] = float(entry['total'] or 0)
 
-        # 2. Despesas
         for model, _ in self.expense_models:
             date_field, value_expr = self._get_model_fields(model)
-            
             filtro = {f"{date_field}__year": year}
             
-            # Filtros de Status
             if hasattr(model, 'status'):
                 if model == Cheque:
                     filtro['status__in'] = ['COM', 'Compensado']
                 else:
-                    # Verifica status comuns de pagamento
                     filtro['status__in'] = ['Pago', 'PAGO', 'pago', 'Confirmado']
 
-            # Nota: value_expr já é uma expressão tratada (Coalesce) ou F()
             qs = model.objects.filter(**filtro).annotate(
                 month=TruncMonth(date_field)
             ).values('month').annotate(total=Sum(value_expr))
@@ -120,7 +101,6 @@ class FinancialDashboardService:
                     val = float(entry['total'] or 0)
                     data['despesas'][idx] += val
 
-        # 3. Resultado
         for i in range(12):
             data['resultado'][i] = data['receitas'][i] - data['despesas'][i]
 
@@ -129,8 +109,6 @@ class FinancialDashboardService:
     def get_expense_breakdown(self, year):
         labels = []
         values = []
-        
-        # Zero decimal constante
         zero = Value(Decimal('0'), output_field=DecimalField())
 
         for model, label_name in self.expense_models:
@@ -143,12 +121,9 @@ class FinancialDashboardService:
                 else:
                     filtro['status__in'] = ['Pago', 'PAGO', 'pago']
 
-            # Aggregate retorna dict {'total': Decimal(...)}
-            # Precisamos envolver o Sum em Coalesce também aqui para evitar None se não houver registros
             result = model.objects.filter(**filtro).aggregate(
                 total=Coalesce(Sum(value_expr), zero, output_field=DecimalField())
             )
-            
             total = result['total']
             
             if total and total > 0:
@@ -156,3 +131,82 @@ class FinancialDashboardService:
                 values.append(float(total))
 
         return {'labels': labels, 'data': values}
+
+    def get_managerial_costs_breakdown(self, year):
+        """
+        Agrupa despesas em Centros de Custo Gerenciais.
+        """
+        zero = Value(Decimal('0'), output_field=DecimalField())
+        
+        # 1. PRODUÇÃO / FÁBRICA
+        itens_fabrica = ['CESAN_MARCENARIA', 'ESC_MARCENARIA', 'INT_MARCENARIA']
+        custo_fabrica = GastoUtilidade.objects.filter(
+            data_vencimento__year=year,
+            tipo_cliente__in=itens_fabrica,
+            status__in=['Pago', 'PAGO', 'pago']
+        ).aggregate(total=Coalesce(Sum('valor'), zero))['total']
+
+        # 2. ADMINISTRATIVO
+        itens_admin = ['CESAN_ALPHA', 'ESC_ALPHA', 'INT_ALPHA', 'CEL']
+        util_admin = GastoUtilidade.objects.filter(
+            data_vencimento__year=year, 
+            tipo_cliente__in=itens_admin,
+            status__in=['Pago', 'PAGO', 'pago']
+        ).aggregate(total=Coalesce(Sum('valor'), zero))['total']
+        
+        contab = GastoContabilidade.objects.filter(
+            data_vencimento__year=year, status__in=['Pago', 'PAGO', 'pago']
+        ).aggregate(total=Coalesce(Sum('valor'), zero))['total']
+        
+        imovel = GastoImovel.objects.filter(
+            data_vencimento__year=year, status__in=['Pago', 'PAGO', 'pago']
+        ).aggregate(total=Coalesce(Sum('valor'), zero))['total']
+        
+        custo_admin = util_admin + contab + imovel
+
+        # 3. LOGÍSTICA
+        gasolina = GastoGasolina.objects.filter(
+            data_gasto__year=year, status__in=['Pago', 'PAGO', 'pago']
+        ).aggregate(total=Coalesce(Sum('valor_total'), zero))['total']
+        
+        veiculos = GastoVeiculoConsorcio.objects.filter(
+            data_vencimento__year=year, status__in=['Pago', 'PAGO', 'pago']
+        ).aggregate(
+            total=Coalesce(Sum(Coalesce(F('valor_pago'), F('valor'))), zero)
+        )['total']
+        
+        custo_logistica = gasolina + veiculos
+
+        # 4. PESSOAL (RH)
+        _, expr_folha = self._get_model_fields(FolhaPagamento)
+        custo_rh = FolhaPagamento.objects.filter(
+            data_referencia__year=year, status__in=['Pago', 'PAGO', 'pago']
+        ).aggregate(total=Coalesce(Sum(expr_folha), zero))['total']
+
+        # 5. COMERCIAL
+        custo_comercial = ComissaoArquiteto.objects.filter(
+            data_pagamento__year=year, status__in=['Pago', 'PAGO', 'pago']
+        ).aggregate(total=Coalesce(Sum('valor_comissao'), zero))['total']
+
+        # 6. OPERACIONAL VARIÁVEL
+        modelos_var = [Boleto, Cheque, FaturaCartao, PrestacaoEmprestimo, GastoGeral]
+        custo_var = Decimal('0')
+        
+        for model in modelos_var:
+            date_field, val_expr = self._get_model_fields(model)
+            filtro = {f"{date_field}__year": year}
+            
+            if model == Cheque:
+                filtro['status__in'] = ['COM', 'Compensado']
+            else:
+                filtro['status__in'] = ['Pago', 'PAGO', 'pago']
+                
+            val = model.objects.filter(**filtro).aggregate(
+                total=Coalesce(Sum(val_expr), zero)
+            )['total']
+            custo_var += val
+
+        return {
+            'labels': ['Produção/Fábrica', 'Administrativo', 'Logística/Frota', 'Pessoal/RH', 'Comercial', 'Operacional/Variável'],
+            'data': [float(custo_fabrica), float(custo_admin), float(custo_logistica), float(custo_rh), float(custo_comercial), float(custo_var)]
+        }

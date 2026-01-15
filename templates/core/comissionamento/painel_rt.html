@@ -1,0 +1,95 @@
+{% extends 'core/base.html' %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="h3 mb-0 text-gray-800">Contratos RT (Projetos)</h2>
+        <a href="{% url 'comissionamento:contrato_create' %}" class="btn btn-primary">
+            <i class="fas fa-plus"></i> Novo Contrato
+        </a>
+    </div>
+
+    <div class="card shadow mb-4">
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-bordered table-hover" id="dataTable" width="100%" cellspacing="0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Data</th>
+                            <th>Arquiteta</th>
+                            <th>Cliente (Projeto)</th>
+                            <th>Valor Venda</th>
+                            <th>Valor RT</th>
+                            <th>Status Financeiro</th>
+                            <th class="text-center">Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for contrato in contratos %}
+                        <tr>
+                            <td>{{ contrato.data_contrato|date:"d/m/Y" }}</td>
+                            <td>{{ contrato.arquiteta.nome }}</td>
+                            <td>{{ contrato.cliente.nome_completo }}</td>
+                            <td>R$ {{ contrato.valor_servico|floatformat:2 }}</td>
+                            <td class="text-info">R$ {{ contrato.valor_rt|floatformat:2 }}</td>
+                            <td>
+                                {% if contrato.parcelas_receber.exists %}
+                                    <span class="badge {% if contrato.status_pagamento == 'Quitado' %}bg-success{% else %}bg-warning text-dark{% endif %}">
+                                        {{ contrato.status_pagamento }}
+                                    </span>
+                                {% else %}
+                                    <span class="badge bg-secondary">Sem Financeiro</span>
+                                {% endif %}
+                            </td>
+                            <td class="text-center">
+                                {% if not contrato.parcelas_receber.exists %}
+                                <button type="button" class="btn btn-sm btn-success" data-bs-toggle="modal" 
+                                        data-bs-target="#modalFinanceiro{{ contrato.id }}" title="Gerar Contas a Receber">
+                                    <i class="fas fa-dollar-sign"></i> Gerar
+                                </button>
+                                {% endif %}
+
+                                <a href="{% url 'comissionamento:contrato_edit' contrato.pk %}" class="btn btn-sm btn-info" title="Editar">
+                                    <i class="fas fa-edit"></i>
+                                </a>
+                            </td>
+                        </tr>
+
+                        <div class="modal fade" id="modalFinanceiro{{ contrato.id }}" tabindex="-1" aria-hidden="true">
+                            <div class="modal-dialog">
+                                <form action="{% url 'comissionamento:gerar_financeiro' contrato.pk %}" method="POST">
+                                    {% csrf_token %}
+                                    <div class="modal-content">
+                                        <div class="modal-header bg-success text-white">
+                                            <h5 class="modal-title">Gerar Contas a Receber</h5>
+                                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                        </div>
+                                        <div class="modal-body">
+                                            <p>Gerar parcelas para o contrato de <strong>{{ contrato.cliente.nome_completo }}</strong>?</p>
+                                            <p>Valor Total: <strong>R$ {{ contrato.valor_servico|floatformat:2 }}</strong></p>
+                                            
+                                            <div class="mb-3">
+                                                <label class="form-label">Número de Parcelas</label>
+                                                <input type="number" name="qtd_parcelas" class="form-control" value="1" min="1" max="60" required>
+                                            </div>
+                                            <div class="mb-3">
+                                                <label class="form-label">Data do 1º Vencimento</label>
+                                                <input type="date" name="data_vencimento" class="form-control" required>
+                                            </div>
+                                        </div>
+                                        <div class="modal-footer">
+                                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                                            <button type="submit" class="btn btn-success">Confirmar Geração</button>
+                                        </div>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

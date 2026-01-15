@@ -1,4 +1,5 @@
 from django.urls import path
+
 from . import views
 
 app_name = 'comissionamento'
@@ -15,4 +16,6 @@ urlpatterns = [
     path('arquiteta/novo/', views.arquiteta_create, name='arquiteta_create'), 
     path('arquiteta/editar/<int:pk>/', views.arquiteta_edit, name='arquiteta_edit'), 
     path('arquiteta/excluir/<int:pk>/', views.arquiteta_delete, name='arquiteta_delete'),    
+path('contratos/<int:pk>/detalhes/', views.rt_contrato_detail, name='contrato_detail'),
+path('contrato/<int:pk>/gerar-financeiro/', views.gerar_financeiro_contrato, name='gerar_financeiro_contrato'),
 ]

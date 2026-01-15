@@ -1,40 +1,128 @@
-<form method="POST" action="{% url 'pagar:pagar_create' %}" id="formNovaConta">
+{% load static %}
+     <style>
+        .modal-body input, 
+        .modal-body select, 
+        .modal-body textarea {
+            width: 100%;
+            padding: 10px;
+            border-radius: 8px;
+            border: 1px solid #cbd5e1;
+            font-size: 14px;
+            box-sizing: border-box;
+        }
+        .modal-body input:focus, 
+        .modal-body select:focus,
+        .modal-body textarea:focus {
+            border-color: #1976d2;
+            outline: none;
+        }
+        .form-label {
+            display: block; 
+            font-size: 13px; 
+            font-weight: 600; 
+            color: #475569; 
+            margin-bottom: 6px;
+        }
+        .error-msg {
+            color: #b91c1c; 
+            font-size: 11px; 
+            margin-top: 4px;
+        }
+
+        /* AJUSTE DOS BOTÕES DE RÁDIO (BANCO/CAIXA) */
+        .radio-group-container {
+            grid-column: span 2; /* Faz a escolha ocupar a linha toda */
+            background: #f1f5f9;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 10px;
+            border: 1px solid #e2e8f0;
+        }
+        .radio-options {
+            display: flex;
+            gap: 20px;
+            align-items: center;
+            margin-top: 5px;
+        }
+        .radio-options div {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+        }
+        .radio-options input[type="radio"] {
+            width: 18px !important; /* Tamanho fixo para não esticar */
+            height: 18px;
+            margin: 0;
+            cursor: pointer;
+        }
+    </style>
+
+<form method="POST"
+      action="{% if form.instance.pk %}{{ request.path }}{% else %}{% url 'pagar:pagar_create' %}{% endif %}"
+      enctype="multipart/form-data"
+      style="margin:0; width:100%; display:flex; flex-direction:column;">
+
     {% csrf_token %}
-    
-    <input type="hidden" name="categoria" value="{{ tipo }}">
-    <input type="hidden" name="modal" value="true">
+<input type="hidden" name="categoria" value="{{ tipo }}">
+
+    {% if is_modal %}
+    <div class="modal-header">
+        <h3 class="modal-title">{{ title|default:"Conta a Pagar" }}</h3>
+        <button type="button" class="btn-close"
+                onclick="closeModal('modalGeneric'); closeModal('modalDetalhe');">
+            ✕
+        </button>
+    </div>
+    {% endif %}
 
     <div class="modal-body">
-        {% if form.non_field_errors %}
-            <div class="alert alert-danger" style="color: #b91c1c; background: #fee2e2; padding: 10px; border-radius: 8px; margin-bottom: 15px; font-size: 13px;">
-                {{ form.non_field_errors }}
-            </div>
-        {% endif %}
 
-        <div class="form-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+        <div class="form-section-title"
+             style="margin-bottom:20px; font-weight:600; border-bottom:1px solid #e2e8f0;">
+            Dados do Lançamento
+        </div>
+
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px;">
             {% for field in form %}
-                <div class="form-group" style="margin-bottom: 12px; {% if field.name == 'observacoes' %}grid-column: span 2;{% endif %}">
-                    <label for="{{ field.id_for_label }}" style="display: block; font-size: 13px; font-weight: 600; color: #475569; margin-bottom: 6px;">
-                        {{ field.label }}
-                    </label>
-                    {{ field }}
-                    {% if field.errors %}
-                        <div style="color: #b91c1c; font-size: 11px; margin-top: 4px;">
-                            {{ field.errors.0 }}
+                {% if field.name == 'origem_pagamento' or field.name == 'destino_recebimento' %}
+                    <div class="radio-group-container">
+                        <label class="form-label">{{ field.label }}</label>
+                        <div class="radio-options">
+                            {% for radio in field %}
+                                <div>
+                                    {{ radio.tag }}
+                                    <label for="{{ radio.id_for_label }}">{{ radio.choice_label }}</label>
+                                </div>
+                            {% endfor %}
                         </div>
-                    {% endif %}
-                </div>
+                        {% if field.errors %}
+                            <div class="error-msg">{{ field.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+                {% else %}
+                    <div class="form-group"
+                         style="{% if field.name == 'descricao' or field.name == 'observacoes' %}grid-column:span 2;{% endif %}">
+                        <label class="form-label">{{ field.label }}</label>
+                        {{ field }}
+                        {% if field.errors %}
+                            <div class="error-msg">{{ field.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+                {% endif %}
             {% endfor %}
         </div>
     </div>
 
+    {# A condição {% if is_modal %} foi removida daqui para os botões aparecerem sempre #}
     <div class="modal-footer">
-        <button type="button" class="btn-ghost" onclick="closeModal('modalDetalhe')">Cancelar</button>
-        <button type="submit" class="btn-primary">Salvar Conta</button>
+        <button type="button" class="btn-ghost"
+                onclick="closeModal('modalGeneric'); closeModal('modalDetalhe');">
+            Cancelar
+        </button>
+        <button type="submit" class="btn-primary">
+            Salvar Registro
+        </button>
     </div>
-</form>
 
-<script>
-    // Reinicializa máscaras ou comportamentos específicos se houver (ex: Select2)
-    // Se seus inputs usam classes CSS do base.html, eles já serão estilizados.
-</script>
+</form>

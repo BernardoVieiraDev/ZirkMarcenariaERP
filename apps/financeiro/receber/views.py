@@ -2,7 +2,7 @@ import calendar
 from datetime import date, datetime, timedelta
 from decimal import Decimal
 from itertools import chain
-
+from apps.financeiro.utils import gerar_parcelas
 from django.db.models import Q, Sum, Value
 from django.db.models.functions import Coalesce
 from django.shortcuts import get_object_or_404, redirect, render
@@ -24,29 +24,54 @@ from .models import (Banco, CaixaDiario,
 
 # --- VIEWS DE CRUD PADRÃO (Lista, Criar, Editar, Excluir) ---
 
+# apps/financeiro/receber/views.py
+
 def receber_list(request):
-    receber = Receber.objects.all().order_by('data_vencimento')
+    # CORREÇÃO N+1: Trazendo cliente, banco e contrato em uma única query
+    receber = Receber.objects.select_related(
+        'cliente', 
+        'banco_destino', 
+        'contrato_rt'
+    ).all().order_by('data_vencimento')
     
-    # === CORREÇÃO: Cálculo do Total Acumulado ===
     total = receber.aggregate(s=Coalesce(Sum('valor'), Decimal(0)))['s']
-    
     form = ReceberForm() 
     
     return render(request, 'core/financeiro/receber/list.html', {
         'receber': receber,
         'form': form,
-        'total': total  # Passando o total para o template
+        'total': total
     })
 
 def receber_create(request):
+    initial_data = {}
+    if request.GET.get('contrato_id'):
+        contrato_id = request.GET.get('contrato_id')
+        initial_data['contrato_rt'] = contrato_id
+        initial_data['valor'] = request.GET.get('valor')
+        initial_data['descricao'] = request.GET.get('descricao')
+    
+    form = ReceberForm(request.POST or None, initial=initial_data)
+    
     if request.method == 'POST':
         form = ReceberForm(request.POST)
         if form.is_valid():
-            form.save()
+            # Não salva ainda (commit=False)
+            recebimento = form.save(commit=False)
+            
+            # Pega a qtd de parcelas do form (limpo)
+            qtd_parcelas = form.cleaned_data.get('parcelas', 1)
+            
+            if qtd_parcelas > 1:
+                # Chama o gerador
+                gerar_parcelas(recebimento, qtd_parcelas, form.cleaned_data)
+            else:
+                # Salva normal
+                recebimento.save()
+    
+                
             return redirect('receber:receber')
-    else:
-        form = ReceberForm()
-    return render(request, 'core/financeiro/receber/form.html', {'form': form})
+
 
 def receber_edit(request, pk):
     receber = get_object_or_404(Receber, pk=pk)
@@ -65,168 +90,6 @@ def receber_delete(request, pk):
         receber.delete()
         return redirect('receber:receber')
     return render(request, 'core/financeiro/receber/delete.html', {'receber': receber})
-
-
-# --- LÓGICA DO RELATÓRIO GERENCIAL (VENDAS E COMPRAS) ---
-
-def _obter_classificacao(item):
-    """
-    Define se o item é 'VISTA' ou 'PRAZO' baseado no Modelo ou Campo Específico.
-    """
-    # 1. Se for Venda (Receber), usa o campo explícito
-    if hasattr(item, 'tipo_recebimento'):
-        return item.tipo_recebimento
-
-    # 2. Se for GastoGeral, usa o campo explícito dele
-    if hasattr(item, 'tipo_pagamento'):
-        return item.tipo_pagamento
-
-    # 3. Lógica Automática para os outros (Compras/Despesas)
-    nome_classe = type(item).__name__
-
-    # Lista de Models que são SEMPRE "A Prazo"
-    models_a_prazo = [
-        'Boleto', 
-        'FaturaCartao', 
-        'FolhaPagamento', 
-        'ComissaoArquiteto', 
-        'PrestacaoEmprestimo',
-        'Cheque',
-        'GastoVeiculoConsorcio',
-        'GastoImovel',
-        'GastoContabilidade',
-        'GastoUtilidade'
-    ]
-
-    if nome_classe in models_a_prazo:
-        return 'PRAZO'
-
-    # Se sobrar algum não mapeado, assume PRAZO por segurança
-    return 'PRAZO'
-
-def _processar_dados_financeiros(lista_objetos, ano_filtro):
-    """
-    Recebe uma lista de contas e agrupa por mês, FILTRANDO PELO ANO.
-    """
-    agrupado = {} # Chave: (ano, mes)
-    
-    for item in lista_objetos:
-        # --- A. Descobrir a Data ---
-        data_ref = getattr(item, 'data_vencimento', None)
-        if not data_ref: data_ref = getattr(item, 'data_gasto', None)
-        if not data_ref: data_ref = getattr(item, 'data_pagamento', None)
-            
-        if not data_ref: continue 
-        
-        # === FILTRO DE ANO ===
-        if data_ref.year != ano_filtro:
-            continue
-        # =====================
-
-        chave = (data_ref.year, data_ref.month)
-        
-        if chave not in agrupado:
-            agrupado[chave] = {
-                'data': date(data_ref.year, data_ref.month, 1),
-                'vista_val': Decimal(0), 
-                'prazo_val': Decimal(0), 
-                'total': Decimal(0)
-            }
-            
-        # --- B. Descobrir o Valor ---
-        valor = getattr(item, 'valor', None)
-        if valor is None: valor = getattr(item, 'valor_total', None)
-        if valor is None: valor = getattr(item, 'valor_comissao', None)
-        valor = valor if valor else Decimal(0)
-        
-        # --- C. Classificar ---
-        classificacao = _obter_classificacao(item)
-        
-        if classificacao == 'VISTA':
-            agrupado[chave]['vista_val'] += valor
-        else:
-            agrupado[chave]['prazo_val'] += valor
-            
-        agrupado[chave]['total'] += valor
-
-    # --- D. Finalização (Cálculo de %) ---
-    resultado = []
-    soma_vista, soma_prazo, soma_total = Decimal(0), Decimal(0), Decimal(0)
-    qtd_meses = 0
-    
-    for chave in sorted(agrupado.keys(), reverse=True):
-        dados = agrupado[chave]
-        total = dados['total']
-        
-        dados['vista_perc'] = (dados['vista_val'] / total * 100) if total > 0 else Decimal(0)
-        dados['prazo_perc'] = (dados['prazo_val'] / total * 100) if total > 0 else Decimal(0)
-        
-        resultado.append(dados)
-        
-        soma_vista += dados['vista_val']
-        soma_prazo += dados['prazo_val']
-        soma_total += total
-        qtd_meses += 1
-        
-    media = {}
-    if qtd_meses > 0:
-        media['vista_val'] = soma_vista / qtd_meses
-        media['prazo_val'] = soma_prazo / qtd_meses
-        media['total'] = soma_total / qtd_meses
-        mt = media['total']
-        media['vista_perc'] = (media['vista_val'] / mt * 100) if mt > 0 else 0
-        media['prazo_perc'] = (media['prazo_val'] / mt * 100) if mt > 0 else 0
-        
-    return resultado, media
-
-def relatorio_vendas(request):
-    """
-    Exibe o Relatório Gerencial de Vendas e Compras filtrado por ANO.
-    """
-    # 1. Determinar o Ano (Padrão: Atual, ou o que vier na URL)
-    ano_atual = datetime.now().year
-    ano_selecionado = request.GET.get('ano', ano_atual)
-    
-    try:
-        ano_selecionado = int(ano_selecionado)
-    except ValueError:
-        ano_selecionado = ano_atual
-
-    # 2. Dados de VENDAS
-    qs_vendas = Receber.objects.all()
-    dados_vendas, media_vendas = _processar_dados_financeiros(qs_vendas, ano_selecionado)
-
-    # 3. Dados de COMPRAS
-    # Buscar todos os models
-    qs_boletos = Boleto.objects.all()
-    qs_gerais = GastoGeral.objects.all()
-    qs_cartao = FaturaCartao.objects.all()
-    qs_util = GastoUtilidade.objects.all()
-    qs_cheque = Cheque.objects.all()
-    qs_emp = PrestacaoEmprestimo.objects.all()
-    qs_veic = GastoVeiculoConsorcio.objects.all()
-    qs_cont = GastoContabilidade.objects.all()
-    qs_imov = GastoImovel.objects.all()
-    qs_gas = GastoGasolina.objects.all()
-    qs_folha = FolhaPagamento.objects.all()
-    qs_comissao = ComissaoArquiteto.objects.all()
-    
-    todos_pagar = list(chain(
-        qs_boletos, qs_gerais, qs_cartao, qs_util, qs_cheque, 
-        qs_emp, qs_veic, qs_cont, qs_imov, qs_gas, qs_folha, qs_comissao
-    ))
-    
-    dados_compras, media_compras = _processar_dados_financeiros(todos_pagar, ano_selecionado)
-
-    return render(request, 'core/financeiro/receber/relatorios_vendas.html', {
-        'dados_vendas': dados_vendas,
-        'media_vendas': media_vendas,
-        'dados_compras': dados_compras,
-        'media_compras': media_compras,
-        'ano_selecionado': ano_selecionado, 
-        'proximo_ano': ano_selecionado + 1,
-        'ano_anterior': ano_selecionado - 1,
-    })
 
 
 def caixa_diario_view(request):
@@ -476,3 +339,5 @@ def movimento_banco_edit(request, pk):
         'form': form, 
         'movimento': movimento
     })
+
+

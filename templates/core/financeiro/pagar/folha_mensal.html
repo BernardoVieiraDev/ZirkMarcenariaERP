@@ -1,0 +1,248 @@
+{% extends 'core/base.html' %}
+{% load static %}
+{% load humanize %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+
+    {% if messages %}
+        {% for message in messages %}
+            <div class="alert alert-{{ message.tags }} alert-dismissible fade show shadow-sm border-0" role="alert" style="border-radius: var(--radius);">
+                <i class="fas {% if message.tags == 'success' %}fa-check-circle{% elif message.tags == 'danger' %}fa-exclamation-circle{% else %}fa-info-circle{% endif %} me-2"></i>
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        {% endfor %}
+    {% endif %}
+
+    <div class="card border-0 shadow-sm mb-4" style="background: var(--surface); border-radius: 12px;">
+        <div class="card-body p-4">
+            <div class="row g-3 align-items-center justify-content-between">
+                
+                <div class="col-md-5">
+                    <h2 class="h4 mb-1 fw-bold" style="color: var(--text);">
+                        <i class="fas fa-file-invoice-dollar me-2" style="color: var(--primary);"></i> Espelho da Folha
+                    </h2>
+                    <p class="mb-0 small" style="color: var(--muted);">Gerencie pagamentos, holerites e fechamentos mensais.</p>
+                </div>
+
+                <div class="col-md-auto">
+                    <form method="get" class="d-flex align-items-center p-2 rounded-3" style="background: #F7FAFF; border: 1px solid #E7EDF8;">
+                        <span class="small me-2 fw-bold text-uppercase ps-2" style="color: var(--primary); letter-spacing: 0.5px;">Período:</span>
+                        <select name="mes" class="form-select form-select-sm border-0 bg-transparent fw-bold text-dark" style="width: auto; cursor: pointer; font-size: 0.95rem;" onchange="this.form.submit()">
+                            {% for num, nome in meses %}
+                            <option value="{{ num }}" {% if num == mes_atual %}selected{% endif %}>{{ nome }}</option>
+                            {% endfor %}
+                        </select>
+                        <span class="mx-1 text-secondary">/</span>
+                        <select name="ano" class="form-select form-select-sm border-0 bg-transparent fw-bold text-dark" style="width: auto; cursor: pointer; font-size: 0.95rem;" onchange="this.form.submit()">
+                            {% for a in anos %}
+                            <option value="{{ a }}" {% if a == ano_atual %}selected{% endif %}>{{ a }}</option>
+                            {% endfor %}
+                        </select>
+                    </form>
+                </div>
+            </div>
+
+            <hr class="my-4" style="opacity: 0.08;">
+
+            <div class="d-flex flex-wrap gap-3 justify-content-between align-items-center">
+                
+                <div class="d-flex gap-2">
+                    <div class="dropdown">
+                        <button class="btn ghost d-flex align-items-center gap-2 px-3" type="button" data-bs-toggle="dropdown">
+                            <i class="fas fa-print"></i> 
+                            <div class="text-start lh-1">
+                                <span class="d-block fw-bold small">Baixar Holerites</span>
+                            </div>
+                            <i class="fas fa-chevron-down ms-2 small opacity-50"></i>
+                        </button>
+                        <ul class="dropdown-menu shadow border-0" style="border-radius: var(--radius);">
+                            <li><h6 class="dropdown-header text-uppercase small fw-bold text-muted">Selecione o Tipo</h6></li>
+                            <li>
+                                <a class="dropdown-item py-2" href="{% url 'pagar:baixar_holerite_lote' %}?mes={{ mes_atual }}&ano={{ ano_atual }}&tipo=mensal">
+                                    📄 Salário Mensal (Final)
+                                </a>
+                            </li>
+                            <li>
+                                <a class="dropdown-item py-2" href="{% url 'pagar:baixar_holerite_lote' %}?mes={{ mes_atual }}&ano={{ ano_atual }}&tipo=adiantamento">
+                                    💰 Adiantamento (Dia 15)
+                                </a>
+                            </li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li>
+                                <a class="dropdown-item py-2" href="{% url 'pagar:baixar_holerite_lote' %}?mes={{ mes_atual }}&ano={{ ano_atual }}&tipo=13">
+                                    🎄 13º Salário
+                                </a>
+                            </li>
+                        </ul>
+                    </div>
+
+                    <a href="{% url 'pagar:folha_exportar' %}?mes={{ mes_atual }}&ano={{ ano_atual }}" class="btn ghost d-flex align-items-center gap-2 px-3" title="Baixar Planilha Excel">
+                        <i class="fas fa-file-excel text-success"></i>
+                        <span class="fw-bold small d-none d-lg-block">Exportar Excel</span>
+                    </a>
+                </div>
+
+                <div class="d-flex gap-2">
+                    <a href="{% url 'pagar:folha_pagar_todos' %}?mes={{ mes_atual }}&ano={{ ano_atual }}" 
+                       class="btn d-flex align-items-center gap-2 px-3"
+                       style="background: var(--accent); color: white;"
+                       onclick="return confirm('Tem certeza que deseja marcar TODOS os funcionários desta lista como PAGO?');">
+                        <i class="fas fa-check-double"></i>
+                        <div class="text-start lh-1">
+                            <span class="d-block fw-bold small">Marcar Todos</span>
+                            <span class="d-block" style="font-size: 0.7rem; opacity: 0.9;">Como Pagos</span>
+                        </div>
+                    </a>
+
+                    <div class="vr mx-1 text-muted opacity-25"></div>
+
+                    <a href="{% url 'pagar:folha_fechar_mes' %}?mes={{ mes_atual }}&ano={{ ano_atual }}" 
+                       class="btn d-flex align-items-center gap-2 px-3"
+                       style="background: #2d3748; color: white;"
+                       onclick="return confirm('ATENÇÃO: Ação Final.\n\nIsso irá:\n1. Marcar TODOS como PAGO.\n2. Gerar arquivos finais.\n3. Bloquear alterações.\n\nConfirma o fechamento do mês?');">
+                        <i class="fas fa-lock text-warning"></i>
+                        <div class="text-start lh-1">
+                            <span class="d-block fw-bold small">Fechar Mês</span>
+                            <span class="d-block text-warning" style="font-size: 0.7rem;">Finalizar Ciclo</span>
+                        </div>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <form method="post">
+        {% csrf_token %}
+        {{ formset.management_form }}
+        
+        <div class="card shadow-sm border-0 mb-5" style="border-radius: 12px; overflow: hidden;">
+            <div class="card-header py-3 border-bottom d-flex justify-content-between align-items-center" style="background: #f8f9fa;">
+                <h5 class="mb-0 fs-6 fw-bold text-uppercase" style="color: var(--text);"><i class="fas fa-users me-2 text-primary"></i> Lista de Funcionários</h5>
+                <span class="badge bg-white text-dark border shadow-sm rounded-pill">{{ formset|length }} Registros</span>
+            </div>
+            
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0 align-middle table-sm text-nowrap">
+                        <thead style="background: #eff2f7;">
+                            <tr>
+                                <th class="ps-3 py-3 text-uppercase small fw-bold" style="color: #495057; width: 14%;">Funcionário</th>
+                                <th class="py-3 text-uppercase small fw-bold" style="color: #495057; width: 9%;">Salário</th>
+                                <th class="py-3 text-uppercase small fw-bold" style="color: #495057; width: 8%;">Adiant.</th>
+                                <th class="py-3 text-uppercase small fw-bold" style="color: #495057; width: 8%;">Empreit.</th>
+                                <th class="py-3 text-uppercase small fw-bold" style="color: #495057; width: 8%;">Vale</th>
+                                <th class="py-3 text-uppercase small fw-bold" style="color: #495057; width: 8%;">H. Extras</th>
+                                <th class="py-3 text-uppercase small fw-bold" style="color: #495057; width: 8%;">13º Sal.</th> 
+                                <th class="py-3 text-center text-uppercase small fw-bold" style="color: #495057; width: 5%;" title="Referência">Ref.</th> 
+                                <th class="py-3 text-uppercase small fw-bold" style="color: #495057; width: 14%;">Obs</th>
+                                <th class="py-3 text-uppercase small fw-bold" style="color: #495057; width: 10%;">Status</th>
+                                <th class="py-3 text-center pe-3 text-uppercase small fw-bold" style="color: #495057; width: 6%;">Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for form in formset %}
+                            <tr>
+                                {% for hidden in form.hidden_fields %}
+                                    {{ hidden }}
+                                {% endfor %}
+
+                                <td class="ps-3 text-truncate" style="max-width: 150px;" title="{{ form.instance.funcionario.nome }}">
+                                    <div class="d-flex align-items-center">
+                                        <span class="fw-bold" style="color: #1a1a1a;">{{ form.instance.funcionario.nome }}</span>
+                                    </div>
+                                </td>
+
+                                <td>{{ form.salario_real }}</td>
+                                <td>{{ form.adiantamento }}</td>
+                                <td>
+                                    <div class="input-group input-group-sm">
+                                        <span class="input-group-text bg-light border-end-0 text-muted px-1">R$</span>
+                                        <input type="number" step="0.01" name="{{ form.empreitada.html_name }}" 
+                                               value="{{ form.empreitada.value|stringformat:'.2f' }}" 
+                                               class="form-control form-control-sm border-start-0 ps-1" readonly style="background-color: #f8f9fa;">
+                                    </div>
+                                </td>                                  
+                                <td>{{ form.vale }}</td>
+                                <td>
+                                    <div class="d-flex flex-column">
+                                        {{ form.horas_extras_valor }}
+                                    </div>
+                                </td>
+                                <td>{{ form.decimo_terceiro }}</td> 
+                                <td class="p-1 text-center">{{ form.referencia_holerite }}</td>
+                                <td>{{ form.observacoes }}</td>
+                                <td>
+                                    <div class="status-indicator">
+                                        {{ form.status }}
+                                    </div>
+                                </td>
+
+                                <td class="text-center pe-3">
+                                    {% if form.instance.pk %}
+                                        <div class="btn-group">
+                                            <button type="button" class="btn btn-sm btn-light border" style="color: var(--muted);" data-bs-toggle="dropdown" aria-expanded="false" title="Opções">
+                                                <i class="fas fa-ellipsis-v"></i>
+                                            </button>
+                                            <ul class="dropdown-menu dropdown-menu-end shadow border-0" style="border-radius: 8px;">
+                                                <li><h6 class="dropdown-header small">Imprimir Holerite</h6></li>
+                                                <li><a class="dropdown-item small" href="{% url 'pagar:baixar_holerite' form.instance.pk %}?tipo=mensal"><i class="fas fa-file-alt w-20 me-2 text-primary"></i> Mensal</a></li>
+                                                <li><a class="dropdown-item small" href="{% url 'pagar:baixar_holerite' form.instance.pk %}?tipo=adiantamento"><i class="fas fa-coins w-20 me-2 text-success"></i> Adiantamento</a></li>
+                                                <li><a class="dropdown-item small" href="{% url 'pagar:baixar_holerite' form.instance.pk %}?tipo=13"><i class="fas fa-gift w-20 me-2 text-danger"></i> 13º Salário</a></li>
+                                                <li><hr class="dropdown-divider"></li>
+                                                <li><a class="dropdown-item small" href="{% url 'pagar:baixar_holerite' form.instance.pk %}?tipo=ferias"><i class="fas fa-umbrella-beach w-20 me-2 text-warning"></i> 1/3 Férias</a></li>
+                                            </ul>
+                                        </div>
+                                    {% else %}
+                                        <span class="text-muted small">-</span>
+                                    {% endif %}
+                                </td>
+
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                        <tfoot style="background: #f8f9fa;">
+                            <tr>
+                                <td colspan="11" class="text-end py-3 pe-4">
+                                    <span class="text-uppercase small me-2 fw-bold text-dark">Total Líquido Estimado:</span>
+                                    <span class="fs-5 fw-bold" style="color: var(--accent);">R$ {{ total_liquido|stringformat:".2f" }}</span>
+                                </td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+            </div>
+            
+            <div class="card-footer bg-white py-3 text-end border-top">
+                <button type="submit" class="btn btn-lg px-5 shadow-sm" style="background: var(--primary); color: white; font-size: 1rem;">
+                    <i class="fas fa-save me-2"></i> Salvar Alterações
+                </button>
+            </div>
+        </div>
+    </form>
+</div>
+
+<style>
+    /* Ajustes finos para Inputs dentro da tabela */
+    .table-sm td input.form-control, 
+    .table-sm td select.form-select {
+        font-size: 0.9rem; /* Fonte um pouco maior */
+        padding: 0.4rem 0.5rem;
+        border-color: #dee2e6;
+        color: #333; /* Texto input mais escuro */
+    }
+    
+    .table-sm td input.form-control:focus, 
+    .table-sm td select.form-select:focus {
+        border-color: var(--primary);
+        box-shadow: 0 0 0 2px rgba(31, 111, 235, 0.1);
+    }
+
+    /* Linhas da tabela */
+    table.table tbody tr td {
+        vertical-align: middle;
+        border-bottom-color: #f0f2f5;
+    }
+</style>
+{% endblock %}

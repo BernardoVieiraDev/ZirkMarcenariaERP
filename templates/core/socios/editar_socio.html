@@ -1,0 +1,56 @@
+{% extends 'core/base.html' %}
+{% load static %}
+
+{% block content %}
+<style>
+    /* Reutilizando estilos do Zirk Design System definidos no cadastro */
+    .zirk-card {
+        background: #fff; border-radius: 16px; border: 1px solid #e2e8f0; padding: 32px;
+        box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
+    }
+    .page-header h1 { font-size: 22px; font-weight: 700; color: #0f172a; }
+    .zirk-label { font-size: 0.8rem; font-weight: 600; text-transform: uppercase; color: #64748b; display: block; margin-bottom: 8px; }
+    input[type="text"] {
+        width: 100%; padding: 12px 16px; border-radius: 10px; border: 1px solid #e2e8f0; font-size: 0.95rem;
+    }
+    input[type="text"]:focus { outline: none; border-color: #1f6feb; box-shadow: 0 0 0 4px rgba(31,111,235,0.1); }
+    
+    .btn-zirk { width: 100%; padding: 10px; border-radius: 10px; font-weight: 600; border: none; cursor: pointer; display: flex; justify-content: center; align-items: center; text-decoration: none; font-size: 14px; }
+    .btn-save { background: #1f6feb; color: white; }
+    .btn-save:hover { background: #1a5dbd; }
+    .btn-cancel { background: #fff; border: 1px solid #e2e8f0; color: #64748b; margin-right: 10px; }
+    .btn-cancel:hover { background: #f8fafc; color: #0f172a; }
+</style>
+
+<div class="page-container" style="padding: 0 20px;">
+    <div class="page-header" style="margin-bottom: 32px; text-align: center;">
+        <h1>Editar Sócio</h1>
+        <p style="color: #64748b; font-size: 13px;">Atualize as informações do sócio</p>
+    </div>
+
+    <div class="row justify-content-center">
+        <div class="col-md-6 col-lg-5">
+            <div class="zirk-card">
+                <form method="post">
+                    {% csrf_token %}
+                    
+                    <div class="mb-4">
+                        <label for="id_nome" class="zirk-label">Nome Completo</label>
+                        {{ form.nome }}
+                        {% if form.nome.errors %}
+                            <div class="text-danger small mt-2">{{ form.nome.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+
+                    <div style="display: flex;">
+                        <a href="{% url 'socios:listar_socios' %}" class="btn-zirk btn-cancel">Cancelar</a>
+                        <button type="submit" class="btn-zirk btn-save">
+                            <i class="fas fa-check me-2"></i> Salvar Alterações
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

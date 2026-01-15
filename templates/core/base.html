@@ -52,11 +52,38 @@
           <span class="nav-text">Indicadores</span>
         </span>
       </a>
+
       <div class="nav-item mt-2">
-        <a class="nav-link text-white nav-item-link {% if 'funcionarios' in route or 'ferias' in route or 'banco_horas' in route or 'rescisao' in route %}active{% endif %}"
+        <a class="nav-link text-white nav-item-link {% if 'clientes' in route %}active{% endif %}"
+           data-bs-toggle="collapse"
+           href="#menuClientes"
+           aria-expanded="{% if 'clientes' in route %}true{% else %}false{% endif %}">
+
+          <span class="nav-left">
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+              <circle cx="9" cy="7" r="4"></circle>
+              <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+              <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+            </svg>
+            <span class="nav-text">Clientes</span>
+          </span>
+          <span class="nav-right">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 9 6 6 6-6"></path></svg>
+          </span>
+        </a>
+
+        <div class="collapse ps-3 mt-1 {% if 'clientes' in route %}show{% endif %}" id="menuClientes">
+          <a class="nav-link text-white-50 small {% if route == 'clientes:list' %}active{% endif %}" href="{% url 'clientes:list' %}">Lista de Clientes</a>
+        </div>
+      </div>
+
+
+      <div class="nav-item mt-2">
+        <a class="nav-link text-white nav-item-link {% if 'funcionarios' in route or 'ferias' in route or 'banco_horas' in route or 'rescisao' in route or 'folha_mensal' in route %}active{% endif %}"
            data-bs-toggle="collapse"
            href="#menuRH"
-           aria-expanded="{% if 'funcionarios' in route or 'ferias' in route or 'banco_horas' in route or 'rescisao' in route %}true{% else %}false{% endif %}">
+           aria-expanded="{% if 'funcionarios' in route or 'ferias' in route or 'banco_horas' in route or 'rescisao' in route or 'folha_mensal' in route %}true{% else %}false{% endif %}">
 
           <span class="nav-left">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12 12c2.7 0 5-2.3 5-5s-2.3-5-5-5-5 2.3-5 5 2.3 5 5 5zm0 2c-3.3 0-10 1.7-10 5v2h20v-2c0-3.3-6.7-5-10-5z"/></svg>
@@ -67,9 +94,10 @@
           </span>
         </a>
 
-        <div class="collapse ps-3 mt-1 {% if 'funcionarios' in route or 'ferias' in route or 'banco_horas' in route or 'rescisao' in route %}show{% endif %}" id="menuRH">
+        <div class="collapse ps-3 mt-1 {% if 'funcionarios' in route or 'ferias' in route or 'banco_horas' in route or 'rescisao' in route or 'folha_mensal' in route %}show{% endif %}" id="menuRH">
           <a class="nav-link text-white-50 small {% if route == 'funcionarios:funcionarios' %}active{% endif %}" href="{% url 'funcionarios:funcionarios' %}">Lista de Funcionários</a>
-          <a class="nav-link text-white-50 small {% if route == 'funcionarios:criar_funcionario' %}active{% endif %}" href="{% url 'funcionarios:criar_funcionario' %}">+ Novo Funcionário</a>
+          
+          <a class="nav-link text-white-50 small {% if 'folha_mensal' in route %}active{% endif %}" href="{% url 'pagar:folha_mensal' %}">Folha de Pagamento</a>
           
           <div class="my-1 border-top border-secondary opacity-25"></div> 
           
@@ -88,10 +116,10 @@
       </div>
 
       <div class="nav-item mt-2">
-        <a class="nav-link text-white nav-item-link {% if 'receber' in route and 'relatorio_vendas' not in route and 'caixa_diario' not in route and 'movimento_banco' not in route or 'pagar' in route %}active{% endif %}"
+        <a class="nav-link text-white nav-item-link {% if 'receber' in route and 'caixa_diario' not in route and 'movimento_banco' not in route or 'pagar' in route and 'folha_mensal' not in route %}active{% endif %}"
            data-bs-toggle="collapse"
            href="#menuFinanceiro"
-           aria-expanded="{% if 'receber' in route and 'relatorio_vendas' not in route and 'caixa_diario' not in route and 'movimento_banco' not in route or 'pagar' in route %}true{% else %}false{% endif %}">
+           aria-expanded="{% if 'receber' in route and 'caixa_diario' not in route and 'movimento_banco' not in route or 'pagar' in route and 'folha_mensal' not in route %}true{% else %}false{% endif %}">
 
           <span class="nav-left">
             <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-receipt h-5 w-5"><path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1Z"></path><path d="M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8"></path><path d="M12 17.5v-11"></path></svg>            
@@ -102,7 +130,7 @@
           </span>
         </a>
 
-        <div class="collapse ps-3 mt-1 {% if 'receber' in route and 'relatorio_vendas' not in route and 'caixa_diario' not in route and 'movimento_banco' not in route or 'pagar' in route %}show{% endif %}" id="menuFinanceiro">
+        <div class="collapse ps-3 mt-1 {% if 'receber' in route and 'caixa_diario' not in route and 'movimento_banco' not in route or 'pagar' in route and 'folha_mensal' not in route %}show{% endif %}" id="menuFinanceiro">
           <a class="nav-link text-white-50 small {% if route == 'receber:receber' %}active{% endif %}" href="{% url 'receber:receber' %}">Contas a Receber</a>
           
           <div class="my-1 border-top border-secondary opacity-25"></div>
@@ -116,37 +144,65 @@
       </div>
 
       <div class="nav-item mt-2">
-        <a class="nav-link text-white nav-item-link {% if 'socios' in route or 'painel_sebrae' in route or 'relatorio_vendas' in route or 'caixa_diario' in route or 'movimento_banco' in route or 'fluxo' in route %}active{% endif %}"
+        <a class="nav-link text-white nav-item-link {% if 'empreitadas' in route %}active{% endif %}"
            data-bs-toggle="collapse"
-           href="#menuSebrae"
-           aria-expanded="{% if 'socios' in route or 'painel_sebrae' in route or 'relatorio_vendas' in route or 'caixa_diario' in route or 'movimento_banco' in route or 'fluxo' in route %}true{% else %}false{% endif %}">
+           href="#menuEmpreitadas"
+           aria-expanded="{% if 'empreitadas' in route %}true{% else %}false{% endif %}">
 
           <span class="nav-left">
-            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg>
-            <span class="nav-text">Gestão Sebrae</span>
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M2 22h20"/>
+              <path d="M20 22V5a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v17"/>
+              <line x1="6" y1="12" x2="18" y2="12"/>
+              <line x1="6" y1="17" x2="18" y2="17"/>
+              <line x1="6" y1="7" x2="18" y2="7"/>
+            </svg>
+            <span class="nav-text">Empreitadas</span>
           </span>
           <span class="nav-right">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 9 6 6 6-6"></path></svg>
           </span>
         </a>
 
-        <div class="collapse ps-3 mt-1 {% if 'socios' in route or 'painel_sebrae' in route or 'relatorio_vendas' in route or 'caixa_diario' in route or 'movimento_banco' in route or 'fluxo' in route %}show{% endif %}" id="menuSebrae">
+        <div class="collapse ps-3 mt-1 {% if 'empreitadas' in route %}show{% endif %}" id="menuEmpreitadas">
+          <a class="nav-link text-white-50 small {% if route == 'empreitadas:list' %}active{% endif %}" href="{% url 'empreitadas:list' %}">Lista de Empreitadas</a>
+          <a class="nav-link text-white-50 small {% if route == 'empreitadas:create' %}active{% endif %}" href="{% url 'empreitadas:create' %}">+ Nova Empreitada</a>
+        </div>
+      </div>
+
+      <div class="nav-item mt-2">
+        <a class="nav-link text-white nav-item-link {% if 'socios' in route or 'painel_sebrae' in route or 'caixa_diario' in route or 'movimento_banco' in route or 'fluxo' in route %}active{% endif %}"
+           data-bs-toggle="collapse"
+           href="#menuTesouraria"
+           aria-expanded="{% if 'socios' in route or 'painel_sebrae' in route or 'caixa_diario' in route or 'movimento_banco' in route or 'fluxo' in route %}true{% else %}false{% endif %}">
+
+          <span class="nav-left">
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg>
+            <span class="nav-text">Tesouraria</span>
+          </span>
+          <span class="nav-right">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 9 6 6 6-6"></path></svg>
+          </span>
+        </a>
+
+        <div class="collapse ps-3 mt-1 {% if 'socios' in route or 'painel_sebrae' in route or 'caixa_diario' in route or 'movimento_banco' in route or 'fluxo' in route %}show{% endif %}" id="menuTesouraria">
           <a class="nav-link text-white-50 small {% if route == 'socios:relatorio_anual' %}active{% endif %}" href="{% url 'socios:relatorio_anual' %}">Despesas Sócios (Relatório)</a>
           <a class="nav-link text-white-50 small {% if route == 'socios:listar_lancamentos' %}active{% endif %}" href="{% url 'socios:listar_lancamentos' %}">Extrato Sócios</a>
+          
+          <a class="nav-link text-white-50 small {% if route == 'socios:listar_socios' %}active{% endif %}" href="{% url 'socios:listar_socios' %}">Gestão de Sócios</a>
+          
           <a class="nav-link text-white-50 small {% if route == 'socios:registrar_despesa' %}active{% endif %}" href="{% url 'socios:registrar_despesa' %}">+ Lançar Despesa</a>
           <a class="nav-link text-white-50 small {% if route == 'socios:cadastrar_socio' %}active{% endif %}" href="{% url 'socios:cadastrar_socio' %}">+ Novo Sócio</a>
           
           <div class="my-1 border-top border-secondary opacity-25"></div>
 
-          <a class="nav-link text-white-50 small {% if route == 'receber:relatorio_vendas' %}active{% endif %}" href="{% url 'receber:relatorio_vendas' %}">Entradas e Saídas</a>
           <a class="nav-link text-white-50 small {% if route == 'receber:caixa_diario' %}active{% endif %}" href="{% url 'receber:caixa_diario' %}">Caixa Diário</a>
           <a class="nav-link text-white-50 small {% if route == 'receber:movimento_banco' or route == 'receber:bancos_list' %}active{% endif %}" href="{% url 'receber:movimento_banco' %}">Movimento Bancário</a>
           
           <div class="my-1 border-top border-secondary opacity-25"></div>
 
-          <a class="nav-link text-white-50 small {% if route == 'fluxo_semanal' %}active{% endif %}" href="{% url 'fluxo_semanal' %}">Fluxo de Caixa (Semanal)</a>
-          <a class="nav-link text-white-50 small {% if route == 'fluxo_mensal' %}active{% endif %}" href="{% url 'fluxo_mensal' %}">Fluxo de Caixa (Mensal)</a>
-        </div>
+          <a class="nav-link text-white-50 small  {% if route == 'fluxo_semanal' or route == 'fluxo_mensal' %}active{% endif %}"  href="{% url 'fluxo_semanal' %}"> Fluxo de Caixa </a>        
+          </div>
       </div>
 
       <div class="nav-item mt-2">
@@ -165,9 +221,7 @@
         </a>
 
         <div class="collapse ps-3 mt-1 {% if 'comissionamento' in route %}show{% endif %}" id="menuComercial">
-          <a class="nav-link text-white-50 small {% if route == 'comissionamento:contratos_list' %}active{% endif %}" href="{% url 'comissionamento:contratos_list' %}">Contratos</a>
-          <a class="nav-link text-white-50 small {% if route == 'comissionamento:contrato_create' %}active{% endif %}" href="{% url 'comissionamento:contrato_create' %}">+ Novo Contrato</a>
-          
+          <a class="nav-link text-white-50 small {% if route == 'comissionamento:contratos_list' %}active{% endif %}" href="{% url 'comissionamento:contratos_list' %}">Contratos</a>           
           <div class="my-1 border-top border-secondary opacity-25"></div>
 
           <a class="nav-link text-white-50 small {% if route == 'comissionamento:arquiteta_list' %}active{% endif %}" href="{% url 'comissionamento:arquiteta_list' %}">Arquitetos</a>
@@ -211,6 +265,24 @@
           </a>
         </div>
       </div>
+
+
+
+      <a class="nav-link text-white nav-item-link {% if 'lixeira' in route %}active{% endif %}" 
+         href="{% url 'configuracoes:lixeira_dashboard' %}">
+        <span class="nav-left">
+          <i class="fas fa-trash-alt" style="width: 18px; text-align: center;"></i>
+          <span class="nav-text ms-2">Lixeira</span>
+        </span>
+      </a>
+
+      <a class="nav-link text-white nav-item-link {% if 'editar_configuracoes' in route %}active{% endif %}" 
+         href="{% url 'configuracoes:editar_configuracoes' %}">
+        <span class="nav-left">
+          <i class="fas fa-cogs" style="width: 18px; text-align: center;"></i>
+          <span class="nav-text ms-2">Configurações</span>
+        </span>
+      </a>
 
       {% endwith %} 
     </nav>

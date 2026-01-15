@@ -1,7 +1,10 @@
 from django.db import models
 from decimal import Decimal
+from apps.configuracoes.mixin import SoftDeleteMixin
+# Importe o modelo de Cliente
+from apps.clientes.models import Cliente 
 
-class Arquiteta(models.Model):
+class Arquiteta(SoftDeleteMixin):
     nome = models.CharField(max_length=150)
     cpf = models.CharField(max_length=14, unique=True, null=True, blank=True)
     banco = models.CharField(max_length=50, verbose_name="Banco de Pagamento")
@@ -15,25 +18,58 @@ class Arquiteta(models.Model):
     def __str__(self):
         return self.nome
 
-class ContratoRT(models.Model):
+class ContratoRT(SoftDeleteMixin):
     arquiteta = models.ForeignKey(Arquiteta, on_delete=models.PROTECT, verbose_name="Arquiteta Responsável")
-    cliente = models.CharField(max_length=255, verbose_name="Nome do Cliente/Projeto")
+    
+    # VÍNCULO REAL COM O CLIENTE
+    cliente = models.ForeignKey(Cliente, on_delete=models.PROTECT, verbose_name="Cliente")
+    
     data_contrato = models.DateField(verbose_name="Data do Contrato", null=True, blank=True)
     
-    # Novo Campo
-    percentual = models.DecimalField(max_digits=5, decimal_places=2, verbose_name="Porcentagem (%)", default=Decimal('0.00'),)
+    # Valores
+    percentual = models.DecimalField(max_digits=5, decimal_places=2, verbose_name="Porcentagem RT (%)", default=Decimal('0.00'))
+    valor_servico = models.DecimalField(max_digits=12, decimal_places=2, verbose_name="Valor Total do Projeto (Venda)")
+    valor_rt = models.DecimalField(max_digits=12, decimal_places=2, verbose_name="Comissão (Valor da RT)")
     
-    valor_servico = models.DecimalField(max_digits=12, decimal_places=2, verbose_name="Valor do Serviço")
-    valor_rt = models.DecimalField(max_digits=12, decimal_places=2, verbose_name="Valor da RT")
-    
-    data_pagamento = models.DateField(verbose_name="Data do Pagamento", null=True, blank=True)
-    valor_pago = models.DecimalField(max_digits=12, decimal_places=2, verbose_name="Valor Pago", null=True, blank=True)
     observacoes = models.TextField(verbose_name="Observações", null=True, blank=True)
-    
+
+    # Campos calculados (somente leitura, baseados no Financeiro)
+# ... (mantenha o código anterior)
+
+    # Campos calculados existentes...
+    @property
+    def total_recebido(self):
+        return self.parcelas_receber.filter(status='Recebido').aggregate(models.Sum('valor_recebido'))['valor_recebido__sum'] or Decimal('0.00')
+
+    # --- ADICIONE ISTO ---
+    @property
+    def total_previsto_financeiro(self):
+        """Soma total das parcelas geradas no contas a receber"""
+        return self.parcelas_receber.aggregate(models.Sum('valor'))['valor__sum'] or Decimal('0.00')
+
+    @property
+    def qtd_parcelas_pendentes(self):
+        """Retorna quantas parcelas ainda não foram recebidas"""
+        return self.parcelas_receber.filter(status='Pendente').count()
+
+    @property
+    def status_pagamento(self):
+        total = self.parcelas_receber.count()
+        if total == 0:
+            return "Sem Financeiro"
+        
+        pendentes = self.qtd_parcelas_pendentes
+        pagas = total - pendentes
+        
+        if pendentes == 0:
+            return "Quitado"
+        elif pagas > 0:
+            return f"Parcial ({pagas}/{total} pagas)"
+        return f"Pendente ({pendentes} restantes)"
     class Meta:
         verbose_name = "Contrato de RT"
         verbose_name_plural = "Contratos de RT"
         ordering = ['-data_contrato']
     
     def __str__(self):
-        return f"{self.arquiteta.nome} - {self.cliente}"
+        return f"{self.arquiteta.nome} - {self.cliente.nome_completo}"

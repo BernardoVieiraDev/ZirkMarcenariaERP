@@ -5,7 +5,7 @@
 
 {% block content %}
 <style>
-    /* === DESIGN SYSTEM (Cópia fiel do Dashboard.html) === */
+    /* === DESIGN SYSTEM (Mantido Fielmente) === */
     :root {
         --font-sans: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
         
@@ -110,7 +110,7 @@
     .btn-export { color: var(--green-700); }
     .btn-export:hover { background-color: var(--green-50); border-color: var(--green-500); }
 
-    /* === STATS CARDS (Idêntico ao Dashboard) === */
+    /* === STATS CARDS === */
     .top-stats-grid { 
         display: grid; 
         grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); 
@@ -137,7 +137,7 @@
     .top-sub { font-size: 13px; margin-top: 6px; opacity: 0.85; }
     .top-icon { width: 48px; height: 48px; background: rgba(255,255,255,0.2); border-radius: 12px; display: flex; align-items: center; justify-content: center; }
 
-    /* === TABELA & SEARCH (Standard Card) === */
+    /* === TABELA & SEARCH === */
     .standard-card {
         background-color: var(--white);
         border: 1px solid var(--slate-200);
@@ -237,7 +237,7 @@
     .dropdown-content button:hover { background-color: var(--slate-50); color: var(--blue-600); }
     .dropdown-content .delete-item:hover { background-color: var(--red-50); color: var(--red-500); }
 
-    /* === MODAIS (Visual Dashboard Clean) === */
+    /* === MODAIS (Visual Clean + Ajustes para Grid/Radios) === */
     .modal-overlay {
         display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.4); 
         z-index: 1000; overflow-y: auto; padding: 20px;
@@ -246,7 +246,8 @@
     .modal-overlay.open { display: flex; }
     
     .modal-window {
-        background: white; width: 100%; max-width: 600px; margin: 40px auto; 
+        background: white; width: 100%; max-width: 700px; /* Aumentei um pouco para o Grid */
+        margin: 40px auto; 
         border-radius: 16px; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
         display: flex; flex-direction: column; position: relative;
         animation: modalFadeIn 0.2s ease-out;
@@ -263,11 +264,12 @@
     
     .modal-body { padding: 24px; }
     
-    .form-group { margin-bottom: 16px; }
+    .form-group { margin-bottom: 5px; } /* Ajuste fino */
     .form-group label { display: block; font-size: 13px; font-weight: 600; color: var(--slate-600); margin-bottom: 6px; }
     .form-group input, .form-group select, .form-group textarea { 
         width: 100%; padding: 10px 12px; border-radius: 8px; border: 1px solid var(--slate-300); 
         font-size: 14px; color: var(--slate-900); transition: border-color 0.15s;
+        box-sizing: border-box;
     }
     .form-group input:focus, .form-group select:focus { 
         border-color: var(--blue-500); outline: none; box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1); 
@@ -277,6 +279,36 @@
         padding: 20px 24px; border-top: 1px solid var(--slate-100); background: var(--slate-50); 
         border-radius: 0 0 16px 16px; display: flex; justify-content: flex-end; gap: 12px; 
     }
+
+    /* === ESTILOS PARA O RADIO BUTTON (BANCO/CAIXA) === */
+    .radio-group-container {
+        grid-column: span 2; /* Ocupa linha inteira no grid */
+        background: var(--slate-50);
+        padding: 15px;
+        border-radius: 10px;
+        border: 1px solid var(--slate-200);
+        margin-bottom: 10px;
+    }
+    .radio-options {
+        display: flex;
+        gap: 20px;
+        align-items: center;
+        margin-top: 8px;
+    }
+    .radio-options div {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        cursor: pointer;
+    }
+    .radio-options input[type="radio"] {
+        width: 18px !important; 
+        height: 18px;
+        margin: 0;
+        cursor: pointer;
+        accent-color: var(--blue-500);
+    }
+    .span-2 { grid-column: span 2; }
 
     .empty-msg { text-align: center; padding: 48px; color: var(--slate-400); }
 
@@ -324,7 +356,13 @@
             <div class="rh-search">
                 <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
                 <input id="searchInput" type="search" placeholder="Filtrar por cliente, categoria..." onkeyup="filterTable()">
+                
             </div>
+            <select id="sortOrder" class="filter-select" onchange="filterTable()" 
+            style="padding: 10px 16px; border-radius: 10px; border: 1px solid var(--slate-200); color: var(--slate-600);">
+        <option value="asc">Próximas de Vencer (Antigas Primeiro)</option>
+        <option value="desc">Data (Mais Recentes Primeiro)</option>
+    </select>
         </div>
 
         <div class="table-responsive">
@@ -343,9 +381,23 @@
                 </thead>
                 <tbody id="tableBody">
                     {% for it in receber %}
-                    <tr class="receber-row">
+                    <tr class="receber-row" data-vencimento="{{ it.data_vencimento|date:'Y-m-d' }}">
                         <td>
-                            <div class="text-main">{{ it.cliente }}</div>
+{% if it.contrato_rt and it.contrato_rt.cliente %}
+    <a href="{% url 'clientes:detail' it.contrato_rt.cliente.pk %}" 
+       class="text-main" 
+       title="Ver detalhes do cliente"
+       style="text-decoration: none; color: inherit; cursor: pointer; display: flex; align-items: center; gap: 4px; transition: color 0.2s;"
+       onmouseover="this.style.color='var(--blue-600)'" 
+       onmouseout="this.style.color='var(--slate-900)'">
+        
+        {{ it.cliente }} 
+        
+    </a>
+{% else %}
+    <div class="text-main">{{ it.cliente }}</div>
+{% endif %}
+
                             {% if it.observacoes %}
                                 <div class="text-sub">{{ it.observacoes|truncatechars:30 }}</div>
                             {% endif %}
@@ -428,13 +480,31 @@
             </div>
             
             <div class="modal-body">
-                {% for field in form %}
-                <div class="form-group">
-                    <label>{{ field.label }}</label>
-                    {{ field }}
-                    {% if field.errors %}<div style="color:var(--red-500);font-size:11px;margin-top:2px">{{ field.errors.0 }}</div>{% endif %}
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                    {% for field in form %}
+                        {% if field.name == 'destino_recebimento' %}
+                             <div class="radio-group-container">
+                                <label style="font-size:13px; font-weight:600; color:var(--slate-600);">{{ field.label }}</label>
+                                <div class="radio-options">
+                                    {% for radio in field %}
+                                        <div>
+                                            {{ radio.tag }}
+                                            <label for="{{ radio.id_for_label }}" style="font-size: 14px; margin: 0; cursor: pointer;">{{ radio.choice_label }}</label>
+                                        </div>
+                                    {% endfor %}
+                                </div>
+                                {% if field.errors %}<div style="color:var(--red-500);font-size:11px;margin-top:2px">{{ field.errors.0 }}</div>{% endif %}
+                            </div>
+
+                        {% else %}
+                            <div class="form-group {% if field.name == 'observacoes' or field.name == 'descricao' %}span-2{% endif %}" id="div_{{ field.auto_id }}">
+                                <label>{{ field.label }}</label>
+                                {{ field }}
+                                {% if field.errors %}<div style="color:var(--red-500);font-size:11px;margin-top:2px">{{ field.errors.0 }}</div>{% endif %}
+                            </div>
+                        {% endif %}
+                    {% endfor %}
                 </div>
-                {% endfor %}
             </div>
             
             <div class="modal-footer">
@@ -452,10 +522,42 @@
 </div>
 
 <script>
+
+
+
+    // --- Lógica para Esconder/Mostrar Banco (Novo) ---
+    function toggleBancoField() {
+        // Tenta pegar pelo nome (seja pagar ou receber)
+        const radioOrigem = document.querySelector('input[name="destino_recebimento"]:checked');
+        
+        // Pega o campo de banco pelo ID gerado pelo Django
+        const campoBanco = document.getElementById('id_banco_destino');
+        
+        if (campoBanco) {
+            // Acha o container pai (a div .form-group) para esconder o label junto
+            const containerBanco = campoBanco.closest('.form-group');
+
+            if (radioOrigem && radioOrigem.value === 'CAIXA') {
+                if (containerBanco) containerBanco.style.display = 'none';
+                campoBanco.value = ''; 
+            } else {
+                if (containerBanco) containerBanco.style.display = 'block';
+            }
+        }
+    }
+
+    // Monitora mudanças nos radios
+    document.addEventListener("change", function(e) {
+        if (e.target.name === "destino_recebimento") {
+            toggleBancoField();
+        }
+    });
+
     // --- Controle do Modal Local ---
     function openModal(modalId) {
         document.getElementById(modalId).classList.add('open');
         document.body.style.overflow = 'hidden';
+        toggleBancoField(); // Garante o estado correto ao abrir
     }
 
     function closeModal(modalId) {
@@ -520,15 +622,39 @@
     });
 
     // Filtro da tabela
-    function filterTable() {
-        const query = document.getElementById('searchInput').value.toLowerCase();
-        const rows = document.querySelectorAll('.receber-row');
-        rows.forEach(row => {
-            const text = row.innerText.toLowerCase();
-            row.style.display = text.includes(query) ? '' : 'none';
-        });
-    }
+function filterTable() {
+    const query = document.getElementById('searchInput').value.toLowerCase();
+    const sortOrder = document.getElementById('sortOrder').value; 
+    const tbody = document.getElementById('tableBody');
+    
+    // Converte a lista de linhas em um Array real para poder ordenar
+    const rows = Array.from(tbody.querySelectorAll('.receber-row'));
 
+    // 1. Aplica Filtro de Busca
+    rows.forEach(row => {
+        const text = row.innerText.toLowerCase();
+        const visible = text.includes(query);
+        row.style.display = visible ? '' : 'none';
+    });
+
+    // 2. Aplica Ordenação
+    rows.sort((a, b) => {
+        // Pega a data ou define uma data muito distante/antiga se não houver
+        const dateA = a.getAttribute('data-vencimento') || (sortOrder === 'asc' ? '9999-99-99' : '0000-00-00');
+        const dateB = b.getAttribute('data-vencimento') || (sortOrder === 'asc' ? '9999-99-99' : '0000-00-00');
+        
+        if (sortOrder === 'asc') {
+            // Do mais antigo para o mais recente (Próximas de Vencer)
+            return dateA.localeCompare(dateB);
+        } else {
+            // Do mais recente para o mais antigo
+            return dateB.localeCompare(dateA);
+        }
+    });
+
+    // Reinsere as linhas na tabela na ordem certa
+    rows.forEach(row => tbody.appendChild(row));
+}
     // Menu Dropdown
     function toggleMenu(menuId) {
         document.querySelectorAll('.dropdown-content').forEach(menu => {
@@ -545,5 +671,10 @@
             });
         }
     }
+
+    // Inicializa estado ao carregar
+    document.addEventListener("DOMContentLoaded", function() {
+        toggleBancoField();
+    });
 </script>
 {% endblock %}

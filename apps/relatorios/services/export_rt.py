@@ -118,13 +118,13 @@ class ExportRTService:
         ws = self.workbook.add_worksheet("RT")
         ws.hide_gridlines(2)
 
-        ws.set_column('A:A', 30) # Cliente
-        ws.set_column('B:B', 15) # Data Contrato
-        ws.set_column('C:C', 18) # Valor Serviço
-        ws.set_column('D:D', 18) # Valor RT
-        ws.set_column('E:E', 15) # Data Pag
-        ws.set_column('F:F', 18) # Valor Pago
-        ws.set_column('G:G', 50) # Obs
+        ws.set_column('A:A', 30) # type: ignore # Cliente
+        ws.set_column('B:B', 15) # Data Contrato# type: ignore
+        ws.set_column('C:C', 18) # Valor Serviço# type: ignore
+        ws.set_column('D:D', 18) # Valor RT# type: ignore
+        ws.set_column('E:E', 15) # Data Pag# type: ignore
+        ws.set_column('F:F', 18) # Valor Pago# type: ignore
+        ws.set_column('G:G', 50) # Obs# type: ignore
 
         self._write_arquiteta_header(ws, arquiteta, f"RELATÓRIO DE RT: {arquiteta.nome.upper()}", width_cols=7)
 
@@ -179,14 +179,14 @@ class ExportRTService:
         ws.hide_gridlines(2)
 
         # Configura colunas
-        ws.set_column('A:A', 30) # Cliente
-        ws.set_column('B:B', 8)  # %
-        ws.set_column('C:C', 18) # Valor Serviço
-        ws.set_column('D:D', 18) # Valor RT
-        ws.set_column('E:E', 15) # Data Pag
-        ws.set_column('F:F', 18) # Valor Pago
-        ws.set_column('G:G', 40) # Obs
-        ws.set_column('H:H', 20) # SALDO
+        ws.set_column('A:A', 30) # Cliente# type: ignore
+        ws.set_column('B:B', 8)  # %# type: ignore
+        ws.set_column('C:C', 18) # Valor Serviço# type: ignore
+        ws.set_column('D:D', 18) # Valor RT# type: ignore
+        ws.set_column('E:E', 15) # Data Pag# type: ignore
+        ws.set_column('F:F', 18) # Valor Pago# type: ignore
+        ws.set_column('G:G', 40) # Obs# type: ignore
+        ws.set_column('H:H', 20) # SALDO# type: ignore
 
         self._write_arquiteta_header(ws, arquiteta, f"RT POR CLIENTE: {arquiteta.nome.upper()}", width_cols=8)
 

@@ -1,38 +1,48 @@
 from datetime import date
+from decimal import ROUND_HALF_UP, Decimal
 
 from django.contrib import messages
-from django.http import HttpResponse
+from django.db import transaction
+from django.http import HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
-from django.views.decorators.http import require_POST
 from django.urls import reverse
+from django.views.decorators.http import require_POST
+
 from apps.funcionarios.models import Funcionario
-from django.http import JsonResponse
-from decimal import Decimal, ROUND_HALF_UP
-from .forms import FeriasForm, RecibosContabilidadeForm, PagamentoFeriasForm, PeriodoAquisitivoForm
-from .models import Ferias, RecibosContabilidade, PagamentoFerias, PeriodoAquisitivo
+
+# IMPORTANTE: Importe o form aqui, não defina a classe novamente
+from .forms import \
+    FeriasColetivasForm  # <--- Certifique-se que está importado aqui
+from .forms import (FeriasForm, PagamentoFeriasForm, PeriodoAquisitivoForm,
+                    RecibosContabilidadeForm)
+from .models import (Ferias, Funcionario, PagamentoFerias,  # ...
+                     PeriodoAquisitivo, RecibosContabilidade)
 from .services import FeriasExcelService
+
+# ... outros imports ...
 
 
 def listar_funcionarios(request):
     funcionarios = (
         Funcionario.objects
         .select_related("banco_horas")
-        .prefetch_related(
-            "periodos_aquisitivos__ferias_registradas"
-        )
+        .prefetch_related("periodos_aquisitivos__ferias_registradas")
         .order_by("nome")
     )
 
-    # --- NOVO: Instanciar forms vazios para os Modais ---
+    # Instanciar forms vazios
     form_periodo = PeriodoAquisitivoForm()
     form_ferias = FeriasForm()
+    
+    # --- NOVO: Form para o Modal de Coletivas ---
+    form_ferias_coletivas = FeriasColetivasForm()
 
     return render(request, "core/ferias/listar_funcionarios.html", {
         "funcionarios": funcionarios,
         "form_periodo": form_periodo,
-        "form_ferias": form_ferias
+        "form_ferias": form_ferias,
+        "form_ferias_coletivas": form_ferias_coletivas, # Passando para o template
     })
-
 
 def registrar_periodo(request):
     if request.method == 'POST':
@@ -102,21 +112,36 @@ def registrar_ferias(request):
 
     # Caso seja um GET direto para essa URL (opcional, ou mantem o comportamento antigo)
     return render(request, 'core/ferias/registrar_ferias.html', {'form': form})
+
 def editar_ferias(request, pk):
     registro = get_object_or_404(Ferias, pk=pk)
+    
     if request.method == 'POST':
         form = FeriasForm(request.POST, instance=registro)
         if form.is_valid():
             try:
                 form.save()
                 messages.success(request, "Registro de férias atualizado.")
+                # Se for AJAX, o ideal seria retornar um JSON ou script para fechar o modal
+                # Mas mantendo o padrão simples, o redirect funciona se o front lidar com isso
                 return redirect('ferias:listar_funcionarios')
             except ValueError as e:
                 form.add_error(None, str(e))
     else:
         form = FeriasForm(instance=registro)
-    return render(request, 'core/ferias/registrar_ferias.html', {'form': form, 'editar': True})
+    
+    # CORREÇÃO: Verifica se é uma requisição AJAX (comum em modais)
+    if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+        # Retorna apenas o template do modal ou form parcial se houver erro
+        # Certifique-se de ter um template parcial ou use o registrar_ferias.html sem o base se necessário
+        # Assumindo que você tem um template base de modal ou reutiliza o registrar_ferias de forma parcial:
+        return render(request, 'core/ferias/registrar_ferias.html', {
+            'form': form, 
+            'editar': True,
+            'is_modal': True # Você pode usar essa flag no template para não carregar cabeçalho/rodapé
+        })
 
+    return render(request, 'core/ferias/registrar_ferias.html', {'form': form, 'editar': True})
 
 @require_POST
 def deletar_ferias(request, pk):
@@ -319,3 +344,69 @@ def calcular_valor_ferias_api(request):
         pass
     
     return JsonResponse({'valor': 0})
+
+
+
+def registrar_ferias_coletivas(request):
+    if request.method == 'POST':
+        form = FeriasColetivasForm(request.POST)
+        if form.is_valid():
+            data = form.cleaned_data
+            
+            funcionarios = data['funcionarios']
+            data_inicio = data['data_inicio']
+            data_fim = data['data_fim']
+            observacao = data['observacao_geral']
+            
+            # 1. Capturar os valores do formulário
+            dias_recesso = data['ferias_no_recesso_final_ano']
+            dias_carnaval = data['ferias_no_carnaval']
+            
+            # Calcula total de dias
+            dias_totais = (data_fim - data_inicio).days + 1
+
+            for func in funcionarios:
+                # CORREÇÃO AQUI:
+                # 1. Buscamos todos os períodos do funcionário ordenados pelo mais antigo
+                periodos = PeriodoAquisitivo.objects.filter(funcionario=func).order_by('data_inicio')
+                
+                periodo_encontrado = None
+                
+                # 2. Iteramos no Python para achar o primeiro com saldo positivo
+                # Como 'saldo_restante' é calculado no Python, precisamos fazer assim:
+                for p in periodos:
+                    if p.saldo_restante() > 0:
+                        periodo_encontrado = p
+                        break
+                
+                if periodo_encontrado:
+                    Ferias.objects.create(
+                        periodo=periodo_encontrado,
+                        dias_tirados=dias_totais,
+                        observacoes=observacao,
+                        ferias_no_recesso_final_ano=dias_recesso,
+                        ferias_no_carnaval=dias_carnaval
+                    )
+                else:
+                    # Opcional: Adicionar aviso se algum funcionário não tiver período com saldo
+                    # messages.warning(request, f"Funcionário {func.nome} não possui saldo suficiente.")
+                    pass
+            
+            messages.success(request, "Férias coletivas registradas com sucesso!")
+            return redirect('ferias:listar_funcionarios')
+    else:
+        form = FeriasColetivasForm()
+
+    # Se der erro no form, reabre o modal na listagem
+    return listar_funcionarios_com_erro_coletivas(request, form)
+
+# Helper necessário para reabrir o modal com erro
+def listar_funcionarios_com_erro_coletivas(request, form_coletivas_com_erro):
+    funcionarios = Funcionario.objects.select_related("banco_horas").prefetch_related("periodos_aquisitivos__ferias_registradas").order_by("nome")
+    return render(request, "core/ferias/listar_funcionarios.html", {
+        "funcionarios": funcionarios,
+        "form_periodo": PeriodoAquisitivoForm(),
+        "form_ferias": FeriasForm(),
+        "form_ferias_coletivas": form_coletivas_com_erro,
+        "abrir_modal": "modalColetivas"
+    })

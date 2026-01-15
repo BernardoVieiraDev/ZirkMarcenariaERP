@@ -84,6 +84,28 @@
         transform: translateY(-1px);
     }
 
+    /* Botão de Sucesso (Verde) para Gerar Financeiro */
+    .btn-success-sm {
+        background-color: var(--green-500);
+        color: white;
+        padding: 6px 12px;
+        border-radius: 8px;
+        font-weight: 600;
+        font-size: 12px;
+        border: none;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        transition: all 0.2s;
+        text-decoration: none;
+    }
+    .btn-success-sm:hover {
+        background-color: var(--green-600);
+        transform: translateY(-1px);
+        box-shadow: 0 4px 6px -1px rgba(16, 185, 129, 0.2);
+    }
+
     .btn-ghost { 
         background: white; border: 1px solid var(--slate-300); color: var(--slate-600); 
         padding: 10px 20px; border-radius: 10px; cursor: pointer; font-weight: 600; font-size: 14px;
@@ -190,10 +212,12 @@
     .text-sub { font-size: 12px; color: var(--slate-500); margin-top: 2px; }
     .text-val { font-weight: 600; font-variant-numeric: tabular-nums; }
     
-    /* Badges de Valor */
-    .badge { display: inline-flex; align-items: center; padding: 2px 8px; border-radius: 6px; font-size: 12px; font-weight: 600; border: 1px solid transparent; }
-    .val-pago { color: var(--green-700); background-color: var(--green-50); border-color: #bbf7d0; }
-    .val-pendente { color: var(--slate-400); }
+    /* Badges */
+    .badge { display: inline-flex; align-items: center; padding: 2px 8px; border-radius: 6px; font-size: 11px; font-weight: 600; border: 1px solid transparent; }
+    
+    .badge-pago { color: var(--green-700); background-color: var(--green-50); border-color: #bbf7d0; }
+    .badge-pendente { color: var(--amber-600); background-color: var(--amber-50); border-color: #fde68a; }
+    .badge-neutro { color: var(--slate-500); background-color: var(--slate-100); border-color: var(--slate-200); }
 
     /* Ações */
     .action-btn {
@@ -252,7 +276,7 @@
     <div class="dash-header">
         <div>
             <h1 class="dash-title">Contratos de RT</h1>
-            <p class="dash-subtitle">Gestão unificada de comissões e pagamentos</p>
+            <p class="dash-subtitle">Gestão de projetos e controle de recebimentos</p>
         </div>
         
         <div style="display: flex; gap: 12px;">
@@ -268,22 +292,22 @@
         </div>
     </div>
 
-    {% if messages %}
-        <div style="margin-bottom: 24px;">
-            {% for message in messages %}
-                <div style="padding: 14px; border-radius: 10px; background: var(--blue-50); color: var(--blue-600); border: 1px solid var(--blue-100); font-size: 14px;">
-                    {{ message }}
-                </div>
-            {% endfor %}
-        </div>
-    {% endif %}
+{% if messages %}
+<div id="messages-container" style="margin-bottom: 24px;">
+    {% for message in messages|slice:":3" %}
+    <div class="message" style="padding: 14px; border-radius: 10px; background: var(--blue-50); color: var(--blue-600); border: 1px solid var(--blue-100); font-size: 14px;">
+        {{ message }}
+    </div>
+    {% endfor %}
+</div>
+{% endif %}
+
 
     <div class="top-stats-grid">
         <div class="top-card bg-orange-original">
             <div>
-                <div class="top-label">Total RT (Contratado)</div>
-                <div class="top-value">R$ {{ total_rt|floatformat:"2g" }}</div>
-                <div class="top-sub">Valor total de contratos</div>
+                <div class="top-label">Vendas Totais (Projetos)</div>
+                <div class="top-value">R$ {{ total_rt|floatformat:"2g" }}</div> <div class="top-sub">Valor total de contratos fechados</div>
             </div>
             <div class="top-icon">
                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
@@ -292,9 +316,9 @@
 
         <div class="top-card bg-green-original">
             <div>
-                <div class="top-label">Total Pago</div>
+                <div class="top-label">Total Recebido</div>
                 <div class="top-value">R$ {{ total_pago|floatformat:"2g" }}</div>
-                <div class="top-sub">Comissões já quitadas</div>
+                <div class="top-sub">Montante já quitado pelos clientes</div>
             </div>
             <div class="top-icon">
                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
@@ -314,51 +338,68 @@
             <table class="rh-table">
                 <thead>
                     <tr>
-                        <th width="20%">Cliente / Projeto</th>
-                        <th width="20%">Arquiteta</th>
                         <th width="10%">Data</th>
-                        <th width="5%">%</th> 
+                        <th width="20%">Arquiteta</th>
+                        <th width="20%">Cliente / Projeto</th>
+                        <th width="12%">Valor Venda</th>
                         <th width="12%">Valor RT</th>
-                        <th width="10%">Pagamento</th>
-                        <th width="12%">Valor Pago</th>
-                        <th width="15%">Obs</th>
-                        <th width="6%"></th>
+                        <th width="10%">Status Fin.</th>
+                        <th width="16%" class="text-end">Ações</th>
                     </tr>
                 </thead>
                 <tbody>
                     {% for c in contratos %}
                     <tr class="search-row">
-                        <td class="text-main">{{ c.cliente }}</td>
-                        <td class="text-main" style="color: var(--blue-600);">{{ c.arquiteta.nome }}</td>
                         <td class="text-sub">{{ c.data_contrato|date:"d/m/Y" }}</td>
-                        <td class="text-sub">{{ c.percentual|floatformat:1 }}%</td>
+                        <td class="text-main" style="color: var(--blue-600);">{{ c.arquiteta.nome }}</td>
+                        <td class="text-main">{{ c.cliente.nome_completo }}</td>
+                        
                         <td>
-                            <div class="text-val">R$ {{ c.valor_rt|floatformat:"2g" }}</div>
+                            <div class="text-val">R$ {{ c.valor_servico|floatformat:"2g" }}</div>
                         </td>
-                        <td class="text-sub">
-                            {{ c.data_pagamento|date:"d/m/Y"|default:"-" }}
-                        </td>
+                        
                         <td>
-                            {% if c.valor_pago %}
-                                <span class="badge val-pago">R$ {{ c.valor_pago|floatformat:"2g" }}</span>
+                            <div class="text-val" style="color: var(--slate-500);">R$ {{ c.valor_rt|floatformat:"2g" }}</div>
+                            <div class="text-sub">{{ c.percentual|floatformat:1 }}%</div>
+                        </td>
+                        
+                        <td>
+                            {% if c.parcelas_receber.exists %}
+                                {% if c.status_pagamento == 'Quitado' %}
+                                    <span class="badge badge-pago">Quitado</span>
+                                {% else %}
+                                    <span class="badge badge-pendente">{{ c.status_pagamento }}</span>
+                                {% endif %}
                             {% else %}
-                                <span class="text-sub">-</span>
+                                <span class="badge badge-neutro">Sem Financeiro</span>
                             {% endif %}
                         </td>
-                        <td class="text-sub" style="max-width: 150px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
-                            {{ c.observacoes|default:"" }}
-                        </td>
+                        
                         <td style="text-align: right; white-space: nowrap;">
+                            {% if not c.parcelas_receber.exists %}
+                            <button onclick="openFinanceModal('{{ c.id }}', '{{ c.cliente.nome_completo|escapejs }}', '{{ c.valor_servico|floatformat:2 }}')" class="btn-success-sm" title="Gerar Contas a Receber">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+                                Gerar
+                            </button>
+                            {% endif %}
+
                             <button onclick="openRemoteModal('{% url 'comissionamento:contrato_edit' pk=c.pk %}')" class="action-btn" title="Editar">
                                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/></svg>
                             </button>
                             <button onclick="openRemoteModal('{% url 'comissionamento:contrato_delete' pk=c.pk %}')" class="action-btn delete" title="Excluir">
                                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>
                             </button>
+                        <a href="{% url 'comissionamento:contrato_detail' c.pk %}" class="action-btn" title="Ver Detalhes do Contrato" style="text-decoration: none; display: inline-flex; align-items: center; justify-content: center;">
+        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--blue-500);">
+            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+            <circle cx="12" cy="12" r="3"></circle>
+        </svg>
+    </a>
                         </td>
+
                     </tr>
                     {% empty %}
-                    <tr><td colspan="9" class="empty-msg">Nenhum registro encontrado.</td></tr>
+                    <tr><td colspan="7" class="empty-msg">Nenhum registro encontrado.</td></tr>
                     {% endfor %}
                 </tbody>
             </table>
@@ -398,6 +439,74 @@
     </div>
 </div>
 
+<div id="financeModal" class="modal-overlay">
+    <div class="modal-window">
+        <div class="modal-header">
+            <h3 class="modal-title">Gerar Contas a Receber</h3>
+            <button type="button" class="btn-close" onclick="closeFinanceModal()">✕</button>
+        </div>
+        <div class="modal-body">
+            <div style="background: var(--blue-50); padding: 15px; border-radius: 8px; margin-bottom: 20px; border: 1px solid var(--blue-100);">
+                <p style="margin:0; font-size: 14px; color: var(--slate-600);">Cliente: <strong id="spanCliente" style="color: var(--slate-900);"></strong></p>
+                <p style="margin:0; font-size: 14px; color: var(--slate-600);">Valor a Gerar: <strong id="spanValor" style="color: var(--green-600); font-size: 16px;"></strong></p>
+            </div>
+            
+            <form id="formFinanceiro" method="POST">
+                {% csrf_token %}
+                
+                <div class="row" style="display: flex; gap: 15px; margin-bottom: 15px;">
+                    <div class="form-group" style="flex: 1;">
+                        <label>Nº Parcelas</label>
+                        <input type="number" name="qtd_parcelas" value="1" min="1" max="60" required class="form-control">
+                    </div>
+                    <div class="form-group" style="flex: 1;">
+                        <label>1º Vencimento</label>
+                        <input type="date" name="data_vencimento" required class="form-control">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Banco de Destino <span style="color:red">*</span></label>
+                    <select name="banco_id" required class="form-control" style="width: 100%;">
+                        <option value="">-- Selecione o Banco --</option>
+                        {% for banco in bancos %}
+                            <option value="{{ banco.id }}">{{ banco.nome }} - Ag: {{ banco.agencia }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                        <div class="row" style="display: flex; gap: 15px;">
+                            <div class="form-group" style="flex: 1;">
+                                <label>Categoria Financeira</label>
+                                <input 
+                                    type="text" 
+                                    name="categoria" 
+                                    class="form-control"
+                                    placeholder="Ex: Projetos/Móveis"
+                                    value="{{ categoria|default:'' }}"
+                                >
+                            </div>
+                        </div>
+                
+                <div class="form-group">
+                    <label>Nome do Projeto (Descrição)</label>
+                    <input type="text" name="descricao_personalizada" id="inputDescricao" 
+                           placeholder="Ex: Armários Cozinha (Deixe vazio para padrão)" class="form-control">
+                    <small style="color: var(--slate-400); font-size: 11px;">Se vazio: "Proj. [Nome Cliente] - Parc X/Y"</small>
+                </div>
+                
+                <div class="modal-footer" style="padding: 20px 0 0 0; border: none; background: none; margin-top: 10px;">
+                    <button type="button" onclick="closeFinanceModal()" class="btn-ghost">Cancelar</button>
+                    <button type="submit" class="btn-primary" style="background-color: var(--green-600);">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1v22"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+                        Confirmar e Gerar
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
 <div id="modalGeneric" class="modal-overlay">
     <div class="modal-window">
         <div id="modalContent">
@@ -426,6 +535,31 @@
         document.body.style.overflow = '';
     }
 
+    // --- Lógica do Modal Financeiro (NOVO) ---
+    function openFinanceModal(id, cliente, valor) {
+        const modal = document.getElementById('financeModal');
+        const form = document.getElementById('formFinanceiro');
+        
+        // Define a URL de ação correta com base no ID
+        // IMPORTANTE: Ajuste a URL base conforme seu urls.py se necessário
+        form.action = `/comissionamento/contrato/${id}/gerar-financeiro/`; 
+        
+        document.getElementById('spanCliente').innerText = cliente;
+        document.getElementById('spanValor').innerText = 'R$ ' + valor;
+        
+        // Define data de hoje como padrão
+        const today = new Date().toISOString().split('T')[0];
+        form.querySelector('input[name="data_vencimento"]').value = today;
+
+        modal.classList.add('open');
+        document.body.style.overflow = 'hidden';
+    }
+
+    function closeFinanceModal() {
+        document.getElementById('financeModal').classList.remove('open');
+        document.body.style.overflow = '';
+    }
+
     // --- Lógica do Modal Genérico (AJAX) ---
     function openRemoteModal(url) {
         const modal = document.getElementById('modalGeneric');
@@ -441,7 +575,7 @@
                 const parser = new DOMParser();
                 const doc = parser.parseFromString(html, 'text/html');
                 
-                // Tenta pegar o formulário da página
+                // Tenta pegar o formulário da página ou o body
                 const main = doc.querySelector('form') || doc.body;
                 
                 content.innerHTML = `
@@ -454,7 +588,7 @@
                     </div>
                 `;
 
-                // Reinicializa scripts (ex: máscaras)
+                // Reinicializa scripts (ex: máscaras, select2)
                 doc.querySelectorAll('script').forEach(oldScript => {
                     const newScript = document.createElement("script");
                     Array.from(oldScript.attributes).forEach(attr => newScript.setAttribute(attr.name, attr.value));
@@ -468,7 +602,7 @@
                         <h3 class="modal-title" style="color:var(--red-500)">Erro</h3>
                         <button type="button" class="btn-close" onclick="document.getElementById('modalGeneric').classList.remove('open')">✕</button>
                     </div>
-                    <div class="modal-body">Erro ao carregar formulário.</div>
+                    <div class="modal-body">Erro ao carregar formulário. Tente novamente.</div>
                 `;
             });
     }
@@ -480,6 +614,19 @@
                 this.classList.remove('open');
                 document.body.style.overflow = '';
             }
+        });
+    });
+
+    document.addEventListener("DOMContentLoaded", function() {
+        const messages = document.querySelectorAll('#messages-container .message');
+        
+        messages.forEach((msg, index) => {
+            setTimeout(() => {
+                msg.style.transition = "opacity 0.5s, transform 0.5s";
+                msg.style.opacity = "0";
+                msg.style.transform = "translateY(-20px)";
+                setTimeout(() => msg.remove(), 500);
+            }, 5000 + index * 200);
         });
     });
 </script>

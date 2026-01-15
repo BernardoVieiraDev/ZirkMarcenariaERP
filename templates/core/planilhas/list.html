@@ -219,6 +219,11 @@
             <div class="card-desc">Relatório completo de recebimentos</div>
         </a>
 
+            <a href="{% url 'relatorios:exportar_consolidado_anual' %}" class="report-card" data-category="financeiro-receber">
+            <div class="card-icon"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></div>
+            <div class="card-title">Contas a Pagar</div>
+            <div class="card-desc">Relatório completo de pagamentos</div>
+        </a>
         <a href="{% url 'relatorios:exportar_folha' %}" class="report-card" data-category="rh">
             <div class="card-icon"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div>
             <div class="card-title">Folha de Pagamento</div>
@@ -285,13 +290,63 @@
             <div class="card-desc">Abastecimentos</div>
         </a>
 
-        <a href="{% url 'relatorios:exportar_vendas' %}?ano={% now 'Y' %}&mes={% now 'n' %}" class="report-card" data-category="financeiro-receber">
+<a href="{% url 'relatorios:exportar_fluxo_caixa' %}" class="report-card" data-category="financeiro-receber">
+    <div class="card-icon" style="color: #0891b2; background: #cffafe;">
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+    </div>
+    <div class="card-title">Fluxo de Caixa</div>
+    <div class="card-desc">Previsão 7 dias (Padrão)</div>
+</a>
+
+
+        <a href="{% url 'relatorios:exportar_caixa_diario' %}?ano={% now 'Y' %}&mes={% now 'n' %}" class="report-card" data-category="financeiro-receber">
             <div class="card-icon">
-                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
             </div>
-            <div class="card-title">Vendas e Compras</div>
-            <div class="card-desc">Relatório de Desempenho<br>(Mês Atual)</div>
+            <div class="card-title">Caixa Diário</div>
+            <div class="card-desc">Movimentação física (Mês Atual)</div>
         </a>
+
+        <a href="{% url 'relatorios:exportar_cheques' %}" class="report-card" data-category="financeiro-pagar">
+            <div class="card-icon">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="12" rx="2"/><rect x="2" y="10" width="20" height="2"/><circle cx="6" cy="12" r="2"/></svg>
+            </div>
+            <div class="card-title">Cheques</div>
+            <div class="card-desc">Controle de emissão e compensação</div>
+        </a>
+
+        <a href="{% url 'relatorios:exportar_bndes' %}" class="report-card" data-category="financeiro-pagar">
+            <div class="card-icon">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/><path d="M10 14h4"/></svg>
+            </div>
+            <div class="card-title">Cartão BNDES</div>
+            <div class="card-desc">Faturas e parcelas BNDES</div>
+        </a>
+
+        <a href="{% url 'relatorios:exportar_prestacoes' %}" class="report-card" data-category="financeiro-pagar">
+            <div class="card-icon">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+            </div>
+            <div class="card-title">Empréstimos</div>
+            <div class="card-desc">Prestações e financiamentos</div>
+        </a>
+
+        <a href="{% url 'relatorios:exportar_condominio' %}" class="report-card" data-category="financeiro-pagar">
+            <div class="card-icon">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18"/><path d="M5 21V7l8-4 8 4v14"/><path d="M17 21v-8H7v8"/><line x1="9" y1="10" x2="9" y2="10"/><line x1="9" y1="13" x2="9" y2="13"/><line x1="9" y1="16" x2="9" y2="16"/><line x1="15" y1="10" x2="15" y2="10"/><line x1="15" y1="13" x2="15" y2="13"/><line x1="15" y1="16" x2="15" y2="16"/></svg>
+            </div>
+            <div class="card-title">Condomínio</div>
+            <div class="card-desc">Taxas e despesas prediais</div>
+        </a>
+
+        <a href="{% url 'relatorios:exportar_iptu' %}" class="report-card" data-category="financeiro-pagar">
+            <div class="card-icon">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
+            </div>
+            <div class="card-title">IPTU</div>
+            <div class="card-desc">Impostos territoriais</div>
+        </a>
+                
 
 <a href="{% url 'relatorios:exportar_pagar_mensal' %}?mes={% now 'n' %}&ano={% now 'Y' %}" class="report-card" data-category="financeiro-pagar">
             <div class="card-icon" style="color: #ef4444; background: #fee2e2;">
@@ -324,6 +379,10 @@
             <div class="card-title" style="color: #1E3A8A;">Pacote SEBRAE</div>
             <div class="card-desc">Relatórios gerenciais e financeiros completos</div>
         </a>
+
+
+   
+     
     </div>
 
     <div class="section-title">

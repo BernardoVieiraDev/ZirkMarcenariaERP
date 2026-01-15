@@ -4,9 +4,9 @@ from django.core.exceptions import ObjectDoesNotExist
 from django.db import models
 
 from apps.funcionarios.models import Funcionario
+from apps.configuracoes.mixin import SoftDeleteMixin
 
-
-class PeriodoAquisitivo(models.Model):
+class PeriodoAquisitivo(SoftDeleteMixin):
     funcionario = models.ForeignKey(Funcionario, on_delete=models.CASCADE, related_name='periodos_aquisitivos')
     data_inicio = models.DateField()
     data_fim = models.DateField()
@@ -18,21 +18,21 @@ class PeriodoAquisitivo(models.Model):
     def dias_gozados(self):
         total = 0
         for f in self.ferias_registradas.all(): #type: ignore
-            total += max(0, (f.dias_tirados - (f.faltas_justificadas_descontadas or 0)))
+            total += max(0, (f.dias_tirados))
         return total
 
     def saldo_restante(self):
         saldo = self.dias_direito - self.dias_gozados()
         return max(0, saldo)
 
-class Ferias(models.Model):
+class Ferias(SoftDeleteMixin):
     periodo = models.ForeignKey(PeriodoAquisitivo, on_delete=models.CASCADE, related_name='ferias_registradas')
     dias_tirados = models.PositiveIntegerField()
     faltas_justificadas_descontadas = models.PositiveIntegerField(default=0)
     observacoes = models.TextField(blank=True)
     
-    ferias_no_recesso_final_ano = models.PositiveIntegerField(default=0, blank=True, null=True)
-    ferias_no_carnaval = models.PositiveIntegerField(default=0, blank=True, null=True)
+    ferias_no_recesso_final_ano = models.PositiveIntegerField(default=0)
+    ferias_no_carnaval = models.PositiveIntegerField(default=0)
     
     criado_em = models.DateTimeField(auto_now_add=True)
 
@@ -44,10 +44,10 @@ class Ferias(models.Model):
             raise ValueError("Dias tirados deve ser >= 0")
 
     def save(self, *args, **kwargs):
-        consumo = max(0, self.dias_tirados - (self.faltas_justificadas_descontadas or 0))
+        consumo = max(0, self.dias_tirados + (self.faltas_justificadas_descontadas or 0))
         if self.pk:
             old = Ferias.objects.get(pk=self.pk)
-            outros_total = sum(max(0, f.dias_tirados - (f.faltas_justificadas_descontadas or 0))
+            outros_total = sum(max(0, f.dias_tirados + (f.faltas_justificadas_descontadas or 0))
                                for f in self.periodo.ferias_registradas.exclude(pk=self.pk)) #type: ignore
             saldo_disponivel = self.periodo.dias_direito - outros_total
         else:
@@ -55,7 +55,7 @@ class Ferias(models.Model):
 
         super().save(*args, **kwargs)
 
-class PagamentoFerias(models.Model):
+class PagamentoFerias(SoftDeleteMixin):
     funcionario = models.ForeignKey(Funcionario, on_delete=models.CASCADE, related_name='pagamentos_ferias')
     vencimento = models.DateField(verbose_name="Data de Vencimento")
     valor_a_pagar = models.DecimalField(max_digits=10, decimal_places=2, blank=True, null=True)
@@ -95,7 +95,7 @@ class PagamentoFerias(models.Model):
         return f"Pgto 1/3 - {self.funcionario}"
 
 # --- Adicionado para funcionar o relatório ---
-class RecibosContabilidade(models.Model):
+class RecibosContabilidade(SoftDeleteMixin):
     funcionario = models.ForeignKey(Funcionario, on_delete=models.CASCADE, related_name='recibo_contabilidade')
     recibo_de_ferias_contabilidade = models.DateField(verbose_name="Data Recibo Contábil", null=True, blank=True)
     observacoes = models.TextField(blank=True, null=True)

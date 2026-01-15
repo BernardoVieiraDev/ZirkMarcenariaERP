@@ -129,7 +129,7 @@ class RelatorioFluxoCaixaExport:
         dias, timeline = FluxoCaixaService.gerar_fluxo_detalhado(data_inicio, num_dias)
 
         # --- LAYOUT ---
-        ws.set_column('A:A', 40)
+        ws.set_column('A:A', 40) # type: ignore
         ws.set_column(1, len(dias), 16)
         row = 1
 

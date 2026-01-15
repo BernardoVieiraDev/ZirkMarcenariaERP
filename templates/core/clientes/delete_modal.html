@@ -1,0 +1,15 @@
+<form method="POST" action="{% url 'clientes:delete' object.id %}">
+    {% csrf_token %}
+    <div style="padding: 24px; text-align: center;">
+        <div style="background: #fee2e2; width: 60px; height: 60px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 16px;">
+            <svg style="color: #dc2626;" width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+        </div>
+        <h3 style="font-size: 18px; color: #0f172a; margin-bottom: 8px;">Excluir Cliente?</h3>
+        <p style="color: #64748b; font-size: 14px;">Tem certeza que deseja excluir <strong>{{ object.nome_completo }}</strong>? Esta ação enviará o registro para a lixeira.</p>
+        
+        <div style="margin-top: 24px; display: flex; justify-content: center; gap: 12px;">
+            <button type="button" onclick="closeModal()" style="background: white; border: 1px solid #cbd5e1; padding: 10px 20px; border-radius: 8px; cursor: pointer;">Cancelar</button>
+            <button type="submit" style="background: #dc2626; color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: 600;">Confirmar Exclusão</button>
+        </div>
+    </div>
+</form>

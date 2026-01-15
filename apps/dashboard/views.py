@@ -123,14 +123,12 @@ def dashboard(request):
     # Como não existe mais 'saldo_devedor' no banco, calculamos via annotate.
     # Coalesce garante que se valor_pago for None, seja tratado como 0.
     contratos_list = ContratoRT.objects.annotate(
-        pago_safe=Coalesce('valor_pago', Value(0, output_field=DecimalField())),
-        saldo_devedor=F('valor_rt') - F('pago_safe')
-    ).filter(saldo_devedor__gt=0).order_by('arquiteta__nome')[:5]
-
+        saldo_devedor=F('valor_rt')
+    ).order_by('-data_contrato')[:5]
     ferias_alerta_list.sort(key=lambda x: x['dias_restantes_prazo'])
 
     # Total Receber
-    receber_total = Receber.objects.exclude(status='Pago').aggregate(total=Sum('valor'))['total'] or Decimal('0.00')
+    receber_total = Receber.objects.exclude(status='Recebido').aggregate(total=Sum('valor'))['total'] or Decimal('0.00')
     
     context = { 
         # Quadros Superiores

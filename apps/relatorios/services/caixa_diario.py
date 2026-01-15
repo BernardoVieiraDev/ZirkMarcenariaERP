@@ -152,11 +152,11 @@ class CaixaDiarioExcelService:
 
         # Configuração de Colunas (Layout Lado a Lado)
         # A: Data | B: Desc Ent | C: Val Ent || D: Desc Sai | E: Val Sai
-        ws.set_column('A:A', 14) # Data
-        ws.set_column('B:B', 35) # Descrição Entrada
-        ws.set_column('C:C', 16) # Valor Entrada
-        ws.set_column('D:D', 35) # Descrição Saída
-        ws.set_column('E:E', 16) # Valor Saída
+        ws.set_column('A:A', 14) # type: ignore # Data 
+        ws.set_column('B:B', 35) # Descrição Entrada# type: ignore
+        ws.set_column('C:C', 16) # Valor Entrada# type: ignore
+        ws.set_column('D:D', 35) # Descrição Saída# type: ignore
+        ws.set_column('E:E', 16) # Valor Saída# type: ignore
 
         row = 1
         
@@ -278,6 +278,7 @@ class CaixaDiarioExcelService:
         # --- CORREÇÃO FINAL: Só fecha se criou o workbook aqui ---
         if should_close:
             workbook.close()
+            assert output is not None
             output.seek(0)
             return output
         

@@ -1,6 +1,8 @@
 from django.apps import AppConfig
 
-
 class ReceberConfig(AppConfig):
-    default_auto_field = "django.db.models.BigAutoField"
-    name = "apps.financeiro.receber"
+    default_auto_field = 'django.db.models.BigAutoField'
+    name = 'apps.financeiro.receber'
+
+    def ready(self):
+        import apps.financeiro.receber.signals  # <--- Adicione isso

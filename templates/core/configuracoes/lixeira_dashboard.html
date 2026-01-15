@@ -1,0 +1,103 @@
+{% extends 'core/base.html' %}
+
+{% block content %}
+<div class="container mt-4 mb-5">
+    
+    <div class="d-flex justify-content-between align-items-end mb-5">
+        <div>
+            <h6 class="text-uppercase text-muted fw-bold ls-1 mb-1">Sistema</h6>
+            <h2 class="fw-bold mb-0 text-dark"><i class="fas fa-trash-alt text-danger me-2"></i> Lixeira Central</h2>
+        </div>
+        <a href="#" class="btn btn-light border text-secondary shadow-sm">
+            <i class="fas fa-cog me-1"></i> Configurar Regras
+        </a>
+    </div>
+
+    <div class="row g-4">
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm h-100 overflow-hidden">
+                <div class="card-header bg-success bg-gradient text-white py-3">
+                    <div class="d-flex align-items-center">
+                        <i class="fas fa-donate fa-lg me-2 opacity-75"></i>
+                        <h5 class="mb-0 fw-bold">Financeiro</h5>
+                    </div>
+                </div>
+                <div class="list-group list-group-flush">
+                    {% for item in resumo.financeiro %}
+                        <a href="{% url 'configuracoes:lixeira_itens' item.model_key %}" 
+                           class="list-group-item list-group-item-action d-flex justify-content-between align-items-center py-3 border-start border-4 border-white hover-border-success transition-all">
+                            <span class="fw-500 text-dark">{{ item.nome }}</span>
+                            <span class="badge bg-success-subtle text-success rounded-pill px-3">{{ item.qtd }}</span>
+                        </a>
+                    {% empty %}
+                        <div class="text-center py-5 text-muted">
+                            <i class="fas fa-check-circle fa-2x mb-2 text-success opacity-25"></i>
+                            <p class="small mb-0">Lixeira vazia</p>
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm h-100 overflow-hidden">
+                <div class="card-header bg-primary bg-gradient text-white py-3">
+                    <div class="d-flex align-items-center">
+                        <i class="fas fa-users fa-lg me-2 opacity-75"></i>
+                        <h5 class="mb-0 fw-bold">RH & Pessoal</h5>
+                    </div>
+                </div>
+                <div class="list-group list-group-flush">
+                    {% for item in resumo.rh %}
+                        <a href="{% url 'configuracoes:lixeira_itens' item.model_key %}" 
+                           class="list-group-item list-group-item-action d-flex justify-content-between align-items-center py-3 border-start border-4 border-white hover-border-primary transition-all">
+                            <span class="fw-500 text-dark">{{ item.nome }}</span>
+                            <span class="badge bg-primary-subtle text-primary rounded-pill px-3">{{ item.qtd }}</span>
+                        </a>
+                    {% empty %}
+                        <div class="text-center py-5 text-muted">
+                            <i class="fas fa-check-circle fa-2x mb-2 text-primary opacity-25"></i>
+                            <p class="small mb-0">Lixeira vazia</p>
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm h-100 overflow-hidden">
+                <div class="card-header bg-warning bg-gradient text-dark py-3">
+                    <div class="d-flex align-items-center">
+                        <i class="fas fa-briefcase fa-lg me-2 opacity-50"></i>
+                        <h5 class="mb-0 fw-bold">Sócios & Outros</h5>
+                    </div>
+                </div>
+                <div class="list-group list-group-flush">
+                    {% for item in resumo.socios %}
+                        <a href="{% url 'configuracoes:lixeira_itens' item.model_key %}" 
+                           class="list-group-item list-group-item-action d-flex justify-content-between align-items-center py-3 border-start border-4 border-white hover-border-warning transition-all">
+                            <span class="fw-500 text-dark">{{ item.nome }}</span>
+                            <span class="badge bg-warning-subtle text-warning-emphasis rounded-pill px-3">{{ item.qtd }}</span>
+                        </a>
+                    {% empty %}
+                        <div class="text-center py-5 text-muted">
+                            <i class="fas fa-check-circle fa-2x mb-2 text-warning opacity-25"></i>
+                            <p class="small mb-0">Lixeira vazia</p>
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<style>
+    .transition-all { transition: all 0.2s ease; }
+    .hover-border-success:hover { border-left-color: var(--bs-success) !important; background-color: var(--bs-success-bg-subtle); }
+    .hover-border-primary:hover { border-left-color: var(--bs-primary) !important; background-color: var(--bs-primary-bg-subtle); }
+    .hover-border-warning:hover { border-left-color: var(--bs-warning) !important; background-color: var(--bs-warning-bg-subtle); }
+    .bg-success-subtle { background-color: #d1e7dd; }
+    .fw-500 { font-weight: 500; }
+</style>
+{% endblock %}

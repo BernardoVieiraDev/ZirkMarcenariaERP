@@ -1,5 +1,5 @@
 from django.db import models
-
+from apps.configuracoes.mixin import SoftDeleteMixin
 
 # Choices
 class GrauInstrucao(models.IntegerChoices):
@@ -26,7 +26,7 @@ class Sexo(models.TextChoices):
     OUTRO = "O", "Outro"
 
 # Model principal
-class Funcionario(models.Model):
+class Funcionario(SoftDeleteMixin):
     nome = models.CharField(max_length=200)
     data_nascimento = models.DateField(null=True, blank=True)
     natural_de = models.CharField(max_length=100, blank=True, null=True)

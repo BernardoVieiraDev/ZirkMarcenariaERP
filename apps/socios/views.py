@@ -190,3 +190,56 @@ def excluir_lancamento(request, pk):
         })
     
     return render(request, 'core/socios/confirmar_exclusao.html', {'item': lancamento})
+
+# zirk_rh_financeiro/apps/socios/views.py
+
+def listar_socios(request):
+    """
+    Lista todos os sócios cadastrados com opções de edição e exclusão.
+    """
+    socios = Socio.objects.all().order_by('nome')
+    context = {
+        'socios': socios
+    }
+    return render(request, 'core/socios/lista_socios.html', context)
+
+def editar_socio(request, pk):
+    socio = get_object_or_404(Socio, pk=pk)
+    
+    if request.method == 'POST':
+        form = SocioForm(request.POST, instance=socio)
+        if form.is_valid():
+            form.save()
+            return redirect('socios:listar_socios')
+    else:
+        form = SocioForm(instance=socio)
+    
+    # Lógica para Modal (se você usar htmx ou similar futuramente)
+    if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+        return render(request, 'core/socios/form_modal.html', {
+            'form': form, 
+            'titulo': f'Editar {socio.nome}',
+            'action_url': request.path
+        })
+    
+    return render(request, 'core/socios/editar_socio.html', {
+        'form': form,
+        'socio': socio
+    })
+
+def excluir_socio(request, pk):
+    socio = get_object_or_404(Socio, pk=pk)
+    
+    if request.method == 'POST':
+        socio.delete() # Irá usar o SoftDeleteMixin se configurado, ou delete padrão
+        return redirect('socios:listar_socios')
+    
+    # Reutiliza o template de modal de exclusão se for requisição AJAX
+    if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+        return render(request, 'core/socios/delete_modal.html', {
+            'object': socio,
+            'action_url': request.path,
+            'titulo': 'Excluir Sócio'
+        })
+    
+    return render(request, 'core/socios/confirmar_exclusao_socio.html', {'socio': socio})

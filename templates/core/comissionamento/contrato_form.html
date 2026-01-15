@@ -27,12 +27,26 @@
                 <div style="grid-column: span 2;"></div>
 
                 <div style="grid-column: span 3; border-top: 1px solid #eee; margin-top: 10px; padding-top: 10px;">
-                    <h4 style="margin-bottom: 10px; color: #154c79;">Dados do Pagamento</h4>
+                    <h4 style="margin-bottom: 10px; color: #154c79;">Financeiro (Comissão a Pagar)</h4>
+                    
+                    <div style="margin-bottom: 15px;">
+                        <label style="display: inline-flex; align-items: center; cursor: pointer;">
+                            {{ form.gerar_financeiro }} 
+                            <span style="margin-left: 8px; font-weight: bold;">{{ form.gerar_financeiro.label }}</span>
+                        </label>
+                    </div>
                 </div>
 
-                <div>{{ form.data_pagamento.label_tag }} {{ form.data_pagamento }}</div>
-                <div>{{ form.valor_pago.label_tag }} {{ form.valor_pago }}</div>
-                <div></div>
+                <div id="financeiro-fields" style="grid-column: span 3; display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px;">
+                    <div>
+                        {{ form.banco_pagamento.label_tag }} 
+                        {{ form.banco_pagamento }}
+                        <small style="color: red;">{{ form.banco_pagamento.errors }}</small>
+                    </div>
+                    <div>{{ form.forma_pagamento.label_tag }} {{ form.forma_pagamento }}</div>
+                    <div>{{ form.qtd_parcelas.label_tag }} {{ form.qtd_parcelas }}</div>
+                    <div>{{ form.primeiro_vencimento.label_tag }} {{ form.primeiro_vencimento }}</div>
+                </div>
                 
                 <div style="grid-column: span 3;">{{ form.observacoes.label_tag }} {{ form.observacoes }}</div>
             </div>
@@ -44,4 +58,26 @@
         </form>
     </div>
 </section>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        // Pega o checkbox e a div que contém os campos
+        // 'id_gerar_financeiro' é o ID padrão que o Django gera para esse campo
+        const checkbox = document.getElementById("id_gerar_financeiro"); 
+        const areaFinanceira = document.getElementById("financeiro-fields");
+        
+        function alternarFinanceiro() {
+            if (checkbox.checked) {
+                areaFinanceira.style.display = "grid"; // Mostra (respeitando o layout grid)
+            } else {
+                areaFinanceira.style.display = "none"; // Esconde
+            }
+        }
+        
+        if(checkbox && areaFinanceira){
+            checkbox.addEventListener("change", alternarFinanceiro);
+            alternarFinanceiro(); // Executa ao carregar a página para definir o estado inicial
+        }
+    });
+</script>
 {% endblock %}

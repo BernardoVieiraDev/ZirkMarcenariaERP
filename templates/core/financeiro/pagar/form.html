@@ -4,24 +4,29 @@
 {% block title %}{{ title }}{% endblock %}
 
 {% block content %}
-
-<div class="form-wrapper">
-  <h1>{{ title }}</h1>
-
-  <form method="POST" enctype="multipart/form-data" class="form-container">
-    {% csrf_token %}
-
-    <section class="form-section">
-      {{ form.as_p }}
-    </section>
+<div class="form-wrapper" style="max-width: 800px; margin: 40px auto; background: white; border-radius: 16px; box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1); overflow: hidden;">
     
-    <div class="form-actions">
-      <button type="submit" class="btn-primary">Salvar</button>
-      <a class="btn ghost" href="{% url 'pagar:pagar_create' %}">Cancelar</a>
-    </div>
-  </form>
+    {% include "core/financeiro/pagar/form_content.html" with title=title %}
+
 </div>
 
-
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        // Verifica se não estamos dentro de um modal (checando se existe o overlay)
+        if (!document.closest || !document.querySelector('.modal-overlay.open')) {
+            const cancelBtn = document.querySelector('.modal-footer .btn-ghost');
+            if (cancelBtn) {
+                // Altera o comportamento para voltar para a lista
+                cancelBtn.onclick = null; // Remove o closeModal
+                cancelBtn.addEventListener('click', function() {
+                    window.location.href = "{% url 'pagar:pagar_list' %}";
+                });
+            }
+            
+            // Remove o botão X do header se for página cheia, pois já tem o cancelar embaixo
+            const closeX = document.querySelector('.modal-header .btn-close');
+            if (closeX) closeX.style.display = 'none';
+        }
+    });
+</script>
 {% endblock %}
-

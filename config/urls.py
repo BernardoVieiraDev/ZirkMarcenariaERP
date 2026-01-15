@@ -25,6 +25,10 @@ path('', auth_views.LoginView.as_view(
     path('relatorios/', include("apps.relatorios.urls")),
     path('socios/', include('apps.socios.urls')),
     path('financeiro/fluxo/', include('apps.financeiro.fluxo.urls')),
+path('configuracoes/', include('apps.configuracoes.urls')),
+path('clientes/', include('apps.clientes.urls')),
+path('empreitadas/', include('apps.empreitadas.urls')),
+
 ]
 
 

@@ -5,20 +5,15 @@ import datetime
 import json
 import locale
 
-# Tenta configurar locale para PT-BR para formatação correta
+# Tenta configurar locale para formatar dinheiro (opcional, mas recomendado)
 try:
     locale.setlocale(locale.LC_ALL, 'pt_BR.UTF-8')
 except:
-    try:
-        locale.setlocale(locale.LC_ALL, 'pt_BR')
-    except:
-        pass # Fallback para formatação manual se não tiver locale instalado
+    pass
 
 def format_currency(value):
-    """Formata float para moeda BRL manualmente para garantir compatibilidade"""
     try:
         val = float(value)
-        # Formata com 2 casas decimais, troca ponto por vírgula e adiciona separador de milhar
         return f"{val:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
     except (ValueError, TypeError):
         return "0,00"
@@ -27,40 +22,49 @@ def format_currency(value):
 def financial_dashboard_view(request):
     current_year = datetime.date.today().year
     
+    # Pega o ano da URL ou usa o atual
     try:
         selected_year = int(request.GET.get('year', current_year))
     except ValueError:
         selected_year = current_year
     
+    # Instancia o serviço
     service = FinancialDashboardService()
     
-    # --- GRÁFICOS ---
+    # 1. Busca os dados usando os métodos do service
     cash_flow_data = service.get_monthly_cash_flow(selected_year)
     expense_data = service.get_expense_breakdown(selected_year)
+    managerial_data = service.get_managerial_costs_breakdown(selected_year) # O novo método
     
-    # --- CÁLCULO DE TOTAIS ---
+    # 2. Calcula totais para os cards do topo
     total_rec = sum(cash_flow_data['receitas'])
     total_desp = sum(cash_flow_data['despesas'])
     total_saldo = sum(cash_flow_data['resultado'])
 
+    # 3. Prepara o contexto para o HTML
     context = {
         'selected_year': selected_year,
         'year_range': range(current_year - 2, current_year + 2),
         
-        # Dados serializados para os Gráficos JS
+        # Gráfico Fluxo de Caixa
         'chart_cash_flow_labels': json.dumps(cash_flow_data['labels']),
         'chart_cash_flow_receitas': json.dumps(cash_flow_data['receitas']),
         'chart_cash_flow_despesas': json.dumps(cash_flow_data['despesas']),
         'chart_cash_flow_resultado': json.dumps(cash_flow_data['resultado']),
         
+        # Gráfico Despesas (Pizza)
         'chart_expense_labels': json.dumps(expense_data['labels']),
         'chart_expense_data': json.dumps(expense_data['data']),
+
+        # Gráfico Gerencial (Novo)
+        'chart_managerial_labels': json.dumps(managerial_data['labels']),
+        'chart_managerial_data': json.dumps(managerial_data['data']),
         
-        # Totais Formatados (Strings prontas para exibir)
+        # Totais formatados
         'total_receitas_fmt': format_currency(total_rec),
         'total_despesas_fmt': format_currency(total_desp),
         'saldo_anual_fmt': format_currency(total_saldo),
-        'saldo_positivo': total_saldo >= 0, # Booleano simples para cor
+        'saldo_positivo': total_saldo >= 0,
     }
     
     return render(request, 'core/analytics/financial_dashboard.html', context)

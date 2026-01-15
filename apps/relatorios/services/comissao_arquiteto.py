@@ -70,11 +70,11 @@ class ComissaoExcelService:
                 "Observações"
             ]
 
-            ws.set_column('A:A', 30)
-            ws.set_column('B:B', 30)
-            ws.set_column('C:C', 15)
-            ws.set_column('D:D', 20)
-            ws.set_column('E:E', 40)
+            ws.set_column('A:A', 30)#  type: ignore
+            ws.set_column('B:B', 30) #  type: ignore
+            ws.set_column('C:C', 15)#  type: ignore
+            ws.set_column('D:D', 20)#  type: ignore
+            ws.set_column('E:E', 40)#  type: ignore
 
             row = 0
             ws.set_row(row, 25)
@@ -88,15 +88,24 @@ class ComissaoExcelService:
             total_valor = Decimal('0.00')
 
             # --- CORREÇÃO AQUI ---
-            # Agora 'item' é uma instância de ContratoRT
+            # Agora 'item' é uma instância de ComissaoArquiteto
             for item in pagamentos:
-                # Acesso direto à Arquiteta (ForeignKey) e Cliente (Campo Char)
-                arquiteta_nome = item.arquiteta.nome if item.arquiteta else "N/A"
-                cliente_nome = item.cliente if item.cliente else "N/A"
+                # O campo no modelo ComissaoArquiteto é 'arquiteto' (ForeignKey)
+                arquiteta_nome = item.arquiteto.nome if item.arquiteto else "N/A"
                 
-                # Acesso direto aos dados de pagamento no próprio contrato
+                # O cliente está vinculado ao ContratoRT
+                cliente_nome = "N/A"
+                if item.contrato_rt:
+                    if hasattr(item.contrato_rt, 'cliente') and item.contrato_rt.cliente:
+                        # Assumindo que __str__ do cliente retorna o nome ou existe um campo nome
+                        cliente_nome = str(item.contrato_rt.cliente)
+                    else:
+                        # Fallback se não tiver cliente mas tiver __str__ no contrato
+                         cliente_nome = str(item.contrato_rt)
+                
+                # Acesso direto aos campos do pagamento
                 dt_pag = item.data_pagamento
-                valor = item.valor_pago if item.valor_pago else Decimal('0.00')
+                valor = item.valor_comissao if item.valor_comissao else Decimal('0.00')
                 obs = item.observacoes if item.observacoes else ''
 
                 ws.write(row, 0, arquiteta_nome, fmt['data_text'])

@@ -1,8 +1,8 @@
 {% load static %}
 
-<form method="POST" action="{{ request.path }}" enctype="multipart/form-data" style="margin:0; width: 100%; display: flex; flex-direction: column;">
+<form id="formEdicao" method="POST" action="{{ request.get_full_path }}" enctype="multipart/form-data" style="margin:0; width: 100%; display: flex; flex-direction: column;">
     {% csrf_token %}
-
+<input type="hidden" name="categoria" value="{{ tipo }}">
     <style>
         .modal-body input, 
         .modal-body select, 
@@ -32,6 +32,36 @@
             font-size: 11px; 
             margin-top: 4px;
         }
+
+        /* === AJUSTE DOS BOTÕES DE RÁDIO (BANCO/CAIXA) === */
+        /* Isso corrige a sobreposição e melhora o layout */
+        .radio-group-container {
+            grid-column: span 2; /* Faz a escolha ocupar a linha toda */
+            background: #f1f5f9;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 10px;
+            border: 1px solid #e2e8f0;
+        }
+        .radio-options {
+            display: flex;
+            gap: 20px;
+            align-items: center;
+            margin-top: 5px;
+        }
+        .radio-options div {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+        }
+        .radio-options input[type="radio"] {
+            width: 18px !important; /* Tamanho fixo para não esticar */
+            height: 18px;
+            margin: 0;
+            cursor: pointer;
+            box-shadow: none !important;
+        }
     </style>
 
     <div class="modal-header" style="padding: 20px 24px; border-bottom: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center; background: white; border-radius: 12px 12px 0 0;">
@@ -45,15 +75,38 @@
             Detalhes da Despesa
         </div>
 
+        {% if form.non_field_errors %}
+        <div style="background-color: #fef2f2; color: #b91c1c; padding: 10px; border-radius: 8px; margin-bottom: 15px; font-size: 13px;">
+            {{ form.non_field_errors }}
+        </div>
+        {% endif %}
+
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
             {% for field in form %}
-            <div class="form-group" style="{% if field.name == 'observacoes' or field.name == 'descricao' %}grid-column: span 2;{% endif %} margin-bottom: 5px;">
-                <label class="form-label">{{ field.label }}</label>
-                {{ field }}
-                {% if field.errors %}
-                    <div class="error-msg">{{ field.errors.0 }}</div>
+                {# Verifica se é o campo de escolha Banco/Caixa para aplicar o estilo especial #}
+                {% if field.name == 'origem_pagamento' or field.name == 'destino_recebimento' %}
+                    <div class="radio-group-container">
+                        <label class="form-label" style="color: #1e293b;">{{ field.label }}</label>
+                        <div class="radio-options">
+                            {% for radio in field %}
+                                <div>
+                                    {{ radio.tag }}
+                                    <label for="{{ radio.id_for_label }}" style="font-size: 14px; margin: 0; cursor: pointer; color: #334155;">{{ radio.choice_label }}</label>
+                                </div>
+                            {% endfor %}
+                        </div>
+                        {% if field.errors %}<div class="error-msg">{{ field.errors.0 }}</div>{% endif %}
+                    </div>
+                {% else %}
+                    {# Campos normais #}
+                    <div class="form-group" style="{% if field.name == 'observacoes' or field.name == 'descricao' %}grid-column: span 2;{% endif %} margin-bottom: 5px;">
+                        <label class="form-label">{{ field.label }}</label>
+                        {{ field }}
+                        {% if field.errors %}
+                            <div class="error-msg">{{ field.errors.0 }}</div>
+                        {% endif %}
+                    </div>
                 {% endif %}
-            </div>
             {% endfor %}
         </div>
 
@@ -64,3 +117,78 @@
         <button type="submit" class="rh-btn-primary" style="background: linear-gradient(180deg, #1976d2, #1565c0); color: white; padding: 10px 20px; border-radius: 8px; border: none; font-weight: 600; cursor: pointer;">Salvar Despesa</button>
     </div>
 </form>
+
+<script>
+    // --- Lógica para Esconder/Mostrar Banco (Novo, copiado do Create) ---
+    function toggleBancoField() {
+        const radioOrigem = document.querySelector('input[name="origem_pagamento"]:checked') || 
+                            document.querySelector('input[name="destino_recebimento"]:checked');
+        
+        // Tenta pegar pelo ID (ajuste conforme seu form) ou busca genérica
+        const campoBanco = document.getElementById('id_banco_origem') || document.getElementById('id_banco_destino');
+        
+        if (campoBanco) {
+            const containerBanco = campoBanco.closest('.form-group');
+
+            if (radioOrigem && radioOrigem.value === 'CAIXA') {
+                if (containerBanco) containerBanco.style.display = 'none';
+                campoBanco.value = ''; 
+            } else {
+                if (containerBanco) containerBanco.style.display = 'block';
+            }
+        }
+    }
+
+    // Monitora mudanças nos radios dentro deste form específico
+    document.getElementById('formEdicao').addEventListener("change", function(e) {
+        if (e.target.name === "origem_pagamento" || e.target.name === "destino_recebimento") {
+            toggleBancoField();
+        }
+    });
+    
+    // Executa ao carregar para aplicar estado inicial (ex: se já veio como Caixa)
+    toggleBancoField();
+
+    // --- Script Original de Envio via AJAX ---
+    document.getElementById('formEdicao').addEventListener('submit', function(e) {
+        e.preventDefault(); 
+        
+        const form = e.target;
+        const formData = new FormData(form);
+        const submitBtn = form.querySelector('button[type="submit"]');
+        
+        submitBtn.disabled = true;
+        submitBtn.innerText = 'Salvando...';
+        
+        fetch(form.action, {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+        .then(response => {
+            if (response.redirected || response.url.includes('/list')) {
+                window.location.reload(); 
+            } else {
+                return response.text().then(html => {
+                    if(html.includes('<html') || html.includes('<!DOCTYPE')) {
+                         window.location.reload();
+                    } else {
+                        document.getElementById('modalGenericContent').innerHTML = html;
+                        const scripts = document.getElementById('modalGenericContent').getElementsByTagName("script");
+                        for (let i = 0; i < scripts.length; i++) {
+                            eval(scripts[i].innerText);
+                        }
+                    }
+                });
+            }
+        })
+        .catch(error => {
+            console.error('Erro:', error);
+            alert('Ocorreu um erro ao salvar. Tente novamente.');
+            submitBtn.disabled = false;
+            submitBtn.innerText = 'Salvar Despesa';
+        });
+    });
+</script>

@@ -1,0 +1,177 @@
+{% extends 'core/base.html' %}
+{% load humanize %}
+
+{% block content %}
+<style>
+    .emp-card {
+        border-radius: 14px;
+        border: 1px solid #e5e7eb;
+        transition: all 0.25s ease;
+    }
+    .emp-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 10px 25px rgba(0,0,0,.08);
+    }
+
+    .emp-header {
+        border-radius: 14px 14px 0 0;
+        padding: 16px;
+        font-weight: 600;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .status-concluida { background: #10b981; color: #064e3b; }
+    .status-andamento { background: #e0f2fe; color: #075985; }
+
+    .emp-meta { font-size: 13px; color: #64748b; }
+    .emp-value { font-size: 15px; font-weight: 600; }
+
+    .progress {
+        height: 14px;
+        border-radius: 10px;
+        background-color: #e5e7eb;
+    }
+    .progress-bar {
+        font-size: 11px;
+        font-weight: 600;
+    }
+
+    /* =======================
+       BOTÕES CLAROS
+       ======================= */
+
+    .btn-app {
+        border-radius: 12px;
+        padding: 10px 14px;
+        font-size: 13px;
+        font-weight: 600;
+        border: 1px solid;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        transition: all .15s ease;
+        text-decoration: none;
+        background: #ffffff;
+    }
+
+    .btn-app:hover {
+        background: #f8fafc;
+    }
+
+    .btn-app-primary {
+        border-color: #93c5fd;
+        color: #1e3a8a;
+    }
+    .btn-app-primary:hover {
+        background: #eff6ff;
+    }
+
+    .btn-app-warning {
+        border-color: #fde68a;
+        color: #92400e;
+    }
+    .btn-app-warning:hover {
+        background: #fffbeb;
+    }
+
+    .btn-app-danger {
+        border-color: #fecaca;
+        color: #991b1b;
+    }
+    .btn-app-danger:hover {
+        background: #fef2f2;
+    }
+</style>
+
+<div class="container-fluid mt-4">
+
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="fw-bold mb-1">Gestão de Empreitadas</h2>
+            <p class="text-muted mb-0">Controle de valores, pagamentos e responsáveis</p>
+        </div>
+
+        <a href="{% url 'empreitadas:create' %}" class="btn-app btn-app-primary">
+            <i class="fas fa-plus"></i> Nova Empreitada
+        </a>
+    </div>
+
+    <div class="row">
+        {% for emp in empreitadas %}
+        <div class="col-xl-4 col-lg-6 mb-4">
+            <div class="card emp-card h-100">
+
+                <div class="emp-header {% if emp.status == 'CONCLUIDA' %}status-concluida{% else %}status-andamento{% endif %}">
+                    <span>{{ emp.ambiente }}</span>
+                    <span class="badge bg-white text-dark">
+                        {{ emp.get_status_display }}
+                    </span>
+                </div>
+
+                <div class="card-body">
+
+                    <h5 class="fw-semibold mb-1">{{ emp.funcionario.nome }}</h5>
+                    <div class="emp-meta mb-3">
+                        Cliente: <strong>{{ emp.cliente.nome }}</strong>
+                    </div>
+
+                    <div class="d-flex justify-content-between mb-2">
+                        <span class="emp-meta">Total</span>
+                        <span class="emp-value">
+                            R$ {{ emp.valor_total|stringformat:".2f"|intcomma }}
+                        </span>
+                    </div>
+
+                    <div class="d-flex justify-content-between mb-3">
+                        <span class="emp-meta">Restante</span>
+                        <span class="emp-value text-danger">
+                            R$ {{ emp.valor_restante|stringformat:".2f"|intcomma }}
+                        </span>
+                    </div>
+
+                    <div class="mb-2">
+                        <div class="progress">
+                            <div class="progress-bar bg-success"
+                                 style="width: {{ emp.percentual_pago|stringformat:'.0f' }}%">
+                                {{ emp.percentual_pago|stringformat:".0f" }}%
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="emp-meta mb-3">
+                        Pago até agora:
+                        <strong>R$ {{ emp.total_pago|stringformat:".2f"|intcomma }}</strong>
+                    </div>
+
+                    <div class="d-flex gap-2 mb-3">
+                        <a href="{% url 'empreitadas:edit' emp.id %}"
+                           class="btn-app btn-app-warning w-50">
+                            <i class="fas fa-edit"></i> Editar
+                        </a>
+
+                        <a href="{% url 'empreitadas:delete' emp.id %}"
+                           class="btn-app btn-app-danger w-50">
+                            <i class="fas fa-trash"></i> Excluir
+                        </a>
+                    </div>
+
+                    <a href="{% url 'empreitadas:detail' emp.id %}"
+                       class="btn-app btn-app-primary w-100">
+                        Gerenciar Pagamentos
+                    </a>
+
+                </div>
+            </div>
+        </div>
+        {% empty %}
+        <div class="col-12 text-center text-muted py-5">
+            <i class="fas fa-folder-open fa-2x mb-2"></i>
+            <p>Nenhuma empreitada cadastrada.</p>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

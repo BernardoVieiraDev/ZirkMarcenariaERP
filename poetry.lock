@@ -386,19 +386,18 @@ argon2 = ["argon2-cffi (>=19.1.0)"]
 bcrypt = ["bcrypt"]
 
 [[package]]
-name = "django-fernet-fields"
-version = "0.6"
-description = "Fernet-encrypted model fields for Django"
+name = "djfernet"
+version = "0.8.1"
+description = ""
 optional = false
-python-versions = "*"
+python-versions = ">=3.8"
 groups = ["main"]
 files = [
-    {file = "django-fernet-fields-0.6.tar.gz", hash = "sha256:7f7e03c86d9473a42031ebade2b15be1484aad18ef5576ddab156c4667e04c4a"},
+    {file = "djfernet-0.8.1.tar.gz", hash = "sha256:40a490faf09e80b2d177a933b33f0e1882587ef53249bc6a1ccaffcbfe3e96be"},
 ]
 
 [package.dependencies]
-cryptography = ">=0.9"
-Django = ">=1.11"
+cryptography = "*"
 
 [[package]]
 name = "flake8"
@@ -806,4 +805,4 @@ files = [
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.12"
-content-hash = "299d692c1a10b1e3e1a68f71df5dfc70b06a0aacd28b755a61e8afd849277a7f"
+content-hash = "6d9e2ca1a8093655bb12228aeebe2db4436fc9a929fcd08e953522007081d95c"

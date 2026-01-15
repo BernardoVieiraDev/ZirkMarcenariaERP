@@ -122,14 +122,14 @@ class ReceberExcelService:
             fmt = ReceberExcelService._define_formats(workbook)
 
             # --- 1. Espaçamento de Colunas ---
-            ws.set_column('A:A', 25) # Forma/Categoria
-            ws.set_column('B:B', 15) # Data
-            ws.set_column('C:C', 30) # Cliente
-            ws.set_column('D:D', 20) # Categoria
-            ws.set_column('E:E', 18) # Valor Receber
-            ws.set_column('F:F', 18) # Valor Estoque
-            ws.set_column('G:G', 35) # Obs
-            ws.set_column('H:H', 18) # Data Pagto
+            ws.set_column('A:A', 25) # Forma/Categoria# type: ignore
+            ws.set_column('B:B', 15) # Data# type: ignore
+            ws.set_column('C:C', 30) # Cliente# type: ignore
+            ws.set_column('D:D', 20) # Categoria# type: ignore
+            ws.set_column('E:E', 18) # Valor Receber# type: ignore
+            ws.set_column('F:F', 18) # Valor Estoque# type: ignore
+            ws.set_column('G:G', 35) # Obs# type: ignore
+            ws.set_column('H:H', 18) # Data Pagto# type: ignore
 
             row = 1
 

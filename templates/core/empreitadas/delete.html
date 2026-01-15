@@ -1,0 +1,116 @@
+{% extends 'core/base.html' %}
+
+{% block content %}
+<style>
+    /* =======================
+       CARD
+       ======================= */
+    .card {
+        border-radius: 14px;
+        border: 1px solid #fecaca;
+    }
+
+    .card-header {
+        background: #fef2f2 !important;
+        color: #991b1b !important;
+        font-weight: 600;
+        border-bottom: 1px solid #fecaca;
+    }
+
+    /* =======================
+       ALERTA
+       ======================= */
+    .alert-warning {
+        background: #fffbeb;
+        border-color: #fde68a;
+        color: #92400e;
+        border-radius: 12px;
+    }
+
+    /* =======================
+       BOTÕES CLAROS
+       ======================= */
+    .btn-app {
+        border-radius: 12px;
+        padding: 10px 20px;
+        font-size: 14px;
+        font-weight: 600;
+        border: 1px solid;
+        background: #fff;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        transition: all .15s ease;
+        text-decoration: none;
+        color: inherit;
+    }
+
+    .btn-app:hover {
+        background: #f8fafc;
+    }
+
+    .btn-app-secondary {
+        border-color: #d1d5db;
+        color: #374151;
+    }
+
+    .btn-app-danger {
+        border-color: #fecaca;
+        color: #991b1b;
+    }
+</style>
+
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card">
+
+                <div class="card-header text-center">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    Confirmar Exclusão
+                </div>
+
+                <div class="card-body text-center p-5">
+                    <h4 class="mb-3 fw-bold">Tem certeza?</h4>
+
+                    <p class="lead mb-1">
+                        Você está prestes a excluir a empreitada de:
+                    </p>
+
+                    <p class="fw-bold fs-4 mb-1">
+                        {{ empreitada.funcionario.nome }}
+                    </p>
+
+                    <p class="text-muted mb-3">
+                        Local: {{ empreitada.ambiente }}
+                    </p>
+
+                    <div class="alert alert-warning mt-3">
+                        <small>
+                            Esta ação removerá a empreitada da lista ativa,
+                            mas manterá o histórico financeiro salvo.
+                        </small>
+                    </div>
+
+                    <form method="post" class="mt-4">
+                        {% csrf_token %}
+                        <div class="d-flex justify-content-center gap-3">
+                            <a href="{% url 'empreitadas:list' %}"
+                               class="btn-app btn-app-secondary">
+                                Cancelar
+                            </a>
+
+                            <button type="submit"
+                                    class="btn-app btn-app-danger">
+                                Sim, Excluir
+                            </button>
+                        </div>
+                    </form>
+
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

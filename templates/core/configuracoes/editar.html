@@ -1,0 +1,124 @@
+{% extends 'core/base.html' %}
+
+{% block content %}
+<div class="container mt-4 mb-5">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="h3 mb-0 text-gray-800">Configurações do Sistema</h2>
+            <p class="text-muted small mb-0">Gerencie as regras globais de retenção e segurança.</p>
+        </div>
+        <div class="d-flex gap-2">
+            <a href="{% url 'configuracoes:criar_novo_admin' %}" class="btn btn-primary btn-sm shadow-sm">
+                <i class="fas fa-user-shield me-1"></i> Novo Administrador
+            </a>
+            <a href="{% url 'dashboard' %}" class="btn btn-outline-secondary btn-sm">
+                <i class="fas fa-arrow-left"></i> Voltar ao Painel
+            </a>
+        </div>
+    </div>
+
+    <form method="post">
+        {% csrf_token %}
+        
+        <div class="row g-4">
+            <div class="col-lg-6">
+                <div class="card shadow-sm border-0 h-100">
+                    <div class="card-header bg-white border-bottom-0 pt-4 px-4 pb-0">
+                        <div class="d-flex align-items-center mb-3">
+                            <div class="icon-shape icon-sm bg-light text-primary rounded-circle me-3 p-2">
+                                <i class="fas fa-trash-alt fa-lg"></i>
+                            </div>
+                            <h5 class="mb-0 fw-bold text-primary">Lixeira e Segurança</h5>
+                        </div>
+                    </div>
+                    <div class="card-body px-4">
+                        <div class="mb-4">
+                            <label class="form-label fw-bold text-dark">Status da Lixeira</label>
+                            <div class="form-check form-switch p-0 m-0 d-flex align-items-center gap-2">
+                                {{ form.lixeira_ativa }} 
+                                <label class="form-check-label text-secondary" for="{{ form.lixeira_ativa.id_for_label }}">
+                                    Ativar Lixeira (Soft Delete)
+                                </label>
+                            </div>
+                            <div class="form-text mt-2">
+                                <i class="fas fa-info-circle me-1"></i>
+                                Se desativado, os registros serão excluídos permanentemente de imediato.
+                            </div>
+                        </div>
+
+                        <hr class="text-muted opacity-25">
+
+                        <div class="mb-2">
+                            <label class="form-label fw-bold text-dark">Retenção de Excluídos</label>
+                            <div class="input-group">
+                                {{ form.dias_retencao_lixeira }}
+                                <span class="input-group-text bg-light text-secondary">dias</span>
+                            </div>
+                            <div class="form-text">
+                                Tempo que um item permanece na lixeira antes da exclusão definitiva automática.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-6">
+                <div class="card shadow-sm border-0 h-100">
+                    <div class="card-header bg-white border-bottom-0 pt-4 px-4 pb-0">
+                        <div class="d-flex align-items-center mb-3">
+                            <div class="icon-shape icon-sm bg-light text-warning rounded-circle me-3 p-2">
+                                <i class="fas fa-history fa-lg"></i>
+                            </div>
+                            <h5 class="mb-0 fw-bold text-warning">Limpeza de Histórico</h5>
+                        </div>
+                    </div>
+                    <div class="card-body px-4">
+                        <div class="mb-4">
+                            <label class="form-label fw-bold text-dark">Arquivamento Automático</label>
+                            <div class="form-check form-switch p-0 m-0 d-flex align-items-center gap-2">
+                                {{ form.limpeza_automatica_ativa }}
+                                <label class="form-check-label text-secondary" for="{{ form.limpeza_automatica_ativa.id_for_label }}">
+                                    Ativar Limpeza de Antigos
+                                </label>
+                            </div>
+                            <div class="form-text mt-2">
+                                <i class="fas fa-info-circle me-1"></i>
+                                Move registros antigos (férias, pagamentos) para a lixeira automaticamente.
+                            </div>
+                        </div>
+
+                        <hr class="text-muted opacity-25">
+
+                        <div class="mb-2">
+                            <label class="form-label fw-bold text-dark">Tempo de Histórico</label>
+                            <div class="input-group">
+                                {# AQUI ESTÁ A ALTERAÇÃO: mudou de anos para meses #}
+                                {{ form.meses_retencao_historico }}
+                                <span class="input-group-text bg-light text-secondary">meses</span>
+                            </div>
+                            <div class="form-text">
+                                Registros com data superior a este período serão arquivados.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="fixed-bottom bg-white border-top shadow py-3 px-4" style="z-index: 100; left: 250px;"> 
+            <div class="container-fluid d-flex justify-content-end align-items-center">
+                <span class="text-muted me-3 small">Verifique as alterações antes de salvar.</span>
+                <button type="submit" class="btn btn-success px-4 fw-bold shadow-sm">
+                    <i class="fas fa-check me-2"></i> Salvar Alterações
+                </button>
+            </div>
+        </div>
+    </form>
+</div>
+
+<style>
+    .form-check-input { margin-left: 0 !important; margin-right: 8px; cursor: pointer; width: 3em; height: 1.5em; }
+    /* Ajuste para telas menores onde a sidebar some/muda */
+    @media (max-width: 768px) { .fixed-bottom { left: 0 !important; } }
+</style>
+{% endblock %}

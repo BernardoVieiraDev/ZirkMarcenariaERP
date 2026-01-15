@@ -27,11 +27,12 @@ urlpatterns = [
     path('historico/', views.list_planilhas_periodo, name='planilhas_por_periodo'),
     path('exportar/periodo/', views.exportar_por_periodo, name='exportar_por_periodo'),
     path('exportar/consolidado-periodo/', views.exportar_consolidado_periodo, name='exportar_consolidado_periodo'),   
-    path('exportar/vendas/', views.exportar_vendas, name='exportar_vendas'),
     path('exportar-caixa-diario/', views.exportar_caixa_diario, name='exportar_caixa_diario'),
-
+path('exportar/consolidado-anual/', views.exportar_consolidado_anual, name='exportar_consolidado_anual'),
     path('exportar-movimentacao-bancaria/', views.exportar_movimentacao_bancaria, name='exportar_movimentacao_bancaria'),
     path('exportar-pagar-mensal/', views.exportar_pagar_mensal, name='exportar_pagar_mensal'),
     path('exportar-receber-mensal/', views.exportar_receber_mensal, name='exportar_receber_mensal'),
 path('exportar/pacote/<str:tipo_pacote>/', views.exportar_pacote, name='exportar_pacote'),
+   path('exportar-fluxo-caixa/', views.exportar_fluxo_caixa, name='exportar_fluxo_caixa'),
+   
     ]

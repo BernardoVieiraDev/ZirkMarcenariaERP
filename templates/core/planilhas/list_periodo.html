@@ -243,14 +243,47 @@
         </div>
     </div>
 
+    <div class="section-label">Tesouraria e Sócios</div>
+    <div class="reports-grid">
+        
+        <div class="report-card-btn" onclick="baixarIndividual('caixa_diario')">
+            <div class="card-icon">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
+            </div>
+            <div class="card-title">Caixa Diário</div>
+            <div class="card-desc">Movimentação física (Intervalo)</div>
+        </div>
+
+        <div class="report-card-btn" onclick="baixarIndividual('socios')">
+            <div class="card-icon">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="22" y1="11" x2="16" y2="11"/></svg>
+            </div>
+            <div class="card-title">Despesas Sócios</div>
+            <div class="card-desc">Retiradas e despesas (Intervalo)</div>
+        </div>
+
+    </div>
+    
+
+
     <div class="section-label">Relatórios Gerenciais e Desempenho</div>
     <div class="reports-grid">
         <div class="report-card-btn gerencial-card" onclick="baixarVendasCompras()" style="border: 1px solid #d8b4fe;">
             <div class="card-icon"><i class="fas fa-chart-line fa-lg"></i></div>
-            <div class="card-title">Vendas e Compras</div>
             <div class="card-desc"><strong>Baixar Planilha de Desempenho</strong><br>Entradas vs Saídas (Ano Selecionado)</div>
         </div>
+
+
+        <div class="report-card-btn" onclick="baixarIndividual('fluxo_caixa')">
+    <div class="card-icon" style="color: #0891b2; background: #cffafe;">
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
     </div>
+    <div class="card-title">Fluxo de Caixa</div>
+    <div class="card-desc">Detalhado (Período Selecionado)</div>
+</div>
+    </div>
+
+    
 
     <div class="section-label">Fechamento Mensal (Contabilidade)</div>
     <div class="reports-grid">
@@ -271,6 +304,25 @@
         </div>
     </div>
 
+    <div class="section-label">Pacotes Completos (Várias Abas)</div>
+    <div class="reports-grid">
+        <div class="report-card-btn" onclick="baixarPacote('pagar')" style="border: 1px solid #FCA5A5; background: #FEF2F2;">
+            <div class="card-icon" style="color: #991B1B; background: #fff;">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            </div>
+            <div class="card-title" style="color: #991B1B;">Pacote Contas a Pagar</div>
+            <div class="card-desc">Todas as despesas do período em abas separadas.</div>
+        </div>
+
+        <div class="report-card-btn" onclick="baixarPacote('sebrae')" style="border: 1px solid #BFDBFE; background: #EFF6FF;">
+            <div class="card-icon" style="color: #1E3A8A; background: #fff;">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+            </div>
+            <div class="card-title" style="color: #1E3A8A;">Pacote SEBRAE</div>
+            <div class="card-desc">Relatórios gerenciais e financeiros unificados.</div>
+        </div>
+    </div>
+
 <div class="consolidado-panel" style="margin-bottom: 32px; margin-top: 20px;">
     <div class="panel-header">
         <h3>Movimento Bancário (Extrato)</h3>
@@ -278,6 +330,10 @@
             Selecione o Banco e o mês de referência para gerar o relatório.
         </p>
     </div>
+
+    
+
+    
     
     <div class="panel-body">
         <form action="{% url 'relatorios:exportar_movimentacao_bancaria' %}" method="GET">
@@ -388,7 +444,6 @@
                     <label class="check-label"><input type="checkbox" name="relatorios" value="folha"> Folha Pagto</label>
                     <label class="check-label"><input type="checkbox" name="relatorios" value="comissoes"> Comissões RT</label>
                     <label class="check-label"><input type="checkbox" name="relatorios" value="receber"> Contas a Receber</label>
-                    <label class="check-label"><input type="checkbox" name="relatorios" value="vendas_compras"> Vendas e Compras </label>
                 <label class="check-label" style="background:#FEF2F2; border-color:#FCA5A5;">
                         <input type="checkbox" name="relatorios" value="pagar_mensal"> 
                         <span style="color:#991B1B; font-weight:600;">Pagar (Mensal)</span>
@@ -446,24 +501,7 @@
         }
     }
 
-    // NOVA FUNÇÃO para baixar o relatório de Vendas e Compras
-    function baixarVendasCompras() {
-        const i = document.getElementById('globalDtInicio').value;
-        if (!i) {
-            const err = document.getElementById('dateError');
-            err.innerHTML = "⚠️ Selecione pelo menos a <strong>Data de Início</strong> para definir o ano.";
-            err.style.display = 'block';
-            setTimeout(() => err.style.display = 'none', 4000);
-            return;
-        }
-        // Extrai o ano da data de início selecionada
-        const date = new Date(i);
-        const year = date.getFullYear();
-        
-        // Redireciona diretamente para a rota de download com o ano na URL
-        const url = "{% url 'relatorios:exportar_vendas' %}?ano=" + year;
-        window.location.href = url;
-    }
+
     
     // Inicializa datas com o mês atual para facilitar
     window.onload = function() {
@@ -499,6 +537,25 @@ function baixarMensal(tipo) {
         } else {
             url = "{% url 'relatorios:exportar_receber_mensal' %}?data_inicio=" + i + "&data_fim=" + f;
         }
+        
+        window.location.href = url;
+    }
+    function baixarPacote(tipo) {
+        const i = document.getElementById('globalDtInicio').value;
+        const f = document.getElementById('globalDtFim').value;
+        
+        if (!i || !f) {
+            const err = document.getElementById('dateError');
+            err.innerHTML = "⚠️ Selecione as datas de <strong>Início</strong> e <strong>Fim</strong>.";
+            err.style.display = 'block';
+            setTimeout(() => err.style.display = 'none', 4000);
+            return;
+        }
+
+        // Monta a URL para a rota de pacote, passando as datas customizadas
+        // O back-end foi ajustado para ler data_inicio e data_fim se presentes
+        let url = "{% url 'relatorios:exportar_pacote' 'PLACEHOLDER' %}".replace('PLACEHOLDER', tipo);
+        url += "?data_inicio=" + i + "&data_fim=" + f;
         
         window.location.href = url;
     }

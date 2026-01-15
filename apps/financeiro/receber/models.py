@@ -1,10 +1,13 @@
-from django.db import models
-from django.db.models import Sum
+import uuid
 from decimal import Decimal
 
-# --- Models de Apoio (Restaurados) ---
+from django.db import models
+from django.db.models import Sum
 
-class CaixaDiario(models.Model):
+from apps.configuracoes.mixin import SoftDeleteMixin
+
+
+class CaixaDiario(SoftDeleteMixin):
     TIPO_CHOICES = [
         ('E', 'Entrada'),
         ('S', 'Saída'),
@@ -26,7 +29,7 @@ class Banco(models.Model):
     def __str__(self):
         return self.nome
 
-class MovimentoBanco(models.Model):
+class MovimentoBanco(SoftDeleteMixin):
     TIPO_CHOICES = [
         ('E', 'Entrada'),
         ('S', 'Saída'),
@@ -43,11 +46,12 @@ class MovimentoBanco(models.Model):
 
 # --- Model Principal ---
 
-class Receber(models.Model):
+class Receber(SoftDeleteMixin):
     TIPO_CHOICES = [
         ('VISTA', 'À Vista'),
         ('PRAZO', 'A Prazo'),
     ]
+    parcelamento_uuid = models.UUIDField(null=True, blank=True, editable=False)
     
     class FormaRecebimento(models.TextChoices):
         DINHEIRO = 'DINHEIRO', 'Dinheiro'
@@ -58,6 +62,15 @@ class Receber(models.Model):
         TRANSFERENCIA = 'TRANSFERENCIA', 'Transferência'
         OUTROS = 'OUTROS', 'Outros'
 
+    contrato_rt = models.ForeignKey(
+        'comissionamento.ContratoRT', 
+        on_delete=models.SET_NULL, 
+        null=True, 
+        blank=True,
+        related_name='parcelas_receber', # Permite acessar as parcelas a partir do contrato: contrato.parcelas_receber.all()
+        verbose_name="Contrato RT Vinculado"
+    )
+        
 
     banco_destino = models.ForeignKey(
         'Banco', 
@@ -82,9 +95,16 @@ class Receber(models.Model):
         blank=True, 
         related_name='recebimento_origem'
     )
+
+    cliente = models.ForeignKey(
+        'clientes.Cliente', 
+        on_delete=models.SET_NULL, 
+        null=True, 
+        blank=True, 
+        verbose_name="Cliente"
+    )
     # Campos Básicos
     descricao = models.CharField("Descrição", max_length=255, blank=True, null=True)
-    cliente = models.CharField("Cliente", max_length=255, blank=True, null=True)
     categoria = models.CharField("Categoria", max_length=255, blank=True, null=True)
     
     # Valores e Datas

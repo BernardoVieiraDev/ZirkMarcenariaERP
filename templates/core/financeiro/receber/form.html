@@ -3,7 +3,6 @@
 <form method="POST" action="{{ request.path }}" enctype="multipart/form-data" style="margin:0; width: 100%; display: flex; flex-direction: column;">
     {% csrf_token %}
 
-    {# CSS Scoped: Aplica estilos apenas aos inputs dentro deste modal #}
     <style>
         .modal-body input, 
         .modal-body select, 
@@ -13,7 +12,7 @@
             border-radius: 8px;
             border: 1px solid #cbd5e1;
             font-size: 14px;
-            box-sizing: border-box; /* Garante que o padding não estoure a largura */
+            box-sizing: border-box;
         }
         .modal-body input:focus, 
         .modal-body select:focus,
@@ -33,6 +32,32 @@
             font-size: 11px; 
             margin-top: 4px;
         }
+
+        /* AJUSTE DOS BOTÕES DE RÁDIO (BANCO/CAIXA) */
+        .radio-group-container {
+            grid-column: span 2; /* Faz a escolha ocupar a linha toda */
+            background: #f1f5f9;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 10px;
+        }
+        .radio-options {
+            display: flex;
+            gap: 20px;
+            align-items: center;
+        }
+        .radio-options div {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+        }
+        .radio-options input[type="radio"] {
+            width: 18px !important; /* Tamanho fixo para não esticar */
+            height: 18px;
+            margin: 0;
+            cursor: pointer;
+        }
     </style>
 
     <div class="modal-header" style="padding: 20px 24px; border-bottom: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center; background: white; border-radius: 12px 12px 0 0;">
@@ -48,20 +73,72 @@
 
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
             {% for field in form %}
-            <div class="form-group" style="{% if field.name == 'observacoes' or field.name == 'descricao' %}grid-column: span 2;{% endif %} margin-bottom: 5px;">
-                <label class="form-label">{{ field.label }}</label>
-                {{ field }}
-                {% if field.errors %}
-                    <div class="error-msg">{{ field.errors.0 }}</div>
+                {% if field.name == 'destino_recebimento' or field.name == 'origem_pagamento' %}
+                    {# Bloco especial para a escolha Banco/Caixa #}
+                    <div class="radio-group-container">
+                        <label class="form-label" style="color: #1e293b;">{{ field.label }}</label>
+                        <div class="radio-options">
+                            {% for radio in field %}
+                                <div>
+                                    {{ radio.tag }}
+                                    <label for="{{ radio.id_for_label }}" style="font-size: 14px; margin: 0; cursor: pointer;">{{ radio.choice_label }}</label>
+                                </div>
+                            {% endfor %}
+                        </div>
+                        {% if field.errors %}<div class="error-msg">{{ field.errors.0 }}</div>{% endif %}
+                    </div>
+                {% else %}
+                    {# Campos normais do formulário #}
+                    <div class="form-group" id="div_{{ field.auto_id }}" style="{% if field.name == 'observacoes' or field.name == 'descricao' %}grid-column: span 2;{% endif %} margin-bottom: 5px;">
+                        <label class="form-label">{{ field.label }}</label>
+                        {{ field }}
+                        {% if field.errors %}
+                            <div class="error-msg">{{ field.errors.0 }}</div>
+                        {% endif %}
+                    </div>
                 {% endif %}
-            </div>
             {% endfor %}
         </div>
-
     </div>
 
     <div class="modal-footer" style="padding: 16px 24px; border-top: 1px solid #e2e8f0; background: #f8fafc; border-radius: 0 0 12px 12px; display: flex; justify-content: flex-end; gap: 12px;">
         <button type="button" class="btn-ghost" onclick="closeModal('modalGeneric')" style="background: white; border: 1px solid #cbd5e1; color: #475569; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: 600;">Cancelar</button>
-        <button type="submit" class="rh-btn-primary" style="background: linear-gradient(180deg, #1976d2, #1565c0); color: white; padding: 10px 20px; border-radius: 8px; border: none; font-weight: 600; cursor: pointer;">Salvar Receita</button>
+        <button type="submit" class="rh-btn-primary" style="background: linear-gradient(180deg, #1976d2, #1565c0); color: white; padding: 10px 20px; border-radius: 8px; border: none; font-weight: 600; cursor: pointer;">Salvar Registro</button>
     </div>
 </form>
+
+<script>
+    function toggleBancoField() {
+        // Seleciona pelo nome (atende tanto Pagar quanto Receber)
+        const radioOrigem = document.querySelector('input[name="destino_recebimento"]:checked') || 
+                            document.querySelector('input[name="origem_pagamento"]:checked');
+        
+        // Pega os IDs dos selects (ajuste se os IDs forem diferentes no seu model)
+        const campoBancoDestino = document.getElementById('id_banco_destino');
+        const campoBancoOrigem = document.getElementById('id_banco_origem');
+        
+        const campoAtivo = campoBancoDestino || campoBancoOrigem;
+
+        if (campoAtivo) {
+            const containerBanco = campoAtivo.closest('.form-group');
+
+            if (radioOrigem && radioOrigem.value === 'CAIXA') {
+                if (containerBanco) containerBanco.style.display = 'none';
+                campoAtivo.value = ''; 
+            } else {
+                if (containerBanco) containerBanco.style.display = 'block';
+            }
+        }
+    }
+
+    // Monitorar mudanças nos rádios
+    document.addEventListener("change", function(e) {
+        if (e.target.name === "destino_recebimento" || e.target.name === "origem_pagamento") {
+            toggleBancoField();
+        }
+    });
+
+    document.addEventListener("DOMContentLoaded", function() {
+        toggleBancoField();
+    });
+</script>

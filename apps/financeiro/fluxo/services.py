@@ -39,12 +39,11 @@ class FluxoCaixaService:
                 'outras': [],
                 'total': []
             },
-            # === NOVA ESTRUTURA SOLICITADA ===
             'saidas': {
                 'compras_vista': [],     # Compras à vista (Caixa)
-                'pagamentos_contas': [], # Pagamentos (Contas a Pagar)
-                'outros_pagamentos': [], # Outros Pagamentos
-                'outras_saidas': [],     # Outras Saídas
+                'pagamentos_contas': [], # Pagamentos (Contas a Pagar + Cheques)
+                'outros_pagamentos': [], # Pessoal, Comissões
+                'outras_saidas': [],     # Investimentos
                 'total': []
             },
             'conclusao': {
@@ -59,23 +58,24 @@ class FluxoCaixaService:
 
         # Configuração: Mapeia (Modelo, CampoData, Categoria)
         config_saidas = [
-            # 1. Compras à vista (Caixa) -> Geral, Gasolina
+            # 1. Compras à vista (Caixa)
             (GastoGeral, 'data_gasto', 'compras_vista'),
             (GastoGasolina, 'data_gasto', 'compras_vista'),
 
-            # 2. Pagamentos (Contas a Pagar) -> Boletos, Faturas, Utilidades, Aluguel
+            # 2. Pagamentos (Contas a Pagar)
+            # Mudei CHEQUE para cá se você quiser vê-lo junto com as contas principais
             (Boleto, 'data_vencimento', 'pagamentos_contas'),
             (GastoUtilidade, 'data_vencimento', 'pagamentos_contas'),
             (GastoImovel, 'data_vencimento', 'pagamentos_contas'),
             (GastoContabilidade, 'data_vencimento', 'pagamentos_contas'),
             (FaturaCartao, 'data_vencimento', 'pagamentos_contas'),
+            (Cheque, 'data_emissao', 'pagamentos_contas'), # <--- MOVIDO PARA PAGAMENTOS DE CONTAS
 
-            # 3. Outros Pagamentos -> Pessoal, Comissões, Cheques
+            # 3. Outros Pagamentos (Pessoal)
             (FolhaPagamento, 'data_referencia', 'outros_pagamentos'), 
             (ComissaoArquiteto, 'data_pagamento', 'outros_pagamentos'),
-            (Cheque, 'data_emissao', 'outros_pagamentos'),
-
-            # 4. Outras Saídas -> Financeiro/Investimentos
+            
+            # 4. Outras Saídas
             (PrestacaoEmprestimo, 'data_vencimento', 'outras_saidas'),
             (GastoVeiculoConsorcio, 'data_vencimento', 'outras_saidas'),
         ]
@@ -85,23 +85,15 @@ class FluxoCaixaService:
             dias.append(dia_atual)
 
             # ==========================================
-            # === 1. ENTRADAS (Mantido)
+            # === 1. ENTRADAS
             # ==========================================
             qs_receber = Receber.objects.filter(data_vencimento=dia_atual).exclude(status='Recebido')
-
-            vendas_vista = qs_receber.filter(
-                Q(tipo_recebimento='VISTA') | 
-                Q(forma_recebimento__in=['DINHEIRO', 'PIX'])
-            ).aggregate(s=Sum('valor'))['s'] or Decimal(0)
-
+            
+            # (Lógica de entradas mantida igual...)
+            vendas_vista = qs_receber.filter(Q(tipo_recebimento='VISTA') | Q(forma_recebimento__in=['DINHEIRO', 'PIX'])).aggregate(s=Sum('valor'))['s'] or Decimal(0)
             rec_debito = qs_receber.filter(forma_recebimento='DEBITO').aggregate(s=Sum('valor'))['s'] or Decimal(0)
             rec_credito = qs_receber.filter(forma_recebimento='CREDITO').aggregate(s=Sum('valor'))['s'] or Decimal(0)
-            
-            outras_entradas = qs_receber.exclude(
-                Q(tipo_recebimento='VISTA') | 
-                Q(forma_recebimento__in=['DINHEIRO', 'PIX', 'DEBITO', 'CREDITO'])
-            ).aggregate(s=Sum('valor'))['s'] or Decimal(0)
-
+            outras_entradas = qs_receber.exclude(Q(tipo_recebimento='VISTA') | Q(forma_recebimento__in=['DINHEIRO', 'PIX', 'DEBITO', 'CREDITO'])).aggregate(s=Sum('valor'))['s'] or Decimal(0)
             total_entradas_dia = vendas_vista + rec_debito + rec_credito + outras_entradas
             
             timeline['entradas']['vendas_vista'].append(vendas_vista)
@@ -111,7 +103,7 @@ class FluxoCaixaService:
             timeline['entradas']['total'].append(total_entradas_dia)
 
             # ==========================================
-            # === 2. SAÍDAS (Nova Categorização)
+            # === 2. SAÍDAS
             # ==========================================
             
             totais_dia = {
@@ -125,16 +117,27 @@ class FluxoCaixaService:
                 filtro = {date_field: dia_atual}
                 qs = Model.objects.filter(**filtro)
 
-                # Verifica se o campo status existe para excluir pagos/baixados
+                # --- CORREÇÃO DE STATUS ---
                 if hasattr(Model, 'status'):
-                     # Verifica dinamicamente os campos do model
-                     field_names = [f.name for f in Model._meta.get_fields()]
-                     if 'status' in field_names:
-                        qs = qs.exclude(status__in=['Pago', 'PAGO', 'Baixado', 'Recebido'])
+                    # Verifica os campos do modelo
+                    field_names = [f.name for f in Model._meta.get_fields()]
+                    if 'status' in field_names:
+                        
+                        # --- MODIFICAÇÃO SUGERIDA ---
+                        # Se for Cheque, só exclui se estiver Devolvido ou Cancelado.
+                        # Se estiver Compensado ('COM'), mantemos na lista para visualização,
+                        # MAS precisamos cuidar para não duplicar o saldo (ver nota abaixo).
+                        if Model.__name__ == 'Cheque':
+                             qs = qs.exclude(status__in=['DEV', 'CAN', 'Devolvido', 'Cancelado'])
+                        else:
+                            # Para outros itens (Boletos, etc), mantém a lógica original
+                            qs = qs.exclude(status__in=[
+                                'Pago', 'PAGO', 'Baixado', 'Recebido', 
+                                'DEV', 'CAN'
+                            ])
 
                 for item in qs:
                     valor = getattr(item, 'valor', 0)
-                    # Tratamento para campos de valor com nomes diferentes
                     if hasattr(item, 'get_valor_consolidado'): valor = item.get_valor_consolidado()
                     elif hasattr(item, 'valor_total'): valor = item.valor_total
                     elif hasattr(item, 'valor_comissao'): valor = item.valor_comissao

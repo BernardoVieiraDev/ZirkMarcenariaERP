@@ -1,10 +1,12 @@
 import calendar
+import datetime
 import io
 from datetime import date, datetime
 from decimal import Decimal
 from itertools import chain
 
 import xlsxwriter
+from django.contrib.auth.decorators import login_required
 from django.db.models import Sum
 from django.db.models.functions import Coalesce
 from django.http import FileResponse, HttpResponse
@@ -24,6 +26,7 @@ from apps.financeiro.pagar.models import (Boleto, Cheque, ComissaoArquiteto,
 from apps.financeiro.receber.models import (Banco, CaixaDiario, MovimentoBanco,
                                             Receber)
 from apps.relatorios.services.movimento_banco import MovimentoBancoExcelService
+from apps.socios.models import LancamentoSocio
 from apps.socios.services import SocioExcelService
 
 # Imports dos Services
@@ -37,11 +40,12 @@ from .extensions import (BNDESExcelService, BoletoExcelService,
                          GastoImovelExcelService, GastoIPTUExcelService,
                          GastoUtilidadeExcelService,
                          GastoVeiculoConsorcioExcelService,
-                         PrestacaoEmprestimoExcelService, ReceberExcelService,
-                         RelatorioPagarMensalService,
-                         RelatorioReceberMensalService, VendasExcelService,
+                         HoleriteExcelService, PrestacaoEmprestimoExcelService,
+                         ReceberExcelService, RelatorioPagarMensalService,
+                         RelatorioReceberMensalService,
                          gerar_relatorio_movimento_banco)
 from .services.fluxo_caixa_export import RelatorioFluxoCaixaExport
+from .services.relatorio_anual_consolidado import RelatorioAnualConsolidado
 
 
 def list_planilhas(request):
@@ -201,8 +205,9 @@ def exportar_gasolina(request):
 
 
 def exportar_comissoes(request):
-    pagamentos = ContratoRT.objects.select_related('arquiteta')\
-        .filter(valor_pago__isnull=False)\
+    # CORREÇÃO: Usando ComissaoArquiteto em vez de ContratoRT
+    pagamentos = ComissaoArquiteto.objects.select_related('arquiteto', 'contrato_rt', 'contrato_rt__cliente')\
+        .all()\
         .order_by('-data_pagamento')
     
     data_hoje = datetime.now().strftime("%Y-%m-%d")
@@ -282,7 +287,11 @@ def exportar_multiplas_planilhas(request):
         if 'gasolina' in relatorios:
             GastoGasolinaExcelService.gerar_relatorio_gasolina(GastoGasolina.objects.all().order_by('-data_gasto'), workbook=wb)
         if 'comissoes' in relatorios:
-            ComissaoExcelService.gerar_relatorio_comissoes(ContratoRT.objects.select_related('arquiteta').filter(valor_pago__isnull=False).order_by('-data_pagamento'), workbook=wb)
+            # CORREÇÃO: Usando ComissaoArquiteto
+            ComissaoExcelService.gerar_relatorio_comissoes(
+                ComissaoArquiteto.objects.select_related('arquiteto', 'contrato_rt', 'contrato_rt__cliente').all().order_by('-data_pagamento'), 
+                workbook=wb
+            )
         if 'prestacoes' in relatorios:
             PrestacaoEmprestimoExcelService.gerar_relatorio_prestacoes(PrestacaoEmprestimo.objects.all().order_by('-data_vencimento'), workbook=wb)
         if 'folha' in relatorios:
@@ -290,13 +299,10 @@ def exportar_multiplas_planilhas(request):
         if 'receber' in relatorios:
             ReceberExcelService.gerar_relatorio_receber(Receber.objects.all().order_by('data_vencimento'), workbook=wb)
         
-        # --- CORREÇÃO AQUI: Passar argumentos NOMEADOS para evitar erro de formato ---
         if 'pagar_mensal' in relatorios:
-            # Gera aba "Pagar_MM_AAAA"
             RelatorioPagarMensalService.gerar_arquivo(mes=now.month, ano=now.year, workbook=wb)
                     
         if 'receber_mensal' in relatorios:
-            # Gera aba "Receber_MM_AAAA"
             RelatorioReceberMensalService.gerar_arquivo(mes=now.month, ano=now.year, workbook=wb)
 
     except Exception as e:
@@ -377,6 +383,8 @@ def exportar_por_periodo(request):
 
     dt_inicio = parse_date(inicio_str)
     dt_fim = parse_date(fim_str)
+    if not dt_inicio or not dt_fim:
+        return HttpResponse("Datas inválidas.", status=400)
     periodo_str = f"{dt_inicio.strftime('%d%m')}_{dt_fim.strftime('%d%m')}"
     
     buffer = None
@@ -391,6 +399,13 @@ def exportar_por_periodo(request):
             dados = GastoUtilidade.objects.filter(data_vencimento__range=[dt_inicio, dt_fim]).order_by('data_vencimento')
             buffer = GastoUtilidadeExcelService.gerar_relatorio_utilidades(dados)
             
+        elif tipo == 'fluxo_caixa':
+            # Calcula a diferença de dias entre Inicio e Fim
+            dias_delta = (dt_fim - dt_inicio).days + 1
+            periodo_nome = f"Período {dt_inicio.strftime('%d/%m')} a {dt_fim.strftime('%d/%m')}"
+            
+            # Gera usando o serviço já existente
+            buffer = RelatorioFluxoCaixaExport.gerar_excel(dt_inicio, dias_delta, periodo_nome)
         elif tipo == 'cheques':
             dados = Cheque.objects.filter(data_emissao__range=[dt_inicio, dt_fim]).order_by('data_emissao')
             buffer = ChequeExcelService.gerar_relatorio_cheques(dados)
@@ -437,11 +452,89 @@ def exportar_por_periodo(request):
             dados = PrestacaoEmprestimo.objects.filter(data_vencimento__range=[dt_inicio, dt_fim]).order_by('data_vencimento')
             buffer = PrestacaoEmprestimoExcelService.gerar_relatorio_prestacoes(dados)
 
+        elif tipo == 'caixa_diario':
+            # 1. Calcula saldo anterior ao período
+            entradas_ant = CaixaDiario.objects.filter(data__lt=dt_inicio, tipo='E').aggregate(s=Coalesce(Sum('valor'), Decimal(0)))['s']
+            saidas_ant = CaixaDiario.objects.filter(data__lt=dt_inicio, tipo='S').aggregate(s=Coalesce(Sum('valor'), Decimal(0)))['s']
+            saldo_anterior = entradas_ant - saidas_ant
+
+            # 2. Busca movimentações do período
+            movimentacoes = CaixaDiario.objects.filter(
+                data__range=[dt_inicio, dt_fim]
+            ).order_by('data', 'id')
+
+            # 3. Calcula totais do período
+            total_entradas = movimentacoes.filter(tipo='E').aggregate(s=Coalesce(Sum('valor'), Decimal(0)))['s']
+            total_saidas = movimentacoes.filter(tipo='S').aggregate(s=Coalesce(Sum('valor'), Decimal(0)))['s']
+            saldo_atual = saldo_anterior + total_entradas - total_saidas
+
+            resumo = {
+                'saldo_anterior': saldo_anterior,
+                'total_entradas': total_entradas,
+                'total_saidas': total_saidas,
+                'saldo_atual': saldo_atual
+            }
+
+            # Reutiliza o serviço existente (passando ano/mês do inicio apenas para referência no título)
+            buffer = CaixaDiarioExcelService.gerar_relatorio(movimentacoes, resumo, dt_inicio.year, dt_inicio.month)
+
+
+        elif tipo == 'socios':
+            # === CORREÇÃO: Volta a filtrar pelas datas selecionadas ===
+            dados = LancamentoSocio.objects.filter(
+                data__range=[dt_inicio, dt_fim]
+            ).select_related('socio', 'categoria').order_by('data')
+
+            # Gera Excel
+            output = io.BytesIO()
+            workbook = xlsxwriter.Workbook(output, {'in_memory': True})
+            worksheet = workbook.add_worksheet("Sócios")
+
+            # Formatos
+            bold = workbook.add_format({'bold': True, 'bg_color': '#f0f0f0', 'border': 1})
+            date_format = workbook.add_format({'num_format': 'dd/mm/yyyy', 'border': 1})
+            money_format = workbook.add_format({'num_format': '#,##0.00', 'border': 1})
+            cell_format = workbook.add_format({'border': 1})
+
+            # Cabeçalho
+            headers = ['Data', 'Sócio', 'Categoria', 'Descrição/Obs', 'Valor']
+            worksheet.write_row('A1', headers, bold)
+
+            # Dados
+            for idx, item in enumerate(dados, start=1):
+                # Data
+                worksheet.write(idx, 0, item.data, date_format)
+                
+                # Nome do Sócio
+                worksheet.write(idx, 1, item.socio.nome if item.socio else 'Indefinido', cell_format)
+                
+                # Categoria
+                worksheet.write(idx, 2, item.categoria.nome if item.categoria else '-', cell_format)
+                
+                # Descrição / Observação (Proteção contra erro de atributo)
+                # Tenta pegar 'observacao', se não existir tenta 'descricao' ou 'obs'.
+                obs_texto = getattr(item, 'observacao', getattr(item, 'descricao', getattr(item, 'obs', '')))
+                worksheet.write(idx, 3, obs_texto, cell_format)
+                
+                # Valor
+                worksheet.write(idx, 4, item.valor, money_format)
+
+            # Ajuste de largura das colunas
+            worksheet.set_column('A:A', 12)
+            worksheet.set_column('B:C', 25)
+            worksheet.set_column('D:D', 45)
+            worksheet.set_column('E:E', 15)
+            
+            workbook.close()
+            output.seek(0)
+            buffer = output
+
+
         elif tipo == 'comissoes':
-            dados = ContratoRT.objects.filter(
-                data_pagamento__range=[dt_inicio, dt_fim],
-                valor_pago__isnull=False
-            ).select_related('arquiteta').order_by('data_pagamento')
+            # CORREÇÃO: Usando ComissaoArquiteto
+            dados = ComissaoArquiteto.objects.filter(
+                data_pagamento__range=[dt_inicio, dt_fim]
+            ).select_related('arquiteto', 'contrato_rt', 'contrato_rt__cliente').order_by('data_pagamento')
             buffer = ComissaoExcelService.gerar_relatorio_comissoes(dados)
             
         elif tipo == 'folha':
@@ -476,6 +569,9 @@ def exportar_consolidado_periodo(request):
 
     dt_inicio = parse_date(inicio_str)
     dt_fim = parse_date(fim_str)
+
+    if not dt_inicio or not dt_fim:
+        return HttpResponse("Datas inválidas.", status=400)
     
     output = io.BytesIO()
     wb = xlsxwriter.Workbook(output, {'in_memory': True})
@@ -519,45 +615,35 @@ def exportar_consolidado_periodo(request):
             PrestacaoEmprestimoExcelService.gerar_relatorio_prestacoes(PrestacaoEmprestimo.objects.filter(data_vencimento__range=[dt_inicio, dt_fim]).order_by('data_vencimento'), workbook=wb)
         
         if 'comissoes' in relatorios:
-            qs_comissao = ContratoRT.objects.select_related('arquiteta').filter(valor_pago__isnull=False, data_pagamento__range=[dt_inicio, dt_fim]).order_by('-data_pagamento')
+            # CORREÇÃO: Usando ComissaoArquiteto
+            qs_comissao = ComissaoArquiteto.objects.filter(
+                data_pagamento__range=[dt_inicio, dt_fim]
+            ).select_related('arquiteto', 'contrato_rt', 'contrato_rt__cliente').order_by('-data_pagamento')
             ComissaoExcelService.gerar_relatorio_comissoes(qs_comissao, workbook=wb)
 
         if 'folha' in relatorios:
             FuncionarioFolhaExcelService.gerar_relatorio_folha(FolhaPagamento.objects.filter(data_referencia__range=[dt_inicio, dt_fim]).order_by('data_referencia'), workbook=wb)
         
         if 'receber' in relatorios:
-            qs_receber_lista = Receber.objects.filter(data_vencimento__range=[dt_inicio, dt_fim]).order_by('data_vencimento')
-            ReceberExcelService.gerar_relatorio_receber(qs_receber_lista, workbook=wb, ano=dt_inicio.year)
+            if not dt_inicio or not dt_fim:
+                return HttpResponse("Datas inválidas.", status=400)
+
+            qs_receber_lista = Receber.objects.filter(
+                data_vencimento__range=[dt_inicio, dt_fim]
+            ).order_by('data_vencimento')
+
+            ReceberExcelService.gerar_relatorio_receber(
+                qs_receber_lista,
+                workbook=wb,
+                ano=dt_inicio.year
+            )
         
-        # --- ADICIONADO: Pagar e Receber Mensal no Consolidado por Período ---
         if 'pagar_mensal' in relatorios:
-            # Usa o modo "Range" do serviço
             RelatorioPagarMensalService.gerar_arquivo(inicio=dt_inicio, fim=dt_fim, workbook=wb)
 
         if 'receber_mensal' in relatorios:
-             # Usa o modo "Range" do serviço
             RelatorioReceberMensalService.gerar_arquivo(inicio=dt_inicio, fim=dt_fim, workbook=wb)
-        # ---------------------------------------------------------------------
 
-        # --- Relatório de Análise (Vendas/Desempenho) ---
-        if 'vendas' in relatorios or 'vendas_compras' in relatorios:
-            qs_receber_vendas = Receber.objects.filter(data_vencimento__range=[dt_inicio, dt_fim]).order_by('data_vencimento')
-            
-            dados_pagar = list(chain(
-                Boleto.objects.filter(data_vencimento__range=[dt_inicio, dt_fim]),
-                GastoUtilidade.objects.filter(data_vencimento__range=[dt_inicio, dt_fim]),
-                Cheque.objects.filter(data_emissao__range=[dt_inicio, dt_fim]),
-                GastoContabilidade.objects.filter(data_vencimento__range=[dt_inicio, dt_fim]),
-                FaturaCartao.objects.filter(data_vencimento__range=[dt_inicio, dt_fim]),
-                GastoGeral.objects.filter(data_gasto__range=[dt_inicio, dt_fim]),
-                GastoVeiculoConsorcio.objects.filter(data_vencimento__range=[dt_inicio, dt_fim]),
-                GastoImovel.objects.filter(data_vencimento__range=[dt_inicio, dt_fim]),
-                GastoGasolina.objects.filter(data_gasto__range=[dt_inicio, dt_fim]),
-                PrestacaoEmprestimo.objects.filter(data_vencimento__range=[dt_inicio, dt_fim]),
-                ContratoRT.objects.filter(data_pagamento__range=[dt_inicio, dt_fim], valor_pago__isnull=False),
-                FolhaPagamento.objects.filter(data_referencia__range=[dt_inicio, dt_fim])
-            ))
-            VendasExcelService.gerar_relatorio_vendas(qs_receber_vendas, dados_pagar, workbook=wb)
 
     except Exception as e:
         wb.close()
@@ -573,6 +659,8 @@ def exportar_consolidado_periodo(request):
             custom_name += '.xlsx'
         filename = custom_name
     else:
+        if not dt_inicio or not dt_fim:
+            return HttpResponse("Datas inválidas.", status=400)
         periodo_str = f"{dt_inicio.strftime('%d%m')}_{dt_fim.strftime('%d%m')}"
         filename = f"Consolidado_Periodo_{periodo_str}.xlsx"
     
@@ -580,75 +668,6 @@ def exportar_consolidado_periodo(request):
     return FileResponse(output, as_attachment=True, filename=filename)
 
 
-def exportar_vendas(request):
-    # 1. Pega ano e MÊS (novo) da URL
-    ano_atual = datetime.now().year
-    mes_atual = datetime.now().month
-    
-    try:
-        ano = int(request.GET.get('ano', ano_atual))
-    except ValueError:
-        ano = ano_atual
-        
-    mes_param = request.GET.get('mes')
-    mes = int(mes_param) if mes_param else None
-
-    # 2. Busca e Filtra dados de Receber (Vendas)
-    qs_receber = Receber.objects.all()
-    dados_receber = []
-    for r in qs_receber:
-        if r.data_vencimento and r.data_vencimento.year == ano:
-            # Se mês foi informado, filtra também pelo mês
-            if mes and r.data_vencimento.month != mes:
-                continue
-            dados_receber.append(r)
-    
-    # 3. Busca e Unifica dados de Pagar (Compras/Despesas)
-    qs_boletos = Boleto.objects.all()
-    qs_gerais = GastoGeral.objects.all()
-    qs_cartao = FaturaCartao.objects.all()
-    qs_util = GastoUtilidade.objects.all()
-    qs_cheque = Cheque.objects.all()
-    qs_emp = PrestacaoEmprestimo.objects.all()
-    qs_veic = GastoVeiculoConsorcio.objects.all()
-    qs_cont = GastoContabilidade.objects.all()
-    qs_imov = GastoImovel.objects.all()
-    qs_gas = GastoGasolina.objects.all()
-    qs_folha = FolhaPagamento.objects.all()
-    qs_comissao = ComissaoArquiteto.objects.all()
-
-    todos_pagar = list(chain(
-        qs_boletos, qs_gerais, qs_cartao, qs_util, qs_cheque, 
-        qs_emp, qs_veic, qs_cont, qs_imov, qs_gas, qs_folha, qs_comissao
-    ))
-    
-    # 4. Filtra Compras pelo Ano (e Mês se selecionado)
-    dados_pagar_filtrados = []
-    for item in todos_pagar:
-        data = getattr(item, 'data_vencimento', None)
-        if not data:
-            data = getattr(item, 'data_gasto', None)
-        if not data:
-            data = getattr(item, 'data_pagamento', None)
-        if not data:
-            data = getattr(item, 'data_referencia', None)
-
-        if data and data.year == ano:
-            if mes and data.month != mes:
-                continue
-            dados_pagar_filtrados.append(item)
-
-    if mes:
-        nome_arquivo = f"Relatorio_Vendas_Compras_{mes:02d}_{ano}.xlsx"
-    else:
-        nome_arquivo = f"Relatorio_Desempenho_Vendas_Compras_{ano}.xlsx"
-
-    try:
-        buffer = VendasExcelService.gerar_relatorio_vendas(dados_receber, dados_pagar_filtrados)
-        return FileResponse(buffer, as_attachment=True, filename=nome_arquivo)
-    except Exception as e:
-        return HttpResponse(f"Erro interno: {str(e)}", status=500)
-    
 
 def exportar_caixa_diario(request):
     hoje = date.today()
@@ -733,6 +752,9 @@ def exportar_pagar_mensal(request):
     if dt_inicio and dt_fim:
         inicio = parse_date(dt_inicio)
         fim = parse_date(dt_fim)
+
+        if not inicio or not fim:
+            return HttpResponse("Datas inválidas.", status=400)
         excel_file = RelatorioPagarMensalService.gerar_arquivo(inicio=inicio, fim=fim)
         filename = f"Pagar_{inicio.strftime('%d%m')}_{fim.strftime('%d%m')}.xlsx"
     else:
@@ -751,6 +773,10 @@ def exportar_receber_mensal(request):
     if dt_inicio and dt_fim:
         inicio = parse_date(dt_inicio)
         fim = parse_date(dt_fim)
+        
+        
+        if not inicio or not fim:
+            return HttpResponse("Datas inválidas.", status=400)
         excel_file = RelatorioReceberMensalService.gerar_arquivo(inicio=inicio, fim=fim)
         filename = f"Receber_{inicio.strftime('%d%m')}_{fim.strftime('%d%m')}.xlsx"
     else:
@@ -763,25 +789,50 @@ def exportar_receber_mensal(request):
     return response
 
 def exportar_pacote(request, tipo_pacote):
+    # Tenta pegar datas específicas do request (para exportação por período)
+    dt_inicio_get = request.GET.get('data_inicio')
+    dt_fim_get = request.GET.get('data_fim')
+    
     hoje = datetime.now()
-    try:
-        ano = int(request.GET.get('ano', hoje.year))
-        mes = int(request.GET.get('mes', hoje.month))
-    except ValueError:
-        ano = hoje.year
-        mes = hoje.month
-
-    dt_inicio = date(ano, mes, 1)
-    ultimo_dia = calendar.monthrange(ano, mes)[1]
-    dt_fim = date(ano, mes, ultimo_dia)
+    
+    # Lógica de definição de datas
+    if dt_inicio_get and dt_fim_get:
+        try:
+            dt_inicio = parse_date(dt_inicio_get)
+            dt_fim = parse_date(dt_fim_get)
+            # Para serviços que exigem ano/mês estrito, usamos a data de início como referência
+            ano = dt_inicio.year
+            mes = dt_inicio.month
+            is_periodo_customizado = True
+        except:
+             return HttpResponse("Datas inválidas.", status=400)
+    else:
+        # Fallback para lógica mensal original
+        try:
+            ano = int(request.GET.get('ano', hoje.year))
+            mes = int(request.GET.get('mes', hoje.month))
+        except ValueError:
+            ano = hoje.year
+            mes = hoje.month
+        
+        dt_inicio = date(ano, mes, 1)
+        ultimo_dia = calendar.monthrange(ano, mes)[1]
+        dt_fim = date(ano, mes, ultimo_dia)
+        is_periodo_customizado = False
 
     output = io.BytesIO()
     wb = xlsxwriter.Workbook(output, {'in_memory': True})
     
-    filename = f"Pacote_{tipo_pacote.upper()}_{mes:02d}_{ano}.xlsx"
+    # Nome do arquivo ajustado conforme o tipo de filtro
+    if is_periodo_customizado:
+        periodo_str = f"{dt_inicio.strftime('%d%m')}_{dt_fim.strftime('%d%m')}"
+        filename = f"Pacote_{tipo_pacote.upper()}_{periodo_str}.xlsx"
+    else:
+        filename = f"Pacote_{tipo_pacote.upper()}_{mes:02d}_{ano}.xlsx"
 
     try:
         if tipo_pacote == 'pagar':
+            # Todos os services abaixo aceitam querysets, então o filtro por range funciona perfeitamente
             BoletoExcelService.gerar_relatorio_geral(
                 Boleto.objects.filter(data_vencimento__range=[dt_inicio, dt_fim]).order_by('data_vencimento'), 
                 workbook=wb
@@ -831,48 +882,53 @@ def exportar_pacote(request, tipo_pacote):
                 workbook=wb
             )
             ComissaoExcelService.gerar_relatorio_comissoes(
-                ContratoRT.objects.select_related('arquiteta').filter(valor_pago__isnull=False, data_pagamento__range=[dt_inicio, dt_fim]).order_by('-data_pagamento'), 
+                ComissaoArquiteto.objects.select_related('arquiteto', 'contrato_rt', 'contrato_rt__cliente')
+                .filter(data_pagamento__range=[dt_inicio, dt_fim])
+                .order_by('-data_pagamento'), 
                 workbook=wb
             )
             FuncionarioFolhaExcelService.gerar_relatorio_folha(
                 FolhaPagamento.objects.filter(data_referencia__range=[dt_inicio, dt_fim]).order_by('data_referencia'), 
                 workbook=wb
             )
-            # Passando argumentos nomeados corretamente:
-            RelatorioPagarMensalService.gerar_arquivo(mes=mes, ano=ano, workbook=wb)
+            # Atualizado para aceitar range se disponível
+            RelatorioPagarMensalService.gerar_arquivo(inicio=dt_inicio, fim=dt_fim, workbook=wb)
 
         elif tipo_pacote == 'sebrae':
+            # Nota: Alguns relatórios gerenciais do pacote SEBRAE são projetados para lógica MENSAL/ANUAL estrita.
+            # Nestes casos, usamos o ano/mês da data de INÍCIO como referência.
+            
             SocioExcelService.gerar_planilha_anual(ano=ano, workbook=wb)
             
-            qs_receber = Receber.objects.filter(data_vencimento__year=ano)
-            qs_pagar_all = list(chain(
-                Boleto.objects.filter(data_vencimento__year=ano),
-                GastoGeral.objects.filter(data_gasto__year=ano),
-                FaturaCartao.objects.filter(data_vencimento__year=ano),
-                GastoUtilidade.objects.filter(data_vencimento__year=ano),
-            ))
-            VendasExcelService.gerar_relatorio_vendas(qs_receber, qs_pagar_all, workbook=wb)
+            # Caixa Diário (Lógica adaptada para o range, mas mantendo a estrutura do service)
+            # Se for range customizado, o saldo anterior é calculado até o dia anterior ao inicio
+            entradas_ant = CaixaDiario.objects.filter(data__lt=dt_inicio, tipo='E').aggregate(s=Coalesce(Sum('valor'), Decimal(0)))['s']
+            saidas_ant = CaixaDiario.objects.filter(data__lt=dt_inicio, tipo='S').aggregate(s=Coalesce(Sum('valor'), Decimal(0)))['s']
             
-            data_inicio_caixa = date(ano, mes, 1)
-            entradas_ant = CaixaDiario.objects.filter(data__lt=data_inicio_caixa, tipo='E').aggregate(s=Coalesce(Sum('valor'), Decimal(0)))['s']
-            saidas_ant = CaixaDiario.objects.filter(data__lt=data_inicio_caixa, tipo='S').aggregate(s=Coalesce(Sum('valor'), Decimal(0)))['s']
+            # Movimentações dentro do range exato
+            mov_caixa = CaixaDiario.objects.filter(data__range=[dt_inicio, dt_fim]).order_by('data')
+            
+            total_entradas_periodo = mov_caixa.filter(tipo='E').aggregate(s=Coalesce(Sum('valor'), Decimal(0)))['s']
+            total_saidas_periodo = mov_caixa.filter(tipo='S').aggregate(s=Coalesce(Sum('valor'), Decimal(0)))['s']
+
             resumo_caixa = {
                 'saldo_anterior': entradas_ant - saidas_ant,
-                'total_entradas': CaixaDiario.objects.filter(data__year=ano, data__month=mes, tipo='E').aggregate(s=Coalesce(Sum('valor'), Decimal(0)))['s'],
-                'total_saidas': CaixaDiario.objects.filter(data__year=ano, data__month=mes, tipo='S').aggregate(s=Coalesce(Sum('valor'), Decimal(0)))['s'],
+                'total_entradas': total_entradas_periodo,
+                'total_saidas': total_saidas_periodo,
             }
             resumo_caixa['saldo_atual'] = resumo_caixa['saldo_anterior'] + resumo_caixa['total_entradas'] - resumo_caixa['total_saidas']
             
-            mov_caixa = CaixaDiario.objects.filter(data__year=ano, data__month=mes).order_by('data')
+            # O service pede ano/mes para título, passamos o do inicio
             CaixaDiarioExcelService.gerar_relatorio(mov_caixa, resumo_caixa, ano, mes, workbook=wb)
             
+            # Movimento Banco (Lógica similar ao Caixa)
             bancos = Banco.objects.all()
             for banco in bancos:
                 entradas_b = MovimentoBanco.objects.filter(banco=banco, data__lt=dt_inicio, tipo='E').aggregate(s=Coalesce(Sum('valor'), Decimal(0)))['s']
                 saidas_b = MovimentoBanco.objects.filter(banco=banco, data__lt=dt_inicio, tipo='S').aggregate(s=Coalesce(Sum('valor'), Decimal(0)))['s']
                 saldo_ant_b = banco.saldo_inicial + entradas_b - saidas_b
                 
-                movs_b = MovimentoBanco.objects.filter(banco=banco, data__year=ano, data__month=mes).order_by('data')
+                movs_b = MovimentoBanco.objects.filter(banco=banco, data__range=[dt_inicio, dt_fim]).order_by('data')
                 tot_ent = sum(m.valor for m in movs_b if m.tipo == 'E')
                 tot_sai = sum(m.valor for m in movs_b if m.tipo == 'S')
                 
@@ -884,10 +940,13 @@ def exportar_pacote(request, tipo_pacote):
                 }
                 MovimentoBancoExcelService.gerar_excel(banco, movs_b, resumo_b, ano, mes, workbook=wb)
 
-            RelatorioReceberMensalService.gerar_arquivo(mes=mes, ano=ano, workbook=wb)
-            RelatorioPagarMensalService.gerar_arquivo(mes=mes, ano=ano, workbook=wb)
+            # Services mensais atualizados para aceitar range
+            RelatorioReceberMensalService.gerar_arquivo(inicio=dt_inicio, fim=dt_fim, workbook=wb)
+            RelatorioPagarMensalService.gerar_arquivo(inicio=dt_inicio, fim=dt_fim, workbook=wb)
             
-            RelatorioFluxoCaixaExport.gerar_excel(dt_inicio, 31, "Mensal", workbook=wb)
+            # Fluxo de Caixa (calcula dias com base no delta)
+            dias_delta = (dt_fim - dt_inicio).days + 1
+            RelatorioFluxoCaixaExport.gerar_excel(dt_inicio, dias_delta, "Periodo", workbook=wb)
 
         else:
             return HttpResponse("Tipo de pacote inválido", status=400)
@@ -900,3 +959,155 @@ def exportar_pacote(request, tipo_pacote):
     wb.close()
     output.seek(0)
     return FileResponse(output, as_attachment=True, filename=filename)
+
+
+# Em apps/financeiro/pagar/views.py ou local similar
+
+
+def download_holerite_view(request, folha_id):
+    folha = FolhaPagamento.objects.get(id=folha_id)
+    funcionario = folha.funcionario
+    dados_trabalhistas = getattr(funcionario, 'dados_trabalhistas', None)
+
+    # 1. Definir Título e Tipo Baseado em Regra de Negócio
+    # Se você tiver um campo "tipo_folha" no model, use-o. Senão, deduza.
+    titulo = "RECIBO DE PAGAMENTO DE SALÁRIO"
+    if "13" in (folha.observacoes or ""):
+        titulo = "RECIBO DE 13º SALÁRIO"
+    elif "Ferias" in (folha.observacoes or ""):
+        titulo = "RECIBO DE FÉRIAS"
+
+    # 2. Construir Lista de Eventos (Dinâmica)
+    eventos = []
+    
+    # Exemplo: Salário (Provento)
+    if folha.salario_real > 0:
+        eventos.append({
+            'codigo': '001', 
+            'descricao': 'SALÁRIO BASE', 
+            'ref': '30d', 
+            'vencimento': float(folha.salario_real),
+            'desconto': 0.0
+        })
+
+    # Exemplo: Horas Extras
+    if folha.horas_extras_valor > 0:
+        eventos.append({
+            'codigo': '002', 
+            'descricao': 'HORAS EXTRAS', 
+            'ref': '', 
+            'vencimento': float(folha.horas_extras_valor),
+            'desconto': 0.0
+        })
+
+    # Exemplo: 1/3 Férias
+    if folha.ferias_terco > 0:
+        eventos.append({
+            'codigo': '003',
+            'descricao': '1/3 FÉRIAS CONSTITUCIONAL',
+            'vencimento': float(folha.ferias_terco),
+            'desconto': 0.0
+        })
+        
+    # Exemplo: Descontos (Adiantamentos/Vales)
+    if folha.adiantamento > 0:
+        eventos.append({
+            'codigo': '101',
+            'descricao': 'ADIANTAMENTO SALARIAL',
+            'vencimento': 0.0,
+            'desconto': float(folha.adiantamento)
+        })
+
+    # Calculando Totais (Pode pegar direto do Model se tiver campo calculado)
+    total_vencimentos = sum(e['vencimento'] for e in eventos)
+    total_descontos = sum(e['desconto'] for e in eventos)
+    
+    # Estrutura final de dados
+    dados_holerite = {
+        'empregador': {
+            'nome': 'ZIRK MARCENARIA E INTERIORES', # Pode vir de ConfiguracaoGlobal
+            'cnpj': '00.000.000/0001-00',
+            'endereco': 'Rua Exemplo, 123, Bairro, Cidade-UF'
+        },
+        'funcionario': {
+            'codigo': str(funcionario.id),
+            'nome': funcionario.nome.upper(),
+            'cbo': dados_trabalhistas.cbo if dados_trabalhistas else '',
+            'cargo': dados_trabalhistas.funcao.upper() if dados_trabalhistas else 'NÃO INFORMADO',
+            'admissao': dados_trabalhistas.data_admissao_contabilidade.strftime('%d/%m/%Y') if dados_trabalhistas else ''
+        },
+        'cabecalho': {
+            'titulo': titulo,
+            'referencia': folha.data_referencia.strftime('%m/%Y')
+        },
+        'eventos': eventos,
+        'totais': {
+            'bruto': total_vencimentos,
+            'descontos': total_descontos,
+            'liquido': float(folha.total_funcionario) - float(folha.vale) - float(folha.adiantamento) # Ajuste sua lógica de líquido aqui
+        },
+        'bases': {
+            # Se tiver esses dados salvos, preencha aqui
+            'salario_base': float(folha.salario_real),
+            'inss_base': float(folha.salario_real), # Exemplo
+            'fgts_base': float(folha.salario_real), # Exemplo
+            'fgts_mes': float(folha.salario_real) * 0.08
+        }
+    }
+
+    # 3. Gerar o Arquivo
+    output = io.BytesIO()
+    service = HoleriteExcelService(output)
+    service.gerar_recibo(dados_holerite)
+    service.close()
+    
+    output.seek(0)
+    
+    # 4. Retornar HTTP Response
+    filename = f"Holerite_{funcionario.nome}_{folha.data_referencia.strftime('%m-%Y')}.xlsx"
+    response = HttpResponse(
+        output,
+        content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    )
+    response['Content-Disposition'] = f'attachment; filename="{filename}"'
+    
+    return response
+
+
+
+
+@login_required
+def exportar_consolidado_anual(request):
+    try:
+        # CORREÇÃO: Usar datetime.now().year em vez de datetime.datetime.now().year
+        ano = int(request.GET.get('ano', datetime.now().year))
+    except ValueError:
+        # CORREÇÃO AQUI TAMBÉM
+        ano = datetime.now().year
+
+    service = RelatorioAnualConsolidado(ano)
+    excel_file = service.gerar()
+
+    filename = f"Consolidado_Despesas_{ano}.xlsx"
+    response = HttpResponse(
+        excel_file,
+        content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    )
+    response['Content-Disposition'] = f'attachment; filename="{filename}"'
+    
+    return response
+
+def exportar_fluxo_caixa(request):
+    """
+    Gera o Fluxo de Caixa padrão de 7 dias a partir de hoje.
+    """
+    dt_inicio = date.today()
+    num_dias = 7
+    periodo_nome = "Próximos 7 Dias"
+
+    try:
+        buffer = RelatorioFluxoCaixaExport.gerar_excel(dt_inicio, num_dias, periodo_nome)
+        filename = f"Fluxo_Caixa_7dias_{dt_inicio.strftime('%d%m')}.xlsx"
+        return FileResponse(buffer, as_attachment=True, filename=filename)
+    except Exception as e:
+        return HttpResponse(f"Erro ao gerar fluxo de caixa: {str(e)}", status=500)

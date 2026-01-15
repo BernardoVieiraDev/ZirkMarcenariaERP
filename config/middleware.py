@@ -1,5 +1,10 @@
-from django.shortcuts import redirect
 from django.conf import settings
+from django.core.cache import cache
+from django.shortcuts import redirect
+from django.utils import timezone
+
+from apps.ferias.service import atualizar_todos_periodos
+
 
 class LoginRequiredMiddleware:
     def __init__(self, get_response):
@@ -22,3 +27,31 @@ class LoginRequiredMiddleware:
                 return redirect(f"{login_url}?next={path}")
 
         return self.get_response(request)
+    
+class VerificacaoFeriasMiddleware:
+    def __init__(self, get_response):
+        self.get_response = get_response
+
+    def __call__(self, request):
+        # Só roda se o usuário estiver logado para não pesar acessos públicos (se houver)
+        if request.user.is_authenticated:
+            # Tenta pegar uma chave no cache chamada 'ferias_verificadas_hoje'
+            # A chave é baseada na data de hoje (ex: ferias_check_2023-10-27)
+            hoje = timezone.now().date().isoformat()
+            chave_cache = f'ferias_check_{hoje}'
+            
+            ja_verificou = cache.get(chave_cache)
+
+            if not ja_verificou:
+                # Se não verificou hoje ainda, roda a atualização
+                try:
+                    atualizar_todos_periodos()
+                    # Salva no cache por 24h para não rodar de novo hoje
+                    # (86400 segundos = 1 dia)
+                    cache.set(chave_cache, True, 86400)
+                except Exception as e:
+                    # Loga o erro mas não para o site
+                    print(f"Erro ao atualizar férias automáticas: {e}")
+
+        response = self.get_response(request)
+        return response

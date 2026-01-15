@@ -172,6 +172,7 @@ class RelatorioReceberMensalService:
         # --- CORREÇÃO FINAL: Fechamento Condicional ---
         if should_close:
             workbook.close()
+            assert output is not None
             output.seek(0)
             return output
         

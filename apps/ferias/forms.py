@@ -1,6 +1,11 @@
 from django import forms
 from django.core.exceptions import ValidationError
-from .models import Ferias, PeriodoAquisitivo, PagamentoFerias, RecibosContabilidade
+
+from apps.funcionarios.models import Funcionario
+
+from .models import (Ferias, PagamentoFerias, PeriodoAquisitivo,
+                     RecibosContabilidade)
+
 
 class FeriasForm(forms.ModelForm):
     class Meta:
@@ -69,7 +74,7 @@ class FeriasForm(forms.ModelForm):
 
         return cleaned_data
 
-
+    
 class PeriodoAquisitivoForm(forms.ModelForm):
     class Meta:
         model = PeriodoAquisitivo
@@ -118,3 +123,61 @@ class RecibosContabilidadeForm(forms.ModelForm):
             'recibo_de_ferias_contabilidade': 'Data do Recibo (Contábil)',
             'observacoes': 'Observações'
         }
+
+
+class FeriasColetivasForm(forms.Form):
+    funcionarios = forms.ModelMultipleChoiceField(
+        queryset=Funcionario.objects.filter(is_deleted=False).order_by('nome'),
+        widget=forms.CheckboxSelectMultiple(attrs={'class': 'form-check-input'}),
+        label="Selecione os Funcionários"
+    )
+    data_inicio = forms.DateField(
+        widget=forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
+        label="Data Início"
+    )
+    data_fim = forms.DateField(
+        widget=forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
+        label="Data Fim"
+    )
+    
+    # Campos de Recesso e Carnaval
+    ferias_no_recesso_final_ano = forms.IntegerField(
+        required=False, 
+        initial=0,
+        min_value=0,
+        widget=forms.NumberInput(attrs={'class': 'form-control', 'min': 0}),
+        label="Dias de Recesso (Final de Ano)"
+    )
+    ferias_no_carnaval = forms.IntegerField(
+        required=False, 
+        initial=0,
+        min_value=0,
+        widget=forms.NumberInput(attrs={'class': 'form-control', 'min': 0}),
+        label="Dias de Carnaval"
+    )
+
+    observacao_geral = forms.CharField(
+        widget=forms.Textarea(attrs={'class': 'form-control', 'rows': 2}),
+        required=False,
+        label="Observação (será adicionada a todos)"
+    )
+
+    def clean(self):
+        cleaned_data = super().clean()
+        inicio = cleaned_data.get('data_inicio')
+        fim = cleaned_data.get('data_fim')
+        recesso = cleaned_data.get('ferias_no_recesso_final_ano') or 0
+        carnaval = cleaned_data.get('ferias_no_carnaval') or 0
+
+        if inicio and fim:
+            if inicio > fim:
+                raise forms.ValidationError("A data de início não pode ser maior que a data fim.")
+            
+            dias_totais = (fim - inicio).days + 1
+            if (recesso + carnaval) > dias_totais:
+                raise forms.ValidationError(
+                    f"A soma de Recesso ({recesso}) e Carnaval ({carnaval}) não pode exceder "
+                    f"a duração total das férias ({dias_totais} dias)."
+                )
+        
+        return cleaned_data

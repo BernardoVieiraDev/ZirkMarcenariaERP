@@ -1,5 +1,6 @@
 from django.db import models
 from decimal import Decimal
+from apps.configuracoes.mixin import SoftDeleteMixin
 from apps.funcionarios.models import Funcionario
 
 class MotivoDemissao(models.TextChoices):
@@ -13,7 +14,7 @@ class TipoOutro(models.TextChoices):
     PROVENTO = 'P', 'Provento (+)'
     DESCONTO = 'D', 'Desconto (-)'
 
-class Rescisao(models.Model):
+class Rescisao(SoftDeleteMixin):
     funcionario = models.OneToOneField(Funcionario, on_delete=models.CASCADE, related_name='rescisao')
     data_demissao = models.DateField(verbose_name="Data de Demissão")
     motivo = models.CharField(max_length=3, choices=MotivoDemissao.choices, default=MotivoDemissao.SEM_JUSTA_CAUSA)

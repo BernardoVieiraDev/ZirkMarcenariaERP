@@ -1,0 +1,58 @@
+# --- Python & Django ---
+__pycache__/
+*.py[cod]
+*$py.class
+*.log
+*.pot
+*.pyc
+
+# --- Ambiente Virtual ---
+venv/
+env/
+.venv/
+.env
+
+# --- Banco de Dados Local ---
+db.sqlite3
+db.sqlite3-journal
+
+# --- Mídia e Estáticos Coletados ---
+# Mantém a pasta media, mas ignora o conteúdo
+media/*
+!media/.gitkeep
+# Ignora a pasta onde o collectstatic joga os arquivos (será gerada no servidor)
+staticfiles/
+
+# --- IDEs e Editores ---
+.idea/
+.vscode/
+.DS_Store
+
+# --- Outros ---
+local_settings.py
+
+# --- Python & Django ---
+__pycache__/
+*.py[cod]
+*.log
+*.pot
+*.pyc
+
+# --- Ambiente Virtual e Configurações ---
+.env
+venv/
+env/
+.venv/
+
+# --- Banco de Dados Local (SQLite) ---
+db.sqlite3
+db.sqlite3-journal
+
+# --- Mídia e Estáticos ---
+media/
+staticfiles/
+
+# --- IDEs ---
+.idea/
+.vscode/
+.DS_Store

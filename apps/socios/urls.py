@@ -14,4 +14,8 @@ urlpatterns = [
     # Rotas de Edição e Exclusão (pk deve ser inteiro)
     path('editar/<int:pk>/', views.editar_lancamento, name='editar_lancamento'),
     path('excluir/<int:pk>/', views.excluir_lancamento, name='excluir_lancamento'),
+
+path('lista-socios/', views.listar_socios, name='listar_socios'),
+    path('socio/editar/<int:pk>/', views.editar_socio, name='editar_socio'),
+    path('socio/excluir/<int:pk>/', views.excluir_socio, name='excluir_socio'),
 ]

@@ -28,6 +28,8 @@ GASTO_MODEL_CHOICES = [
     ('ComissaoArquiteto', 'Comissão Arquiteto'),
 ]
 
+
+
 class TipoGastoForm(forms.Form):
     categoria = forms.ChoiceField(
         choices=[('', '--- Selecione a Categoria ---')] + GASTO_MODEL_CHOICES,
@@ -41,16 +43,29 @@ class TipoGastoForm(forms.Form):
 # ----------------------------------------------------
 
 class GastoBaseForm(forms.ModelForm):
-    """
-    Formulário Base. 
-    REMOVIDOS: valor_pago, data_pagamento, juros (pois nem todos os filhos usam).
-    """
+    ORIGEM_CHOICES = [
+        ('BANCO', 'Conta Bancária'),
+        ('CAIXA', 'Caixa Interno (Dinheiro)'),
+    ]
+    origem_pagamento = forms.ChoiceField(
+        choices=ORIGEM_CHOICES, 
+        widget=forms.RadioSelect(attrs={'class': 'form-check-input'}),
+        initial='BANCO',
+        label="Origem do Recurso"
+    )
+
+    parcelas = forms.IntegerField(
+        initial=1, min_value=1, label="Parcelamento", required=False,
+        widget=forms.NumberInput(attrs={'class': 'form-control', 'placeholder': 'Qtd Parcelas'})
+    )
+
     class Meta:
         fields = [
+            'origem_pagamento', # Adicionado
             'descricao',
             'valor',
             'data_vencimento',
-            "banco_origem",
+            'banco_origem',
             'status',
             'forma_pagamento',
             'observacoes',
@@ -68,9 +83,25 @@ class GastoBaseForm(forms.ModelForm):
             'status': forms.Select(attrs={'class': 'form-select'}),
             'forma_pagamento': forms.Select(attrs={'class': 'form-select'}),
         }
+    def clean(self):
+        cleaned_data = super().clean()
+        origem = cleaned_data.get('origem_pagamento')
+        banco = cleaned_data.get('banco_origem')
+
+        # REGRA DE CORREÇÃO:
+        # Se escolheu CAIXA, forçamos o banco a ser None, mesmo que o usuário tenha selecionado um.
+        if origem == 'CAIXA':
+            cleaned_data['banco_origem'] = None
+        
+        # Se escolheu BANCO, o banco é obrigatório
+        elif origem == 'BANCO' and not banco:
+            self.add_error('banco_origem', 'Selecione uma conta bancária para esta operação.')
+
+        return cleaned_data
     
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self.fields['banco_origem'].required = False
         for field_name, field in self.fields.items():
             if not field.widget.attrs.get('class'):
                  field.widget.attrs['class'] = 'form-control'
@@ -84,16 +115,21 @@ class BoletoForm(GastoBaseForm):
     """Adiciona de volta os campos de pagamento que foram retirados do base"""
     class Meta:
         model = Boleto 
-        # Adiciona nota_fiscal E os campos de pagamento exclusivos
+        # Mantemos a definição dos fields como está
         fields = GastoBaseForm.Meta.fields + ['nota_fiscal', 'valor_pago', 'data_pagamento', 'juros']
         widgets = GastoBaseForm.Meta.widgets.copy()
         
-        # Widgets extras
         widgets['nota_fiscal'] = forms.TextInput(attrs={'class': 'form-control'})
         widgets['valor_pago'] = forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'})
         widgets['juros'] = forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'})
         widgets['data_pagamento'] = forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}, format='%Y-%m-%d')
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Remove o campo forma_pagamento para que o usuário não precise selecionar.
+        # O Model Boleto já possui default=FormaPagamento.BOLETO, que será usado automaticamente.
+        if 'forma_pagamento' in self.fields:
+            del self.fields['forma_pagamento']
 
 class GastoVeiculoConsorcioForm(GastoBaseForm):
     """Adiciona de volta os campos de pagamento"""
@@ -156,9 +192,13 @@ class GastoImovelForm(GastoBaseForm):
 # ----------------------------------------------------
 
 class ChequeForm(forms.ModelForm):
+    parcelas = forms.IntegerField(
+    initial=1, min_value=1, label="Parcelamento", required=False,
+    widget=forms.NumberInput(attrs={'class': 'form-control', 'placeholder': 'Qtd Parcelas'})
+    )
     class Meta:
         model = Cheque
-        fields = '__all__'
+        fields = 'descricao', 'valor','parcelas', 'data_emissao', 'numero_cheque', 'status','banco_origem', 'tipo_entidade'
         widgets = {
             'descricao': forms.TextInput(attrs={'class': 'form-control'}),
             'valor': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
@@ -168,10 +208,41 @@ class ChequeForm(forms.ModelForm):
             'tipo_entidade': forms.Select(attrs={'class': 'form-select'}),
         }
 
+        
+
 class GastoGeralForm(forms.ModelForm):
+    ORIGEM_CHOICES = [
+        ('BANCO', 'Conta Bancária'),
+        ('CAIXA', 'Caixa Interno (Dinheiro)'),
+    ]
+    origem_pagamento = forms.ChoiceField(
+        choices=ORIGEM_CHOICES,
+        widget=forms.RadioSelect(attrs={
+            'class': 'form-check-input', 
+            'onclick': 'toggleBancoField()'
+        }),
+        initial='BANCO',
+        label="Origem do Recurso"
+    )
+
     class Meta:
         model = GastoGeral
-        fields = '__all__'
+        fields = [
+            'credor',
+            'descricao',
+            'data_gasto',
+            'valor_total',
+            'valor_dinheiro_pix',
+            'valor_cartao',
+            'forma_principal_pagamento',
+            'motorista',
+            'carro',
+            'cliente',
+            'tipo_pagamento',
+            'status',
+            'forma_pagamento',
+            'banco_origem',  # <--- ADICIONE ESTE CAMPO
+        ]
         widgets = {
             'credor': forms.TextInput(attrs={'class': 'form-control'}), 
             'descricao': forms.TextInput(attrs={'class': 'form-control'}),
@@ -188,9 +259,44 @@ class GastoGeralForm(forms.ModelForm):
             'forma_pagamento': forms.Select(attrs={'class': 'form-select'}), 
         }
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['banco_origem'].required = False
+        
+        # Define inicial na edição
+        if self.instance.pk:
+            if self.instance.movimento_caixa:
+                self.fields['origem_pagamento'].initial = 'CAIXA'
+            elif self.instance.banco_origem:
+                self.fields['origem_pagamento'].initial = 'BANCO'
+
+    def clean(self):
+        cleaned_data = super().clean()
+        origem = cleaned_data.get('origem_pagamento')
+        banco = cleaned_data.get('banco_origem')
+        status = cleaned_data.get('status')
+
+        # Se escolheu CAIXA, limpa o banco
+        if origem == 'CAIXA':
+            cleaned_data['banco_origem'] = None
+        
+        # Se escolheu BANCO e está Pago, exige o banco
+        elif origem == 'BANCO' and status == 'Pago' and not banco:
+            self.add_error('banco_origem', 'Selecione a conta bancária para confirmar o pagamento.')
+
+        return cleaned_data
+
 class GastoGasolinaForm(GastoGeralForm):
     class Meta(GastoGeralForm.Meta):
         model = GastoGasolina
+        fields = [
+            'descricao',
+            'data_gasto',
+            'valor_total',
+            'carro',
+            'status',
+            'banco_origem', # Necessário pois é usado na lógica de clean() do GastoGeralForm
+        ]
 
 class PagamentoFuncionarioForm(forms.ModelForm):
     class Meta:
@@ -208,17 +314,52 @@ class PagamentoFuncionarioForm(forms.ModelForm):
             'forma_pagamento': forms.Select(attrs={'class': 'form-select'}),
         }
 
+# Em zirk_rh_financeiro/apps/financeiro/pagar/forms.py
+
 class ComissaoArquitetoForm(forms.ModelForm):
+    parcelas = forms.IntegerField(
+        initial=1, min_value=1, label="Parcelamento", required=False,
+        widget=forms.NumberInput(attrs={'class': 'form-control', 'placeholder': 'Qtd Parcelas'})
+    )
+
     class Meta:
         model = ComissaoArquiteto
         fields = '__all__'
         widgets = {
             'arquiteto': forms.Select(attrs={'class': 'form-select'}),
+            'data_vencimento': forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}, format='%Y-%m-%d'),
+            
+            # Novos widgets
             'data_pagamento': forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}, format='%Y-%m-%d'),
+            'valor_pago': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
+            
             'valor_comissao': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
             'observacoes': forms.Textarea(attrs={'rows': 3, 'class': 'form-control'}),
             'forma_pagamento': forms.Select(attrs={'class': 'form-select'}),
+            'status': forms.Select(attrs={'class': 'form-select'}),
+            'banco_origem': forms.Select(attrs={'class': 'form-select'}),
         }
+    
+    # Adicionando validação básica de banco (igual ao GastoBaseForm)
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if 'banco_origem' in self.fields:
+            self.fields['banco_origem'].required = False
+
+    def clean(self):
+        cleaned_data = super().clean()
+        status = cleaned_data.get('status')
+        banco = cleaned_data.get('banco_origem')
+        data_pgto = cleaned_data.get('data_pagamento')
+
+        # Se marcar como Pago, exige Data de Pagamento e Banco (se for o caso)
+        if status == 'Pago':
+            if not data_pgto:
+                 self.add_error('data_pagamento', 'Informe a data do pagamento para baixar o registro.')
+            # Adicione aqui logica de banco se necessário
+            
+        return cleaned_data
+
 
 class FolhaPagamentoForm(forms.ModelForm):
     class Meta:
@@ -226,7 +367,7 @@ class FolhaPagamentoForm(forms.ModelForm):
         fields = [
             'funcionario', 'data_referencia', 'salario_real', 'adiantamento',
             'ferias_terco', 'empreitada', 'decimo_terceiro', 'vale',
-            'horas_extras_valor', 'observacoes'
+            'horas_extras_valor','referencia_holerite', 'observacoes'
         ]
         widgets = {
             'funcionario': forms.Select(attrs={'class': 'form-control select2', 'placeholder': 'Selecione o funcionário'}),
@@ -238,5 +379,11 @@ class FolhaPagamentoForm(forms.ModelForm):
             'decimo_terceiro': forms.NumberInput(attrs={'class': 'form-control money-mask', 'step': '0.01'}),
             'vale': forms.NumberInput(attrs={'class': 'form-control money-mask', 'step': '0.01'}),
             'horas_extras_valor': forms.NumberInput(attrs={'class': 'form-control money-mask', 'step': '0.01'}),
+            'referencia_holerite': forms.TextInput(attrs={
+                'class': 'form-control form-control-sm text-center p-0', 
+                'style': 'width: 50px;' # Força o tamanho pequeno
+            }),            
             'observacoes': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
         }
+
+        

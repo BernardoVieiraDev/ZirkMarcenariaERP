@@ -1,0 +1,197 @@
+{% extends 'core/base.html' %}
+{% load humanize %}
+
+{% block content %}
+<style>
+    /* =======================
+       CARDS / HEADER
+       ======================= */
+    .card {
+        border-radius: 14px;
+        border: 1px solid #e5e7eb;
+    }
+
+    .card-header {
+        background: #f8fafc !important;
+        color: #1f2937 !important;
+        font-weight: 600;
+        border-bottom: 1px solid #e5e7eb;
+    }
+
+    /* =======================
+       ALERTS CLAROS
+       ======================= */
+    .alert {
+        border-radius: 12px;
+        border: 1px solid;
+    }
+
+    .alert-info {
+        background: #eff6ff;
+        border-color: #bfdbfe;
+        color: #1e3a8a;
+    }
+
+    .alert-success {
+        background: #ecfdf5;
+        border-color: #a7f3d0;
+        color: #065f46;
+    }
+
+    .alert-danger {
+        background: #fef2f2;
+        border-color: #fecaca;
+        color: #991b1b;
+    }
+
+    /* =======================
+       BOTÕES CLAROS
+       ======================= */
+    .btn-app {
+        border-radius: 12px;
+        padding: 10px 14px;
+        font-size: 14px;
+        font-weight: 600;
+        border: 1px solid;
+        background: #fff;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        transition: all .15s ease;
+        text-decoration: none;
+        color: inherit;
+    }
+
+    .btn-app:hover {
+        background: #f8fafc;
+    }
+
+    .btn-app-primary {
+        border-color: #93c5fd;
+        color: #1e3a8a;
+    }
+
+    .btn-app-success {
+        border-color: #a7f3d0;
+        color: #065f46;
+    }
+
+    .btn-app-secondary {
+        border-color: #d1d5db;
+        color: #374151;
+    }
+
+    /* =======================
+       TABLE
+       ======================= */
+    table th {
+        font-size: 13px;
+        text-transform: uppercase;
+        color: #6b7280;
+    }
+</style>
+
+<div class="container mt-4">
+    <div class="row">
+        <!-- RESUMO -->
+        <div class="col-md-4">
+            <div class="card mb-3">
+                <div class="card-header">Resumo da Empreitada</div>
+                <div class="card-body">
+                    <h4 class="fw-bold">{{ empreitada.ambiente }}</h4>
+                    <p><strong>Funcionário:</strong> {{ empreitada.funcionario.nome }}</p>
+                    <p><strong>Cliente:</strong> {{ empreitada.cliente.nome }}</p>
+                    <hr>
+
+                    <div class="alert alert-info">
+                        <strong>Valor Total</strong><br>
+                        R$ {{ empreitada.valor_total|stringformat:".2f" }}
+                    </div>
+
+                    <div class="alert alert-success">
+                        <strong>Já Retirado</strong><br>
+                        R$ {{ empreitada.total_pago|stringformat:".2f" }}
+                    </div>
+
+                    <div class="alert alert-danger">
+                        <strong>Falta Receber</strong><br>
+                        R$ {{ empreitada.valor_restante|stringformat:".2f" }}
+                    </div>
+                </div>
+            </div>
+
+            <!-- FORM PAGAMENTO -->
+            <div class="card">
+                <div class="card-header">
+                    <i class="fas fa-hand-holding-usd"></i>
+                    Lançar Pagamento / Retirada
+                </div>
+                <div class="card-body">
+                    <form method="post">
+                        {% csrf_token %}
+                        <div class="mb-3">
+                            <label class="fw-semibold">Data</label>
+                            {{ form.data }}
+                        </div>
+                        <div class="mb-3">
+                            <label class="fw-semibold">Valor (R$)</label>
+                            {{ form.valor }}
+                        </div>
+                        <div class="mb-3">
+                            <label class="fw-semibold">Observação</label>
+                            {{ form.observacao }}
+                        </div>
+
+                        <button type="submit" class="btn-app btn-app-success w-100">
+                            Confirmar Retirada
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- HISTÓRICO -->
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <span>Histórico de Retiradas</span>
+                    <a href="{% url 'empreitadas:list' %}"
+                       class="btn-app btn-app-secondary">
+                        Voltar
+                    </a>
+                </div>
+
+                <div class="card-body p-0">
+                    <table class="table mb-0">
+                        <thead>
+                            <tr>
+                                <th>Data</th>
+                                <th>Observação</th>
+                                <th class="text-end">Valor</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for pg in empreitada.pagamentos.all %}
+                            <tr>
+                                <td>{{ pg.data|date:"d/m/Y" }}</td>
+                                <td>{{ pg.observacao|default:"-" }}</td>
+                                <td class="text-end text-success fw-bold">
+                                    R$ {{ pg.valor|stringformat:".2f" }}
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="3" class="text-center py-4 text-muted">
+                                    Nenhum valor retirado ainda.
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,7 +1,9 @@
 from django.db import models
 from django.utils import timezone
 
-class Socio(models.Model):
+from apps.configuracoes.mixin import SoftDeleteMixin
+
+class Socio(SoftDeleteMixin):
     nome = models.CharField(max_length=150)
     
     def __str__(self):
@@ -32,7 +34,7 @@ class CategoriaSocio(models.Model):
     def __str__(self):
         return f"{self.get_grupo_display()} - {self.nome}"
 
-class LancamentoSocio(models.Model):
+class LancamentoSocio(SoftDeleteMixin):
     socio = models.ForeignKey(Socio, on_delete=models.CASCADE, verbose_name="Sócio")
     categoria = models.ForeignKey(CategoriaSocio, on_delete=models.PROTECT, verbose_name="Categoria")
     data = models.DateField("Data", default=timezone.now)

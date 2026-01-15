@@ -142,8 +142,8 @@ class RelatorioPagarMensalService:
         fmt = RelatorioPagarMensalService._define_formats(workbook)
 
         # Configurações de coluna
-        ws.set_column('A:A', 14); ws.set_column('B:B', 20); ws.set_column('C:C', 28)
-        ws.set_column('D:D', 40); ws.set_column('E:E', 20); ws.set_column('F:F', 16)
+        ws.set_column('A:A', 14); ws.set_column('B:B', 20); ws.set_column('C:C', 28) # type: ignore
+        ws.set_column('D:D', 40); ws.set_column('E:E', 20); ws.set_column('F:F', 16)  # type: ignore
 
         # Cabeçalho Dinâmico
         ws.set_row(0, 45)
@@ -154,9 +154,9 @@ class RelatorioPagarMensalService:
             titulo = f"RELATÓRIO DE CONTAS A PAGAR - {mes:02d}/{ano}"
             dados = RelatorioPagarMensalService._buscar_dados(mes=mes, ano=ano)
             
-        ws.merge_range('A1:F1', titulo, fmt['title'])
+        ws.merge_range('A1:F1', titulo, fmt['title']) # type: ignore
         ws.set_row(1, 15)
-        ws.merge_range('A2:F2', "", fmt['subtitle_bar'])
+        ws.merge_range('A2:F2', "", fmt['subtitle_bar']) # type: ignore
 
         # Cabeçalhos
         ws.set_row(2, 30)
@@ -194,6 +194,7 @@ class RelatorioPagarMensalService:
         # --- CORREÇÃO FINAL: Fechamento Condicional ---
         if should_close:
             workbook.close()
+            assert output is not None
             output.seek(0)
             return output
         

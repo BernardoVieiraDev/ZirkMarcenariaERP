@@ -1,0 +1,152 @@
+{% extends 'core/base.html' %}
+{% load static %}
+
+{% block content %}
+<style>
+    /* =======================
+       CARD / HEADER
+       ======================= */
+    .card {
+        border-radius: 14px;
+        border: 1px solid #e5e7eb;
+    }
+
+    .card-header {
+        background: #f8fafc !important;
+        color: #1f2937 !important;
+        font-weight: 600;
+        border-bottom: 1px solid #e5e7eb;
+    }
+
+    /* =======================
+       ALERT ERRO
+       ======================= */
+    .alert-danger {
+        background: #fef2f2;
+        border-color: #fecaca;
+        color: #991b1b;
+        border-radius: 12px;
+    }
+
+    /* =======================
+       BOTÕES CLAROS
+       ======================= */
+    .btn-app {
+        border-radius: 12px;
+        padding: 10px 16px;
+        font-size: 14px;
+        font-weight: 600;
+        border: 1px solid;
+        background: #fff;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        transition: all .15s ease;
+        text-decoration: none;
+        color: inherit;
+    }
+
+    .btn-app:hover {
+        background: #f8fafc;
+    }
+
+    .btn-app-success {
+        border-color: #a7f3d0;
+        color: #065f46;
+    }
+
+    .btn-app-secondary {
+        border-color: #d1d5db;
+        color: #374151;
+    }
+
+    /* =======================
+       LABELS
+       ======================= */
+    label {
+        font-weight: 600;
+        color: #374151;
+    }
+</style>
+
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    {{ title }}
+                </div>
+
+                <div class="card-body">
+                    <form method="post">
+                        {% csrf_token %}
+
+                        {% if form.non_field_errors %}
+                        <div class="alert alert-danger mb-3">
+                            {{ form.non_field_errors }}
+                        </div>
+                        {% endif %}
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label>Funcionário</label>
+                                {{ form.funcionario }}
+                                {{ form.funcionario.errors }}
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label>Cliente</label>
+                                {{ form.cliente }}
+                                {{ form.cliente.errors }}
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label>Ambiente / Serviço</label>
+                            {{ form.ambiente }}
+                            {{ form.ambiente.errors }}
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-4 mb-3">
+                                <label>Valor Total (R$)</label>
+                                {{ form.valor_total }}
+                                {{ form.valor_total.errors }}
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label>Data Início</label>
+                                {{ form.data_inicio }}
+                                {{ form.data_inicio.errors }}
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label>Status</label>
+                                {{ form.status }}
+                                {{ form.status.errors }}
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label>Descrição Detalhada</label>
+                            {{ form.descricao }}
+                            {{ form.descricao.errors }}
+                        </div>
+
+                        <!-- BOTÕES -->
+                        <div class="d-flex justify-content-end gap-2 mt-4">
+                            <a href="{% url 'empreitadas:list' %}"
+                               class="btn-app btn-app-secondary">
+                                Cancelar
+                            </a>
+                            <button type="submit"
+                                    class="btn-app btn-app-success">
+                                Salvar Empreitada
+                            </button>
+                        </div>
+
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

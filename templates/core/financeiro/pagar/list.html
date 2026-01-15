@@ -217,6 +217,31 @@
     .dropdown-content button:hover { background-color: var(--slate-50); color: var(--blue-600); }
     .dropdown-content .delete-item:hover { background-color: var(--red-50); color: var(--red-500); }
 
+    /* === PAGINAÇÃO (NOVO) === */
+    .pagination-container {
+        padding: 16px 24px;
+        border-top: 1px solid var(--slate-200);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        background-color: var(--slate-50);
+    }
+    .page-info { font-size: 13px; color: var(--slate-500); }
+    .page-nav { display: flex; gap: 8px; }
+    .page-btn {
+        padding: 6px 12px;
+        border: 1px solid var(--slate-300);
+        background: white;
+        border-radius: 6px;
+        font-size: 13px;
+        color: var(--slate-600);
+        text-decoration: none;
+        transition: all 0.2s;
+    }
+    .page-btn:hover { border-color: var(--blue-500); color: var(--blue-600); }
+    .page-btn.active { background: var(--blue-500); color: white; border-color: var(--blue-500); }
+    .page-btn.disabled { opacity: 0.5; pointer-events: none; }
+
     /* === MODAIS === */
     .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.4); z-index: 1000; overflow-y: auto; padding: 20px; align-items: flex-start; justify-content: center; backdrop-filter: blur(2px); }
     .modal-overlay.open { display: flex; }
@@ -312,6 +337,11 @@
                 <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
                 <input id="searchInput" type="search" placeholder="Buscar por descrição ou fornecedor..." onkeyup="applyFilters()">
             </div>
+
+            <select id="sortOrder" class="filter-select" onchange="applyFilters()">
+                <option value="desc">Data (Mais Recentes Primeiro)</option>
+                <option value="asc">Próximas de Vencer (Antigas Primeiro)</option>
+            </select>
             
             <select id="filterStatus" class="filter-select" onchange="applyFilters()">
                 <option value="">Todos os Status</option>
@@ -331,7 +361,7 @@
 
     <div id="dash-contas" class="dashboard-section">
         <div class="section-header">
-            <h2 class="section-title">Contas a Pagar <span class="badge-count">{{ list_contas|length }}</span></h2>
+            <h2 class="section-title">Contas a Pagar <span class="badge-count">{{ list_contas.paginator.count }}</span></h2>
         </div>
         <div class="standard-card">
             <div class="table-responsive">
@@ -351,8 +381,8 @@
                         <tr class="conta-row" 
                             data-search="{{ conta.descricao|default:conta.get_model_name|lower }} {{ conta.get_model_name|lower }}"
                             data-status="{% if conta.status == 'PG' or conta.status == 'Pago' %}Pago{% elif conta.status == 'Atrasado' %}Atrasado{% else %}Pendente{% endif %}"
-                            data-tipo="{{ conta.get_tipo_classe }}">
-                            
+                            data-tipo="{{ conta.get_tipo_classe }}"
+                            data-vencimento="{{ conta.get_data_consolidada|date:'Y-m-d' }}">
                             <td>
                                 <div class="text-main">{{ conta.descricao|default:conta.get_model_name }}</div>
                                 <div class="text-sub">{{ conta.get_model_name }}</div>
@@ -381,8 +411,8 @@
                                         <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="1"/><circle cx="12" cy="5" r="1"/><circle cx="12" cy="19" r="1"/></svg>
                                     </button>
                                     <div id="menu-{{ conta.get_tipo_classe }}-{{ conta.pk }}" class="dropdown-content">
-                                        <button onclick="openRemoteModal('{% url 'pagar:pagar_edit' conta.pk %}')">Editar</button>
-                                        <button onclick="openRemoteModal('{% url 'pagar:pagar_delete' conta.pk %}')" class="delete-item">Excluir</button>
+                                        <button onclick="openRemoteModal('{% url 'pagar:pagar_edit' conta.pk %}?tipo={{ conta.get_tipo_classe }}')">Editar</button>
+                                        <button onclick="openRemoteModal('{% url 'pagar:pagar_delete' conta.pk %}?tipo={{ conta.get_tipo_classe }}')" class="delete-item">Excluir</button>
                                     </div>
                                 </div>
                             </td>
@@ -393,12 +423,29 @@
                     </tbody>
                 </table>
             </div>
+            
+            {% if list_contas.has_other_pages %}
+            <div class="pagination-container">
+                <span class="page-info">
+                    Página {{ list_contas.number }} de {{ list_contas.paginator.num_pages }}
+                </span>
+                <div class="page-nav">
+                    {% if list_contas.has_previous %}
+                        <a href="?p_contas={{ list_contas.previous_page_number }}&mes={{ mes_atual }}&ano={{ ano_atual }}" class="page-btn">← Anterior</a>
+                    {% endif %}
+                    
+                    {% if list_contas.has_next %}
+                        <a href="?p_contas={{ list_contas.next_page_number }}&mes={{ mes_atual }}&ano={{ ano_atual }}" class="page-btn">Próxima →</a>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
         </div>
     </div>
 
     <div id="dash-operacional" class="dashboard-section hidden">
         <div class="section-header">
-            <h2 class="section-title">Gastos Operacionais <span class="badge-count">{{ list_operacional|length }}</span></h2>
+            <h2 class="section-title">Gastos Operacionais <span class="badge-count">{{ list_operacional.paginator.count }}</span></h2>
         </div>
         <div class="standard-card">
             <div class="table-responsive">
@@ -418,7 +465,8 @@
                         <tr class="conta-row"
                             data-search="{{ conta.descricao|default:conta.get_model_name|lower }} {{ conta.get_model_name|lower }}"
                             data-status="Pago"
-                            data-tipo="{{ conta.get_tipo_classe }}">
+                            data-tipo="{{ conta.get_tipo_classe }}"
+                            data-vencimento="{{ conta.get_data_consolidada|date:'Y-m-d' }}"> 
                             <td>
                                 <div class="text-main">{{ conta.descricao|default:conta.get_model_name }}</div>
                                 <div class="text-sub">{{ conta.get_model_name }}</div>
@@ -441,8 +489,8 @@
                                         <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="1"/><circle cx="12" cy="5" r="1"/><circle cx="12" cy="19" r="1"/></svg>
                                     </button>
                                     <div id="menu-{{ conta.get_tipo_classe }}-{{ conta.pk }}" class="dropdown-content">
-                                        <button onclick="openRemoteModal('{% url 'pagar:pagar_edit' conta.pk %}')">Editar</button>
-                                        <button onclick="openRemoteModal('{% url 'pagar:pagar_delete' conta.pk %}')" class="delete-item">Excluir</button>
+                                        <button onclick="openRemoteModal('{% url 'pagar:pagar_edit' conta.pk %}?tipo={{ conta.get_tipo_classe }}')">Editar</button>
+                                        <button onclick="openRemoteModal('{% url 'pagar:pagar_delete' conta.pk %}?tipo={{ conta.get_tipo_classe }}')" class="delete-item">Excluir</button>
                                     </div>
                                 </div>
                             </td>
@@ -453,12 +501,29 @@
                     </tbody>
                 </table>
             </div>
+
+            {% if list_operacional.has_other_pages %}
+            <div class="pagination-container">
+                <span class="page-info">
+                    Página {{ list_operacional.number }} de {{ list_operacional.paginator.num_pages }}
+                </span>
+                <div class="page-nav">
+                    {% if list_operacional.has_previous %}
+                        <a href="?p_ops={{ list_operacional.previous_page_number }}&mes={{ mes_atual }}&ano={{ ano_atual }}" class="page-btn">← Anterior</a>
+                    {% endif %}
+                    
+                    {% if list_operacional.has_next %}
+                        <a href="?p_ops={{ list_operacional.next_page_number }}&mes={{ mes_atual }}&ano={{ ano_atual }}" class="page-btn">Próxima →</a>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
         </div>
     </div>
 
     <div id="dash-folha" class="dashboard-section hidden">
         <div class="section-header">
-            <h2 class="section-title">Folha de Pagamento <span class="badge-count">{{ list_folha|length }}</span></h2>
+            <h2 class="section-title">Folha de Pagamento <span class="badge-count">{{ list_folha.paginator.count }}</span></h2>
         </div>
         <div class="standard-card">
             <div class="table-responsive">
@@ -478,7 +543,8 @@
                         <tr class="conta-row"
                             data-search="{{ conta.funcionario.nome|lower }} folha pagamento"
                             data-status="{% if conta.status == 'PG' or conta.status == 'Pago' %}Pago{% elif conta.status == 'Atrasado' %}Atrasado{% else %}Pendente{% endif %}"
-                            data-tipo="FolhaPagamento">
+                            data-tipo="FolhaPagamento"
+                            data-vencimento="{{ conta.get_data_consolidada|date:'Y-m-d' }}"> 
                             <td>
                                 <div class="text-main">{{ conta.funcionario.nome }}</div>
                                 <div class="text-sub">Folha Mensal</div>
@@ -507,8 +573,8 @@
                                         <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="1"/><circle cx="12" cy="5" r="1"/><circle cx="12" cy="19" r="1"/></svg>
                                     </button>
                                     <div id="menu-FolhaPagamento-{{ conta.pk }}" class="dropdown-content">
-                                        <button onclick="openRemoteModal('{% url 'pagar:pagar_edit' conta.pk %}')">Editar</button>
-                                        <button onclick="openRemoteModal('{% url 'pagar:pagar_delete' conta.pk %}')" class="delete-item">Excluir</button>
+                                       <button onclick="openRemoteModal('{% url 'pagar:pagar_edit' conta.pk %}?tipo={{ conta.get_tipo_classe }}')">Editar</button>
+                                        <button onclick="openRemoteModal('{% url 'pagar:pagar_delete' conta.pk %}?tipo={{ conta.get_tipo_classe }}')" class="delete-item">Excluir</button>
                                     </div>
                                 </div>
                             </td>
@@ -519,12 +585,29 @@
                     </tbody>
                 </table>
             </div>
+
+            {% if list_folha.has_other_pages %}
+            <div class="pagination-container">
+                <span class="page-info">
+                    Página {{ list_folha.number }} de {{ list_folha.paginator.num_pages }}
+                </span>
+                <div class="page-nav">
+                    {% if list_folha.has_previous %}
+                        <a href="?p_folha={{ list_folha.previous_page_number }}&mes={{ mes_atual }}&ano={{ ano_atual }}" class="page-btn">← Anterior</a>
+                    {% endif %}
+                    
+                    {% if list_folha.has_next %}
+                        <a href="?p_folha={{ list_folha.next_page_number }}&mes={{ mes_atual }}&ano={{ ano_atual }}" class="page-btn">Próxima →</a>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
         </div>
     </div>
 
     <div id="dash-comissao" class="dashboard-section hidden">
         <div class="section-header">
-            <h2 class="section-title">Comissões <span class="badge-count">{{ list_comissao|length }}</span></h2>
+            <h2 class="section-title">Comissões <span class="badge-count">{{ list_comissao.paginator.count }}</span></h2>
         </div>
         <div class="standard-card">
             <div class="table-responsive">
@@ -532,7 +615,7 @@
                     <thead>
                         <tr>
                             <th width="35%">Beneficiário</th>
-                            <th width="15%">Data Pagto.</th>
+                            <th width="15%">Data Vencimento</th>
                             <th width="15%">Valor Comissão</th>
                             <th width="15%">Status</th>
                             <th width="10%">Categoria</th>
@@ -544,7 +627,8 @@
                         <tr class="conta-row"
                             data-search="{{ conta.arquiteto.nome|lower }} comissão"
                             data-status="{% if conta.status == 'PG' or conta.status == 'Pago' %}Pago{% elif conta.status == 'Atrasado' %}Atrasado{% else %}Pendente{% endif %}"
-                            data-tipo="ComissaoArquiteto">
+                            data-tipo="ComissaoArquiteto"
+                            data-vencimento="{{ conta.get_data_consolidada|date:'Y-m-d' }}"> 
                             <td>
                                 <div class="text-main">{{ conta.arquiteto.nome }}</div>
                                 <div class="text-sub">Comissão</div>
@@ -573,8 +657,8 @@
                                         <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="1"/><circle cx="12" cy="5" r="1"/><circle cx="12" cy="19" r="1"/></svg>
                                     </button>
                                     <div id="menu-ComissaoArquiteto-{{ conta.pk }}" class="dropdown-content">
-                                        <button onclick="openRemoteModal('{% url 'pagar:pagar_edit' conta.pk %}')">Editar</button>
-                                        <button onclick="openRemoteModal('{% url 'pagar:pagar_delete' conta.pk %}')" class="delete-item">Excluir</button>
+                                        <button onclick="openRemoteModal('{% url 'pagar:pagar_edit' conta.pk %}?tipo={{ conta.get_tipo_classe }}')">Editar</button>
+                                        <button onclick="openRemoteModal('{% url 'pagar:pagar_delete' conta.pk %}?tipo={{ conta.get_tipo_classe }}')" class="delete-item">Excluir</button>  
                                     </div>
                                 </div>
                             </td>
@@ -585,6 +669,23 @@
                     </tbody>
                 </table>
             </div>
+
+            {% if list_comissao.has_other_pages %}
+            <div class="pagination-container">
+                <span class="page-info">
+                    Página {{ list_comissao.number }} de {{ list_comissao.paginator.num_pages }}
+                </span>
+                <div class="page-nav">
+                    {% if list_comissao.has_previous %}
+                        <a href="?p_com={{ list_comissao.previous_page_number }}&mes={{ mes_atual }}&ano={{ ano_atual }}" class="page-btn">← Anterior</a>
+                    {% endif %}
+                    
+                    {% if list_comissao.has_next %}
+                        <a href="?p_com={{ list_comissao.next_page_number }}&mes={{ mes_atual }}&ano={{ ano_atual }}" class="page-btn">Próxima →</a>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
         </div>
     </div>
 
@@ -626,15 +727,16 @@
 </div>
 
 <script>
-    // --- LÓGICA DE FILTROS GLOBAL E VISIBILIDADE INTELIGENTE ---
+    // --- LÓGICA DE FILTROS GLOBAL ---
+    // Nota: A busca cliente-side (javascript) funcionará apenas nos registros da página atual.
     function applyFilters() {
         const query = document.getElementById('searchInput').value.toLowerCase();
         const status = document.getElementById('filterStatus').value;
         const tipo = document.getElementById('filterTipo').value;
+        const sortOrder = document.getElementById('sortOrder').value; 
         
         const rows = document.querySelectorAll('.conta-row');
         
-        // 1. Filtrar as linhas
         rows.forEach(row => {
             const rowSearch = row.getAttribute('data-search') || '';
             const rowStatus = row.getAttribute('data-status');
@@ -653,62 +755,54 @@
             }
         });
 
-        // 2. Gerenciar Visibilidade das Seções e Mensagens Vazias
-        const dashboards = [
-            { id: 'dash-contas', checkboxIndex: 0 },
-            { id: 'dash-operacional', checkboxIndex: 1 },
-            { id: 'dash-folha', checkboxIndex: 2 },
-            { id: 'dash-comissao', checkboxIndex: 3 }
-        ];
+        // Ordenação
+        const tables = document.querySelectorAll('.data-table-body');
+        tables.forEach(tbody => {
+            const visibleRows = Array.from(tbody.querySelectorAll('.conta-row'));
+            visibleRows.sort((a, b) => {
+                const dateA = a.getAttribute('data-vencimento') || '0000-00-00';
+                const dateB = b.getAttribute('data-vencimento') || '0000-00-00';
+                return sortOrder === 'asc' ? dateA.localeCompare(dateB) : dateB.localeCompare(dateA);
+            });
+            visibleRows.forEach(row => tbody.appendChild(row));
+        });
 
-        const checkboxes = document.querySelectorAll('.view-toggles input[type="checkbox"]');
-
-        dashboards.forEach(dash => {
-            const section = document.getElementById(dash.id);
-            const tbody = section.querySelector('.data-table-body');
-            const hasVisibleRows = tbody.querySelectorAll('.conta-row.visible-row').length > 0;
-            const noDataMsg = tbody.querySelector('.no-data');
-
-            // Gerenciar mensagem de "Nenhum registro"
-            if (!hasVisibleRows) {
+        // Atualiza visibilidade das seções
+        const sections = ['dash-contas', 'dash-operacional', 'dash-folha', 'dash-comissao'];
+        sections.forEach(id => {
+            const section = document.getElementById(id);
+            const visibleRows = section.querySelectorAll('.conta-row.visible-row').length;
+            const noDataMsg = section.querySelector('.no-data');
+            
+            if (visibleRows === 0) {
                 if(!noDataMsg) {
+                    const tbody = section.querySelector('.data-table-body');
                     const tr = document.createElement('tr');
                     tr.className = 'no-data';
-                    tr.innerHTML = '<td colspan="6" class="empty-msg">Nenhum registro encontrado com os filtros atuais.</td>';
+                    tr.innerHTML = '<td colspan="6" class="empty-msg">Nenhum registro encontrado nesta página.</td>';
                     tbody.appendChild(tr);
                 } else {
                     noDataMsg.style.display = '';
                 }
             } else {
                 if(noDataMsg) noDataMsg.style.display = 'none';
-                
-                // --- LÓGICA INTELIGENTE: Abrir aba se houver resultado ---
-                if (tipo !== "" || query !== "") {
-                    section.classList.remove('hidden');
-                    if(checkboxes[dash.checkboxIndex]) checkboxes[dash.checkboxIndex].checked = true;
-                }
+                if (query !== "" || tipo !== "") section.classList.remove('hidden');
             }
         });
     }
 
-    // --- LÓGICA DE TOGGLE (ESCONDER/MOSTRAR) ---
     function toggleDashboard(id, checkbox) {
         const el = document.getElementById(id);
-        if (checkbox.checked) {
-            el.classList.remove('hidden');
-        } else {
-            el.classList.add('hidden');
-        }
+        checkbox.checked ? el.classList.remove('hidden') : el.classList.add('hidden');
     }
 
-    // --- Controle de Modais ---
+    // --- CONTROLE DE MODAIS ---
     function openModal(id) {
         document.getElementById(id).classList.add('open');
         document.body.style.overflow = 'hidden';
     }
     
     function closeModal(id) {
-        if(!id) return; 
         document.getElementById(id).classList.remove('open');
         document.body.style.overflow = '';
     }
@@ -717,7 +811,7 @@
         m.addEventListener('click', e => { if(e.target === m) closeModal(m.id); });
     });
 
-    // --- Lógica do Menu Dropdown ---
+    // --- MENU DROPDOWN ---
     function toggleMenu(menuId) {
         document.querySelectorAll('.dropdown-content').forEach(menu => {
             if (menu.id !== menuId) menu.classList.remove('show');
@@ -731,30 +825,79 @@
         }
     }
 
-    // --- Lógica de Criação (Passo a Passo) ---
+    // --- INTERCEPTAÇÃO DE FORMULÁRIO (AJAX) ---
+    function setupModalForm(containerId) {
+        const container = document.getElementById(containerId);
+        const form = container.querySelector('form');
+        
+        if (!form) return;
+
+        form.onsubmit = function(e) {
+            e.preventDefault(); 
+            const formData = new FormData(form);
+            const actionUrl = form.action;
+
+            const btn = form.querySelector('button[type="submit"]');
+            if(btn) {
+                var originalText = btn.innerText;
+                btn.innerText = "Salvando...";
+                btn.disabled = true;
+            }
+
+            fetch(actionUrl, {
+                method: 'POST',
+                body: formData,
+                headers: { 'X-Requested-With': 'XMLHttpRequest' }
+            })
+            .then(response => {
+                if (response.redirected || response.url.includes('pagar_list') || response.url.endsWith('/pagar/')) {
+                    window.location.reload(); 
+                    return;
+                }
+                return response.text();
+            })
+            .then(html => {
+                if (html) {
+                    container.innerHTML = html;
+                    setupModalForm(containerId);
+                }
+            })
+            .catch(error => {
+                console.error('Erro:', error);
+                alert('Erro ao salvar. Verifique sua conexão.');
+                if(btn) {
+                    btn.innerText = originalText;
+                    btn.disabled = false;
+                }
+            });
+        };
+    }
+
+    // --- MODAL CRIAÇÃO ---
     function avancarParaDetalhe() {
         const select = document.getElementById('categoria-selector') || document.querySelector('select[name="categoria"]');
-        if (!select) return; 
+        if (!select || !select.value) return alert("Selecione uma categoria.");
         
         const categoria = select.value;
-        const textoCategoria = select.options[select.selectedIndex].text;
-
-        if (!categoria) return alert("Por favor, selecione uma categoria.");
+        const texto = select.options[select.selectedIndex].text;
 
         closeModal('modalSelecao');
         openModal('modalDetalhe');
-        document.getElementById('tituloDetalhe').innerText = "Novo: " + textoCategoria;
+        document.getElementById('tituloDetalhe').innerText = "Novo: " + texto;
         
         const container = document.getElementById('modalDetalheContent');
         container.innerHTML = '<div class="loading-spinner">Carregando formulário...</div>';
 
         fetch(`{% url 'pagar:pagar_create' %}?tipo=${categoria}&modal=true`)
             .then(res => res.text())
-            .then(html => { container.innerHTML = html; })
-            .catch(err => { container.innerHTML = '<div style="padding:20px; color:var(--red-500); text-align:center">Erro ao carregar.</div>'; });
+            .then(html => { 
+                container.innerHTML = html;
+                setupModalForm('modalDetalheContent');
+            })
+            .catch(err => { container.innerHTML = '<div class="empty-msg">Erro ao carregar.</div>'; });
     }
 
-    // --- Lógica do Modal Remoto (Para Edit/Delete) ---
+    // --- MODAL EDIÇÃO/EXCLUSÃO ---
     function openRemoteModal(url) {
         const modal = document.getElementById('modalGeneric');
         const content = document.getElementById('modalGenericContent');
@@ -763,35 +906,16 @@
         modal.classList.add('open');
         document.body.style.overflow = 'hidden';
 
-        fetch(url)
-            .then(response => response.text())
+        const separator = url.includes('?') ? '&' : '?';
+        const finalUrl = url + separator + 'modal=true';
+
+        fetch(finalUrl)
+            .then(res => res.text())
             .then(html => {
-                const parser = new DOMParser();
-                const doc = parser.parseFromString(html, 'text/html');
-                let newContent = doc.querySelector('form');
-                
-                if (newContent) {
-                    content.innerHTML = newContent.outerHTML;
-                    const scripts = content.getElementsByTagName("script");
-                    for (let i = 0; i < scripts.length; i++) {
-                        eval(scripts[i].innerText);
-                    }
-                } else {
-                    content.innerHTML = `
-                        <div class="modal-header">
-                            <h3 class="modal-title">Ação</h3>
-                            <button type="button" class="btn-close" onclick="closeModal('modalGeneric')">✕</button>
-                        </div>
-                        <div class="modal-body">
-                            ${doc.body.innerHTML}
-                        </div>
-                    `;
-                }
+                content.innerHTML = html;
+                setupModalForm('modalGenericContent');
             })
-            .catch(err => {
-                console.error(err);
-                content.innerHTML = '<div style="padding:20px; color:var(--red-500)">Erro de conexão.</div>';
-            });
+            .catch(err => { content.innerHTML = '<div class="empty-msg">Erro de conexão.</div>'; });
     }
 </script>
 {% endblock %}
