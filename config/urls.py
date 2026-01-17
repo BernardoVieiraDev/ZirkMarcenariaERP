@@ -28,7 +28,7 @@ path('', auth_views.LoginView.as_view(
 path('configuracoes/', include('apps.configuracoes.urls')),
 path('clientes/', include('apps.clientes.urls')),
 path('empreitadas/', include('apps.empreitadas.urls')),
-
+path('ajuda/', include('apps.docs.urls')),
 ]
 
 

@@ -6,13 +6,15 @@
     :root {
         --bg-color: #f8fafc;
         --card-bg: #ffffff;
-        --primary: #2563eb; /* Azul mais moderno */
+        --primary: #2563eb;
         --primary-hover: #1d4ed8;
         --text-main: #1e293b;
         --text-muted: #64748b;
         --border: #e2e8f0;
         --success: #10b981;
         --danger: #ef4444;
+        --danger-bg: #fef2f2;
+        --danger-border: #fecaca;
         --radius: 12px;
         --shadow-sm: 0 1px 3px rgba(0,0,0,0.1);
         --shadow-md: 0 4px 6px -1px rgba(0,0,0,0.1);
@@ -58,7 +60,6 @@
         box-shadow: var(--shadow-md); border: 1px solid var(--border);
         overflow: visible; transition: transform 0.2s;
     }
-    /* .employee-card:hover { transform: translateY(-2px); box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); } */
 
     .card-header {
         padding: 20px 24px; border-bottom: 1px solid var(--border);
@@ -134,7 +135,7 @@
     }
     .btn-launch:hover { background: #d1fae5; }
 
-    /* --- DROPDOWN & MODALS (Mantidos e refinados) --- */
+    /* --- DROPDOWN & MODALS --- */
     .action-menu { position: relative; }
     .dropdown-content {
         display: none; position: absolute; right: 0; top: 100%; margin-top: 5px;
@@ -175,6 +176,27 @@
     }
     .form-group input:focus, .form-group select:focus { border-color: var(--primary); outline: none; box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1); }
     
+    /* Error Styles */
+    .alert-box {
+        padding: 12px 16px;
+        background-color: var(--danger-bg);
+        border: 1px solid var(--danger-border);
+        border-radius: 8px;
+        color: #991b1b;
+        font-size: 13px;
+        margin-bottom: 20px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+    .field-error {
+        color: var(--danger);
+        font-size: 12px;
+        margin-top: 4px;
+        display: block;
+        font-weight: 500;
+    }
+
     @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
 </style>
 
@@ -414,11 +436,20 @@
                 <button type="button" style="background:none; border:none; font-size:20px; cursor:pointer;" onclick="closeModal('modalPeriodo')">✕</button>
             </div>
             <div class="modal-body">
+                {% if form_periodo.non_field_errors %}
+                    <div class="alert-box">
+                         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+                         <div>{{ form_periodo.non_field_errors }}</div>
+                    </div>
+                {% endif %}
+
                 {% for field in form_periodo %}
                 <div class="form-group" id="div_{{ field.name }}">
                     <label>{{ field.label }}</label>
                     {{ field }}
-                    {% if field.errors %}<small style="color:var(--danger)">{{ field.errors.0 }}</small>{% endif %}
+                    {% if field.errors %}
+                        <small class="field-error">{{ field.errors.0 }}</small>
+                    {% endif %}
                 </div>
                 {% endfor %}
             </div>
@@ -439,6 +470,13 @@
                 <button type="button" style="background:none; border:none; font-size:20px; cursor:pointer;" onclick="closeModal('modalFerias')">✕</button>
             </div>
             <div class="modal-body">
+                {% if form_ferias.non_field_errors %}
+                    <div class="alert-box">
+                         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+                         <div>{{ form_ferias.non_field_errors }}</div>
+                    </div>
+                {% endif %}
+
                 <p style="font-size:13px; color:var(--text-muted); margin-bottom:16px; background:#f0f9ff; padding:10px; border-radius:6px; border:1px solid #bae6fd;">
                     <strong>Dica:</strong> Verifique se o período selecionado possui saldo suficiente.
                 </p>
@@ -446,7 +484,9 @@
                 <div class="form-group" id="div_{{ field.name }}">
                     <label>{{ field.label }}</label>
                     {{ field }}
-                    {% if field.errors %}<small style="color:var(--danger)">{{ field.errors.0 }}</small>{% endif %}
+                    {% if field.errors %}
+                        <small class="field-error">{{ field.errors.0 }}</small>
+                    {% endif %}
                 </div>
                 {% endfor %}
             </div>
@@ -462,11 +502,19 @@
     <div class="modal-window">
         <form method="POST" action="{% url 'ferias:registrar_ferias_coletivas' %}"> 
             {% csrf_token %}
+    
             <div class="modal-header">
                 <h3 class="modal-title">Lançar Férias Coletivas</h3>
                 <button type="button" style="background:none; border:none; font-size:20px; cursor:pointer;" onclick="closeModal('modalColetivas')">✕</button>
             </div>
             <div class="modal-body">
+                {% if form_ferias_coletivas.non_field_errors %}
+                    <div class="alert-box">
+                         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+                         <div>{{ form_ferias_coletivas.non_field_errors }}</div>
+                    </div>
+                {% endif %}
+
                 <div style="font-size: 13px; background: #eff6ff; border: 1px solid #dbeafe; color: #1e40af; padding: 10px; border-radius: 6px; margin-bottom: 20px; display: flex; gap: 10px; align-items: start;">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="flex-shrink:0"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
                     <div>
@@ -478,10 +526,16 @@
                     <div style="flex: 1;">
                         <label style="display: block; font-size: 13px; font-weight: 600; color: #475569; margin-bottom: 6px;">Data Início</label>
                         {{ form_ferias_coletivas.data_inicio }}
+                        {% if form_ferias_coletivas.data_inicio.errors %}
+                            <small class="field-error">{{ form_ferias_coletivas.data_inicio.errors.0 }}</small>
+                        {% endif %}
                     </div>
                     <div style="flex: 1;">
                         <label style="display: block; font-size: 13px; font-weight: 600; color: #475569; margin-bottom: 6px;">Data Fim</label>
                         {{ form_ferias_coletivas.data_fim }}
+                        {% if form_ferias_coletivas.data_fim.errors %}
+                            <small class="field-error">{{ form_ferias_coletivas.data_fim.errors.0 }}</small>
+                        {% endif %}
                     </div>
                 </div>
 
@@ -492,7 +546,7 @@
                         </label>
                         {{ form_ferias_coletivas.ferias_no_recesso_final_ano }}
                         {% if form_ferias_coletivas.ferias_no_recesso_final_ano.errors %}
-                            <small style="color:var(--danger)">{{ form_ferias_coletivas.ferias_no_recesso_final_ano.errors.0 }}</small>
+                            <small class="field-error">{{ form_ferias_coletivas.ferias_no_recesso_final_ano.errors.0 }}</small>
                         {% endif %}
                     </div>
                     <div style="flex: 1;">
@@ -501,7 +555,7 @@
                         </label>
                         {{ form_ferias_coletivas.ferias_no_carnaval }}
                         {% if form_ferias_coletivas.ferias_no_carnaval.errors %}
-                            <small style="color:var(--danger)">{{ form_ferias_coletivas.ferias_no_carnaval.errors.0 }}</small>
+                            <small class="field-error">{{ form_ferias_coletivas.ferias_no_carnaval.errors.0 }}</small>
                         {% endif %}
                     </div>
                 </div>
@@ -517,8 +571,14 @@
                             <input type="checkbox" id="checkAllColetivas" style="width: auto;"> Selecionar Todos
                         </label>
                     </div>
+
+                    {% if form_ferias_coletivas.funcionarios.errors %}
+                        <div class="alert-box" style="margin-bottom: 8px; padding: 8px;">
+                            <small style="color:var(--danger); font-weight:bold;">Selecione pelo menos um funcionário.</small>
+                        </div>
+                    {% endif %}
                     
-                    <div style="max-height: 250px; overflow-y: auto; border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px; background: #f8fafc;">
+                    <div style="max-height: 250px; overflow-y: auto; border: 1px solid {% if form_ferias_coletivas.funcionarios.errors %}var(--danger-border){% else %}#e2e8f0{% endif %}; border-radius: 8px; padding: 12px; background: #f8fafc;">
                         {% for value, text in form_ferias_coletivas.funcionarios.field.choices %}
                         <div style="display: flex; align-items: center; padding: 6px 0; border-bottom: 1px solid #f1f5f9;">
                             <input type="checkbox" name="{{ form_ferias_coletivas.funcionarios.name }}" value="{{ value }}" id="id_fc_{{ value }}" class="chk-func" style="width: auto; margin-right: 10px; cursor: pointer;">
@@ -560,13 +620,19 @@
     /* --- LÓGICA DE MODAIS E INTERAÇÃO --- */
 
     function openModal(id) {
-        document.getElementById(id).classList.add('open');
-        document.body.style.overflow = 'hidden';
+        const modal = document.getElementById(id);
+        if(modal) {
+            modal.classList.add('open');
+            document.body.style.overflow = 'hidden';
+        }
     }
     
     function closeModal(id) {
-        document.getElementById(id).classList.remove('open');
-        document.body.style.overflow = '';
+        const modal = document.getElementById(id);
+        if(modal) {
+            modal.classList.remove('open');
+            document.body.style.overflow = '';
+        }
     }
 
     // Fechar ao clicar fora
@@ -716,14 +782,19 @@
     });
 
     document.addEventListener("DOMContentLoaded", function() {
-        // Verifica se o backend mandou abrir algum modal (via contexto da view)
+        // Lógica para reabrir modais automaticamente em caso de erro
+        
+        // 1. Prioridade: Instrução explícita da View
         {% if abrir_modal %}
             openModal('{{ abrir_modal }}');
-        {% endif %}
-
-        // OU: Verifica se o form de férias tem erros renderizados
-        {% if form_ferias.errors %}
+        
+        // 2. Fallback: Detectar erros nos forms e abrir o respectivo modal
+        {% elif form_ferias_coletivas.errors %}
+            openModal('modalColetivas');
+        {% elif form_ferias.errors %}
             openModal('modalFerias');
+        {% elif form_periodo.errors %}
+            openModal('modalPeriodo');
         {% endif %}
     });
 </script>

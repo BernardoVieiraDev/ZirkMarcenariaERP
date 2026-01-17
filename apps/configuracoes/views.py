@@ -4,12 +4,12 @@ from django.contrib.auth.decorators import login_required, user_passes_test
 # --- Adicione estes imports no topo se não existirem ---
 from django.contrib.auth.models import User
 from django.core.paginator import Paginator
+from django.db.models import Q  
 from django.shortcuts import get_object_or_404, redirect, render
 
 from apps.banco_horas.models import LancamentoHoras
 # --- IMPORTS ---
 from apps.clientes.models import Cliente
-# Novos imports:
 from apps.comissionamento.models import Arquiteta, ContratoRT
 from apps.dashboard.models import PerfilUsuario
 from apps.empreitadas.models import Empreitada, PagamentoEmpreitada
@@ -40,42 +40,49 @@ def is_admin(user):
     return user.is_superuser or user.is_staff
 # ... Mantenha o código existente ...
 
+# ... (Imports existentes)
+from django.contrib.auth.models import User
+
+# ...
+
 @login_required
 @user_passes_test(is_admin)
 def criar_novo_admin(request):
     if request.method == 'POST':
         form = AdminCreationForm(request.POST)
         if form.is_valid():
+            # ... (Lógica de salvamento mantém-se igual) ...
             username = form.cleaned_data['username']
             password = form.cleaned_data['password']
             cpf = form.cleaned_data['cpf']
-            
-            # Remove pontuação do CPF se houver, para padronizar (opcional, mas recomendado)
             cpf_limpo = ''.join(filter(str.isdigit, cpf))
 
             if User.objects.filter(username=username).exists():
                 messages.error(request, "⚠️ Este nome de usuário já existe.")
             else:
                 try:
-                    # Cria o usuário
                     user = User.objects.create_user(username=username, password=password)
                     user.is_superuser = True
                     user.is_staff = True
                     user.save()
                     
-                    # Cria o perfil com CPF
                     PerfilUsuario.objects.create(user=user, cpf=cpf_limpo)
                     
                     messages.success(request, f"✅ Admin {username} criado com sucesso!")
-                    return redirect('configuracoes:lixeira_dashboard') # Ou redireciona para onde preferir
+                    return redirect('configuracoes:criar_novo_admin')
                 except Exception as e:
                     messages.error(request, f"Erro ao criar admin: {e}")
     else:
         form = AdminCreationForm()
 
+    # --- ALTERADO: Busca Superusuários OU Staff (Membros da equipe) ---
+    admins = User.objects.filter(Q(is_superuser=True) | Q(is_staff=True)).order_by('username')
+
     return render(request, 'core/configuracoes/criar_admin.html', {
-        'form': form
+        'form': form,
+        'admins': admins
     })
+# ... (Restante do arquivo permanece igual)
 
 @login_required
 @user_passes_test(is_admin)
@@ -206,3 +213,63 @@ def editar_configuracoes(request):
     else:
         form = ConfiguracaoGlobalForm(instance=config)
     return render(request, 'core/configuracoes/editar.html', {'form': form})
+
+
+# ... (imports existentes e outras views)
+
+@login_required
+@user_passes_test(is_admin)
+def acoes_lixeira_em_massa(request, model_key):
+    if request.method == 'POST':
+        acao = request.POST.get('acao')
+        item_ids = request.POST.getlist('item_ids')
+        
+        if not item_ids:
+            messages.warning(request, "Nenhum item selecionado.")
+            return redirect('configuracoes:lixeira_itens', model_key=model_key)
+
+        try:
+            app_label, model_name = model_key.split('.')
+            model = apps.get_model(app_label, model_name)
+            
+            # Busca os itens na lixeira
+            itens = model.trash.filter(pk__in=item_ids)
+            qtd = itens.count()
+
+            if acao == 'restaurar':
+                for item in itens:
+                    item.restore()
+                messages.success(request, f"✅ {qtd} itens restaurados com sucesso!")
+            
+            elif acao == 'excluir':
+                for item in itens:
+                    item.hard_delete()
+                messages.success(request, f"🗑️ {qtd} itens excluídos permanentemente.")
+                
+        except Exception as e:
+            messages.error(request, f"Erro ao processar ação: {e}")
+            
+    return redirect('configuracoes:lixeira_itens', model_key=model_key)
+
+@login_required
+@user_passes_test(is_admin)
+def esvaziar_lixeira(request, model_key):
+    try:
+        app_label, model_name = model_key.split('.')
+        model = apps.get_model(app_label, model_name)
+        
+        itens = model.trash.all()
+        qtd = itens.count()
+        
+        if qtd > 0:
+            for item in itens:
+                item.hard_delete()
+            messages.success(request, f"✅ Lixeira esvaziada! {qtd} itens foram removidos.")
+        else:
+            messages.info(request, "A lixeira já está vazia.")
+            
+    except Exception as e:
+        messages.error(request, f"Erro ao esvaziar lixeira: {e}")
+        
+    return redirect('configuracoes:lixeira_itens', model_key=model_key)
+

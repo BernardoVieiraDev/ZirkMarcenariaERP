@@ -1,6 +1,7 @@
 # zirk_rh_financeiro/apps/clientes/views.py
 
 import requests
+from django.contrib.auth.decorators import login_required
 from django.db.models import Q
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
@@ -8,10 +9,12 @@ from django.shortcuts import get_object_or_404, redirect, render
 # Imports locais corretos
 from apps.comissionamento.models import ContratoRT
 from apps.financeiro.receber.models import Receber
+
 from .forms import ClienteForm, EnderecoClienteForm
 from .models import Cliente, EnderecoCliente
 
 
+@login_required
 def buscar_endereco_por_cep(request):
     cep = request.GET.get('cep', '').replace('-', '').replace('.', '').strip()
     
@@ -51,7 +54,7 @@ def buscar_endereco_por_cep(request):
 
     return JsonResponse({'error': 'CEP não encontrado.'}, status=404)
 
-
+@login_required
 def lista_clientes(request):
     qs = Cliente.objects.all()
     
@@ -65,7 +68,7 @@ def lista_clientes(request):
     }
     return render(request, 'core/clientes/list.html', context)
 
-
+@login_required
 def criar_cliente(request):
     if request.method == 'POST':
         cliente_form = ClienteForm(request.POST)
@@ -116,7 +119,7 @@ def criar_cliente(request):
 
     return render(request, 'core/clientes/form_modal.html', context)
 
-
+@login_required
 def editar_cliente(request, pk):
     cliente = get_object_or_404(Cliente, pk=pk)
     
@@ -173,6 +176,7 @@ def editar_cliente(request, pk):
 
 from django.http import JsonResponse
 
+@login_required
 def deletar_cliente(request, pk):
     obj = get_object_or_404(Cliente, pk=pk)
 
@@ -197,7 +201,7 @@ def deletar_cliente(request, pk):
 
     return redirect('clientes:list')
 
-
+@login_required
 def detalhe_cliente(request, pk):
     cliente = get_object_or_404(Cliente, pk=pk)
     contratos = ContratoRT.objects.filter(cliente=cliente).select_related('arquiteta').order_by('-data_contrato')

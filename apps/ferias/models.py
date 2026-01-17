@@ -18,7 +18,7 @@ class PeriodoAquisitivo(SoftDeleteMixin):
     def dias_gozados(self):
         total = 0
         for f in self.ferias_registradas.all(): #type: ignore
-            total += max(0, (f.dias_tirados))
+            total += max(0, (f.dias_tirados+ (f.faltas_justificadas_descontadas or 0)))
         return total
 
     def saldo_restante(self):

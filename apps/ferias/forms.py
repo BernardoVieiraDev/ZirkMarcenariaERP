@@ -1,5 +1,6 @@
 from django import forms
 from django.core.exceptions import ValidationError
+from django.db import models  # <--- Importação adicionada aqui
 
 from apps.funcionarios.models import Funcionario
 
@@ -64,7 +65,7 @@ class FeriasForm(forms.ModelForm):
             
             # Se for edição, precisamos adicionar de volta os dias deste registro para recalcular o saldo disponível
             if self.instance.pk:
-                consumo_anterior = max(0, self.instance.dias_tirados - (self.instance.faltas_justificadas_descontadas or 0))
+                consumo_anterior = max(0, self.instance.dias_tirados + (self.instance.faltas_justificadas_descontadas or 0))
                 saldo_atual += consumo_anterior
 
             consumo_novo = max(0, dias_tirados - faltas)
@@ -83,8 +84,45 @@ class PeriodoAquisitivoForm(forms.ModelForm):
             'funcionario': forms.Select(attrs={'class': 'form-select'}),
             'data_inicio': forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}, format='%Y-%m-%d'),
             'data_fim': forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}, format='%Y-%m-%d'),
-            'dias_direito': forms.NumberInput(attrs={'class': 'form-control'}),
+            'dias_direito': forms.NumberInput(attrs={'class': 'form-control', 'max': 30}),
         }
+
+    def clean(self):
+        cleaned_data = super().clean()
+        funcionario = cleaned_data.get('funcionario')
+        data_inicio = cleaned_data.get('data_inicio')
+        data_fim = cleaned_data.get('data_fim')
+        dias_direito = cleaned_data.get('dias_direito')
+
+        # 1. Valida se a data fim é maior que a data início
+        if data_inicio and data_fim and data_inicio > data_fim:
+            raise ValidationError("A data de fim deve ser posterior à data de início.")
+
+        # 2. Valida limite de dias de direito (padrão CLT é 30)
+        if dias_direito and dias_direito > 30:
+             self.add_error('dias_direito', "O máximo de dias de direito permitido por período é 30.")
+
+        # 3. Valida sobreposição de períodos para o mesmo funcionário
+        if funcionario and data_inicio and data_fim:
+            # Busca períodos existentes que colidam com as datas informadas
+            conflitos = PeriodoAquisitivo.objects.filter(
+                funcionario=funcionario,
+                is_deleted=False  # Ignora deletados se usar SoftDelete
+            ).filter(
+                # Lógica de sobreposição: (InicioA <= FimB) e (FimA >= InicioB)
+                models.Q(data_inicio__lte=data_fim) & models.Q(data_fim__gte=data_inicio)
+            )
+
+            # Se for edição (instance.pk existe), exclui o próprio registro da busca
+            if self.instance.pk:
+                conflitos = conflitos.exclude(pk=self.instance.pk)
+
+            if conflitos.exists():
+                raise ValidationError(
+                    f"O funcionário {funcionario.nome} já possui um período aquisitivo registrado que conflita com essas datas."
+                )
+
+        return cleaned_data
 
 
 class PagamentoFeriasForm(forms.ModelForm):
@@ -106,8 +144,6 @@ class PagamentoFeriasForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
         self.fields['valor_a_pagar'].required = False
 
-
-# zirk_rh_financeiro/apps/ferias/forms.py
 
 class RecibosContabilidadeForm(forms.ModelForm):
     class Meta:

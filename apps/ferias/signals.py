@@ -1,13 +1,24 @@
-from django.db.models.signals import post_save
+from django.db.models.signals import post_save, post_delete
 from django.dispatch import receiver
-from apps.funcionarios.models import DadosTrabalhistas
-from apps.ferias.service import gerar_novo_periodo_aquisitivo
+from django.core.cache import cache
 
-@receiver(post_save, sender=DadosTrabalhistas)
-def criar_primeiro_periodo_signal(sender, instance, created, **kwargs):
+# Importa os modelos que afetam o saldo de férias e os alertas
+from .models import PeriodoAquisitivo, Ferias
+
+# Define a chave de cache usada no Dashboard (apps/dashboard/views.py)
+CACHE_KEY_DASHBOARD_FERIAS = "dashboard_ferias_alerts"
+
+@receiver(post_save, sender=PeriodoAquisitivo)
+@receiver(post_delete, sender=PeriodoAquisitivo)
+@receiver(post_save, sender=Ferias)
+@receiver(post_delete, sender=Ferias)
+def invalidar_cache_alertas_ferias(sender, instance, **kwargs):
     """
-    Acionado sempre que salvar DadosTrabalhistas (onde fica a data de admissão).
-    Cria o primeiro período automaticamente.
+    Sempre que um Período Aquisitivo ou uma Féria marcada for criada,
+    alterada ou excluída, limpamos o cache de alertas do dashboard.
+    Isso força o sistema a recalcular quem está com férias vencendo
+    na próxima vez que alguém abrir a página inicial.
     """
-    if instance.funcionario:
-        gerar_novo_periodo_aquisitivo(instance.funcionario)
+    cache.delete(CACHE_KEY_DASHBOARD_FERIAS)
+    # Opcional: Log para debug (remova em produção se quiser limpar os logs)
+    # print(f"Cache de Férias invalidado por alteração em: {instance}")

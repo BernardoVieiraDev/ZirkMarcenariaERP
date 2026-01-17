@@ -31,7 +31,7 @@
         color: var(--text-main);
     }
 
-    /* === Header e Controles (Mantidos iguais) === */
+    /* === Header e Controles === */
     .page-header {
         display: flex;
         justify-content: space-between;
@@ -116,53 +116,40 @@
         border-right: 1px solid var(--border-color); color: var(--text-muted);
     }
 
-    /* === ESTILOS DE SEPARAÇÃO (NOVO) === */
-    
-    /* Borda lateral colorida para agrupar */
+    /* === ESTILOS DE SEPARAÇÃO === */
     .group-entrada td:first-child { border-left: 4px solid var(--entrada-border); }
     .group-saida td:first-child { border-left: 4px solid var(--saida-border); }
 
-    /* Cabeçalhos de Seção */
     .section-header td {
         font-weight: 700; text-transform: uppercase; font-size: 11px;
         letter-spacing: 0.5px; padding-top: 14px; padding-bottom: 14px;
-        /* Fundo suave na linha inteira para separar */
         background-color: #f8fafc; 
         border-top: 1px solid var(--border-color);
     }
     
-    /* Cores Específicas nos Cabeçalhos */
     .header-entrada td { color: var(--entrada-text); background-color: var(--entrada-light) !important; }
     .header-saida td { color: var(--saida-text); background-color: var(--saida-light) !important; }
 
-    /* Cores dos Valores nas linhas */
     .row-entrada td:not(:first-child) { color: var(--entrada-text); }
     .row-saida td:not(:first-child) { color: var(--saida-text); }
 
-    /* Totais de Seção */
     .row-total-section td {
         font-weight: 700;
         border-top: 2px solid #cbd5e1;
     }
     
-    /* Total de Saída Destacado */
     .total-saida-highlight td {
-        background-color: #fee2e2 !important; /* Fundo vermelho claro na linha toda */
-        color: #b91c1c !important; /* Texto vermelho forte */
+        background-color: #fee2e2 !important;
+        color: #b91c1c !important;
         border-bottom: 2px solid #fca5a5;
     }
     
-    /* Total de Entrada (Mais suave) */
     .total-entrada-style td {
         background-color: #f0fdf4 !important;
         color: #15803d !important;
     }
 
     /* Conclusão */
-    .conclusion-header td {
-        background-color: #334155; color: white !important;
-        text-align: center; font-weight: 700; text-transform: uppercase; padding: 8px;
-    }
     .row-conclusion td { font-weight: 600; font-size: 13px; }
     .row-conclusion td:first-child { font-weight: 700; color: var(--text-dark); border-left: 4px solid #334155; }
     
@@ -291,13 +278,13 @@
                     </tr>
                     <tr class="row-saida group-saida">
                         <td>Pagamentos (Contas a Pagar)</td>
-                        {% for val in timeline.saidas.pagamentos %}
+                        {% for val in timeline.saidas.pagamentos_contas %}
                             <td>{% if val %}R$ {{ val|floatformat:2 }}{% else %}<span class="val-neutral">-</span>{% endif %}</td>
                         {% endfor %}
                     </tr>
                     <tr class="row-saida group-saida">
                         <td>Outros Pagamentos</td>
-                        {% for val in timeline.saidas.outros %}
+                        {% for val in timeline.saidas.outros_pagamentos %}
                             <td>{% if val %}R$ {{ val|floatformat:2 }}{% else %}<span class="val-neutral">-</span>{% endif %}</td>
                         {% endfor %}
                     </tr>
@@ -309,14 +296,14 @@
                         {% endfor %}
                     </tr>
 
-                    <tr><td colspan="{{ dias|length|add:1 }}" style="height: 30px; background: white; border:none;"></td></tr>
+                    <tr><td colspan="{{ dias|length|add:1 }}" style="height: 20px; background: white; border:none;"></td></tr>
 
-                    <tr class="conclusion-header">
-                        <td colspan="{{ dias|length|add:1 }}">Resultado</td>
+                    <tr class="section-header conclusion-header">
+                        <td colspan="{{ dias|length|add:1 }}">CONCLUSÃO DIÁRIA</td>
                     </tr>
-
+                    
                     <tr class="row-conclusion">
-                        <td style="padding-left: 30px;">1. Entradas - Saídas</td>
+                        <td style="padding-left: 30px;">1. Resultado do Dia</td>
                         {% for val in timeline.conclusao.resultado_dia %}
                             <td class="{% if val < 0 %}text-danger{% else %}text-success{% endif %}">
                                 R$ {{ val|floatformat:2 }}
@@ -347,12 +334,10 @@
 
                     <tr class="row-conclusion" style="border-top: 2px solid #cbd5e1;">
                         <td style="background-color: #1e293b; color: white !important;">5. SALDO FINAL</td>
-                        {% for i in dias %}
-                            {% with val=timeline.conclusao.saldo_final|slice:forloop.counter0|last alerta=timeline.conclusao.alerta|slice:forloop.counter0|last %}
-                            <td class="{% if alerta %}bg-saldo-negativo{% else %}bg-saldo-positivo{% endif %}">
-                                R$ {{ val|floatformat:2 }}
+                        {% for item in timeline.conclusao.itens_saldo_final %}
+                            <td class="{% if item.alerta %}bg-saldo-negativo{% else %}bg-saldo-positivo{% endif %}">
+                                R$ {{ item.valor|floatformat:2 }}
                             </td>
-                            {% endwith %}
                         {% endfor %}
                     </tr>
 

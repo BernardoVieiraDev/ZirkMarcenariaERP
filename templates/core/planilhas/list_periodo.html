@@ -224,7 +224,7 @@
         </div>
     </div>
 
-    <div class="section-label">Receitas e RH</div>
+<div class="section-label">Receitas e RH</div>
     <div class="reports-grid">
         <div class="report-card-btn" onclick="baixarIndividual('receber')">
             <div class="card-icon"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></div>
@@ -241,7 +241,15 @@
             <div class="card-title">Comissões RT</div>
             <div class="card-desc">Arquitetos (Pagamento)</div>
         </div>
-    </div>
+        
+        <div class="report-card-btn" onclick="baixarIndividual('relatorio_anual_consolidado')">
+            <div class="card-icon" style="background: #f3e8ff; color: #7e22ce;">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M18 17V9"/><path d="M13 17V5"/><path d="M8 17v-3"/></svg>
+            </div>
+            <div class="card-title">Relatório Anual Consolidado</div>
+            <div class="card-desc">Resumo anual por categoria</div>
+        </div>
+        </div>
 
     <div class="section-label">Tesouraria e Sócios</div>
     <div class="reports-grid">
@@ -268,11 +276,6 @@
 
     <div class="section-label">Relatórios Gerenciais e Desempenho</div>
     <div class="reports-grid">
-        <div class="report-card-btn gerencial-card" onclick="baixarVendasCompras()" style="border: 1px solid #d8b4fe;">
-            <div class="card-icon"><i class="fas fa-chart-line fa-lg"></i></div>
-            <div class="card-desc"><strong>Baixar Planilha de Desempenho</strong><br>Entradas vs Saídas (Ano Selecionado)</div>
-        </div>
-
 
         <div class="report-card-btn" onclick="baixarIndividual('fluxo_caixa')">
     <div class="card-icon" style="color: #0891b2; background: #cffafe;">
@@ -452,6 +455,11 @@
                     <label class="check-label" style="background:#EFF6FF; border-color:#BFDBFE;">
                         <input type="checkbox" name="relatorios" value="receber_mensal"> 
                         <span style="color:#1E3A8A; font-weight:600;">Receber (Mensal)</span>
+                    </label>
+
+                    <label class="check-label" style="background:#F3E8FF; border-color:#D8B4FE;">
+                        <input type="checkbox" name="relatorios" value="relatorio_anual_consolidado">
+                        <span style="color:#7E22CE; font-weight:600;">Consolidado Anual (Período)</span>
                     </label>
                     </div>
                 

@@ -3,15 +3,13 @@ from datetime import date
 from decimal import Decimal
 
 from django.core.exceptions import ObjectDoesNotExist
-from django.db.models import F, OuterRef, Subquery, Sum, Value
+from django.db.models import F, OuterRef, Subquery, Sum, Value, Q
 from django.db.models.functions import Coalesce
 
 from apps.banco_horas.models import LancamentoHoras
-# Importação necessária para buscar os pagamentos das empreitadas
 from apps.empreitadas.models import Empreitada, PagamentoEmpreitada
-# --- CORREÇÃO: Importar o modelo de Pagamento de Férias ---
 from apps.ferias.models import PagamentoFerias
-from apps.financeiro.pagar.models import FolhaPagamento
+from apps.financeiro.pagar.models import FolhaPagamento, ParcelamentoPagar
 from apps.funcionarios.models import Funcionario
 
 
@@ -25,46 +23,87 @@ def add_months(source_date, months):
 
 def gerar_lancamentos_parcelados(form, model_class, user=None):
     """
-    Gera múltiplos lançamentos baseados nos dados do formulário.
+    Gera múltiplos lançamentos e cria a entidade pai ParcelamentoPagar.
     """
     instance_base = form.save(commit=False)
-    qtd_parcelas = form.cleaned_data.get('qtd_parcelas', 1) or 1
+    qtd_parcelas = form.cleaned_data.get('parcelas', 1) or 1
     is_recorrente = form.cleaned_data.get('is_recorrente', False)
     
-    objetos_criados = []
-    valor_total = instance_base.valor or Decimal('0.00')
-    data_inicial = instance_base.data_vencimento or instance_base.data_gasto or date.today()
-    descricao_original = instance_base.descricao
+    # --- CORREÇÃO: Identificar qual campo de valor o model usa (valor ou valor_total) ---
+    campo_valor = 'valor'
+    if hasattr(instance_base, 'valor'):
+        valor_total_form = instance_base.valor or Decimal('0.00')
+    elif hasattr(instance_base, 'valor_total'):
+        campo_valor = 'valor_total'
+        valor_total_form = instance_base.valor_total or Decimal('0.00')
+    else:
+        # Fallback de segurança
+        valor_total_form = Decimal('0.00')
+    # ------------------------------------------------------------------------------------
+
+    descricao_base = instance_base.descricao
     
+    # 1. Cria o Pai (Parcelamento) se for mais de 1 parcela ou recorrente
+    parcelamento_pai = None
+    if qtd_parcelas > 1 or is_recorrente:
+        parcelamento_pai = ParcelamentoPagar.objects.create(
+            descricao=f"{descricao_base} (Ref: {instance_base.credor or ''})",
+            valor_total_original=valor_total_form if not is_recorrente else (valor_total_form * qtd_parcelas),
+            qtd_parcelas=qtd_parcelas
+        )
+
+    objetos_criados = []
+    # Verifica qual campo de data usar (vencimento ou gasto)
+    data_inicial = getattr(instance_base, 'data_vencimento', None) or getattr(instance_base, 'data_gasto', None) or date.today()
+    
+    # Cálculos de valor para parcelamento
     if is_recorrente:
-        valor_parcela = valor_total
+        valor_parcela = valor_total_form
         resto = Decimal('0.00')
     else:
-        valor_parcela = round(valor_total / qtd_parcelas, 2)
-        resto = valor_total - (valor_parcela * qtd_parcelas)
+        valor_parcela = round(valor_total_form / qtd_parcelas, 2)
+        resto = valor_total_form - (valor_parcela * qtd_parcelas)
 
     for i in range(qtd_parcelas):
         nova_instancia = model_class()
+        
+        # Copia todos os campos da instância base, ignorando chaves primárias e vínculos
         for field in instance_base._meta.fields:
-            if field.name not in ['id', 'pk']:
+            if field.name not in ['id', 'pk', 'parcelamento', 'parcelamento_uuid']:
                 setattr(nova_instancia, field.name, getattr(instance_base, field.name))
         
+        # Define datas (incrementa meses para cada parcela)
         nova_data = add_months(data_inicial, i)
-        
         if hasattr(nova_instancia, 'data_vencimento'):
             nova_instancia.data_vencimento = nova_data
         elif hasattr(nova_instancia, 'data_gasto'):
             nova_instancia.data_gasto = nova_data
             
+        # Define a descrição com o número da parcela
+        nova_instancia.descricao = f"{descricao_base} ({i+1}/{qtd_parcelas})"
+
+        # Calcula o valor desta parcela específica
         if is_recorrente:
-            nova_instancia.descricao = f"{descricao_original} ({i+1}/{qtd_parcelas})"
-            nova_instancia.valor = valor_parcela
-            if hasattr(nova_instancia, 'valor_total'): nova_instancia.valor_total = valor_parcela
+            valor_atual = valor_parcela
         else:
-            nova_instancia.descricao = f"{descricao_original} ({i+1}/{qtd_parcelas})"
             valor_atual = valor_parcela + resto if i == 0 else valor_parcela
+
+        # --- CORREÇÃO: Atribui o valor ao campo correto identificado anteriormente ---
+        if campo_valor == 'valor':
             nova_instancia.valor = valor_atual
-            if hasattr(nova_instancia, 'valor_total'): nova_instancia.valor_total = valor_atual
+            # Sincroniza valor_total se existir (ex: para compatibilidade futura)
+            if hasattr(nova_instancia, 'valor_total'):
+                nova_instancia.valor_total = valor_atual
+        elif campo_valor == 'valor_total':
+            nova_instancia.valor_total = valor_atual
+            # Sincroniza valor se existir
+            if hasattr(nova_instancia, 'valor'):
+                nova_instancia.valor = valor_atual
+        # -----------------------------------------------------------------------------
+
+        # VÍNCULO COM O PAI
+        if parcelamento_pai:
+            nova_instancia.parcelamento = parcelamento_pai
 
         nova_instancia.save()
         objetos_criados.append(nova_instancia)
@@ -75,7 +114,23 @@ def gerar_lancamentos_parcelados(form, model_class, user=None):
 def gerar_folha_mensal(mes, ano):
     data_ref = date(ano, mes, 1)
     
-    # Subqueries para somar valores sem loops
+    # Define o último dia do mês para verificar se a demissão ocorreu antes ou durante este mês
+    ultimo_dia = calendar.monthrange(ano, mes)[1]
+    data_ultimo_dia = date(ano, mes, ultimo_dia)
+
+    # 1. LIMPEZA PREVENTIVA
+    # Remove folhas 'Pendente' deste mês que pertençam a funcionários:
+    # a) Marcados como excluídos (lixeira)
+    # b) Com rescisão datada neste mês ou antes (pois a rescisão substitui a folha)
+    FolhaPagamento.objects.filter(
+        data_referencia=data_ref,
+        status='Pendente'
+    ).filter(
+        Q(funcionario__is_deleted=True) | 
+        Q(funcionario__rescisao__data_demissao__lte=data_ultimo_dia)
+    ).delete()
+
+    # 2. SUBQUERIES (Otimização para buscar totais sem loops extras)
     ferias_sum = PagamentoFerias.objects.filter(
         funcionario=OuterRef('pk'),
         vencimento__month=mes, vencimento__year=ano, is_deleted=False
@@ -86,18 +141,19 @@ def gerar_folha_mensal(mes, ano):
         data__month=mes, data__year=ano, is_deleted=False
     ).values('empreitada__funcionario').annotate(total=Sum('valor')).values('total')
 
-    # Query única anotada
-    funcionarios = Funcionario.objects.filter(is_deleted=False).annotate(
+    # 3. QUERY PRINCIPAL DE FUNCIONÁRIOS
+    # Filtra apenas ativos e que NÃO tenham rescisão vigente até o fim deste mês
+    funcionarios = Funcionario.objects.filter(is_deleted=False).exclude(
+        rescisao__data_demissao__lte=data_ultimo_dia
+    ).annotate(
         total_ferias=Coalesce(Subquery(ferias_sum), Value(Decimal('0.00'))),
         total_empreitada=Coalesce(Subquery(empreitada_sum), Value(Decimal('0.00'))),
-        # Fazer o mesmo para Banco de Horas (requer lógica de valor_hora * horas, mais complexo em SQL puro,
-        # talvez manter o loop do banco de horas se for complexo, mas otimizar o resto)
     ).select_related('dados_trabalhistas')
 
     registros = []
     
     for func in funcionarios:
-        # 1. Busca Salário Base
+        # A. Busca Salário Base
         try:
             salario_base = func.dados_trabalhistas.salario if hasattr(func, 'dados_trabalhistas') else Decimal('0.00')
         except ObjectDoesNotExist:
@@ -105,7 +161,7 @@ def gerar_folha_mensal(mes, ano):
 
         valor_adiantamento = round(salario_base * Decimal('0.40'), 2)
 
-        # 2. Integração Banco de Horas
+        # B. Integração Banco de Horas
         total_horas_mes = LancamentoHoras.objects.filter(
             funcionario=func,
             data__month=mes,
@@ -115,35 +171,21 @@ def gerar_folha_mensal(mes, ano):
             total=Sum(F('horas') * F('valor_hora'))
         )['total'] or Decimal('0.00')
 
-        # 3. Integração Empreitadas
-        total_empreitadas_mes = PagamentoEmpreitada.objects.filter(
-            empreitada__funcionario=func,
-            data__month=mes,
-            data__year=ano,
-            is_deleted=False
-        ).aggregate(
-            total=Sum('valor')
-        )['total'] or Decimal('0.00')
+        # C. Integração Empreitadas (via annotate ou fallback)
+        # Usando o valor já trazido pelo annotate para otimização
+        total_empreitadas_mes = func.total_empreitada
 
-        # 4. Integração Férias (1/3) - NOVO
-        # Soma os pagamentos de 1/3 cujo vencimento cai neste mês
-        total_ferias_terco = PagamentoFerias.objects.filter(
-            funcionario=func,
-            vencimento__month=mes,
-            vencimento__year=ano,
-            is_deleted=False
-        ).aggregate(
-            total=Sum('valor_a_pagar')
-        )['total'] or Decimal('0.00')
+        # D. Integração Férias (via annotate ou fallback)
+        total_ferias_terco = func.total_ferias
 
-        # 5. Cria ou Recupera o registro da Folha
+        # E. Cria ou Recupera o registro da Folha
         folha, created = FolhaPagamento.objects.get_or_create(
             funcionario=func,
             data_referencia=data_ref,
             defaults={
                 'salario_real': salario_base,
                 'adiantamento': valor_adiantamento,
-                'ferias_terco': total_ferias_terco, # Campo populado automaticamente
+                'ferias_terco': total_ferias_terco, 
                 'empreitada': total_empreitadas_mes, 
                 'decimo_terceiro': Decimal('0.00'),
                 'vale': Decimal('0.00'),
@@ -152,10 +194,12 @@ def gerar_folha_mensal(mes, ano):
             }
         )
 
-        # 6. Atualiza valores se já existir (e não estiver pago)
-        if not created:
+        # F. Atualiza valores se já existir (e não estiver pago)
+        # Isso garante que se você rodar "Gerar" de novo, ele recalcula horas/empreitadas
+        if not created and folha.status == 'Pendente':
             mudou = False
             
+            # Verifica mudanças nos valores variáveis
             if folha.horas_extras_valor != total_horas_mes:
                 folha.horas_extras_valor = total_horas_mes
                 mudou = True
@@ -164,14 +208,19 @@ def gerar_folha_mensal(mes, ano):
                 folha.empreitada = total_empreitadas_mes
                 mudou = True
             
-            # Atualiza se o valor de férias mudou
             if folha.ferias_terco != total_ferias_terco:
                 folha.ferias_terco = total_ferias_terco
                 mudou = True
-                
+            
+            # Se o salário mudou no cadastro, atualiza na folha também
+            if folha.salario_real != salario_base:
+                folha.salario_real = salario_base
+                # Recalcula adiantamento se o salário mudou
+                folha.adiantamento = round(salario_base * Decimal('0.40'), 2)
+                mudou = True
+
             if mudou:
-                # Adicionado 'ferias_terco' aos campos a atualizar
-                folha.save(update_fields=['horas_extras_valor', 'empreitada', 'ferias_terco'])
+                folha.save()
 
         registros.append(folha)
         

@@ -4,20 +4,30 @@
 {% block content %}
 <div class="container-fluid mt-4">
     <div class="d-flex justify-content-between align-items-center mb-4">
-        <h1><i class="fas fa-chart-line"></i> Indicadores Financeiros</h1>
         
-        <form method="get" class="d-flex align-items-center bg-white p-2 rounded shadow-sm">
-            <label class="me-2 fw-bold">Ano:</label>
-            <input type="number"
-                   name="year"
-                   value="{{ selected_year }}"
-                   class="form-control form-control-sm"
-                   min="2000"
-                   max="2100"
-                   style="width: 100px;"
-                   onchange="this.form.submit()"
-                   title="Selecione o ano">
-        </form>
+        <h1 class="h2 text-dark mb-0">
+            <i class="fas fa-chart-line text-primary me-2"></i>Indicadores Financeiros
+        </h1>
+
+        <div class="d-flex align-items-center gap-3">
+            
+            <form method="get" class="d-flex align-items-center bg-white px-3 py-2 rounded shadow-sm border">
+                <label class="me-2 fw-bold text-muted small text-uppercase mb-0">Ano de Referência:</label>
+                <input type="number" 
+                       name="year" 
+                       value="{{ selected_year }}" 
+                       class="form-control form-control-sm border-0 fw-bold text-primary" 
+                       min="2000" 
+                       max="2100" 
+                       style="width: 80px; background-color: #f8f9fa;"
+                       onchange="this.form.submit()"
+                       title="Selecione o ano">
+            </form>
+
+            <a href="?year={{ selected_year }}&refresh=true" class="btn btn-primary shadow-sm d-flex align-items-center">
+                <i class="fas fa-sync-alt me-2"></i> Atualizar Dados
+            </a>
+        </div>
     </div>
 
     <div class="row mb-4">
@@ -218,4 +228,4 @@
         }
     });
 </script>
-{% endblock %}
+{% endblock %}'

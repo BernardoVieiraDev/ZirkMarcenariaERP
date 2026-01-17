@@ -1,5 +1,6 @@
 # minha_app/urls.py
 from django.urls import path
+
 from . import views
 
 app_name = "pagar"
@@ -20,6 +21,7 @@ path('folha/holerite/<int:pk>/', views.baixar_holerite_view, name='baixar_holeri
     path('folha/fechar-mes/', views.folha_fechar_mes, name='folha_fechar_mes'),
 
 path('folha/baixar-lote/', views.baixar_holerite_lote_view, name='baixar_holerite_lote'),
-
-
+path('confirmar-pagamento/<int:pk>/', views.pagar_confirmar_pagamento, name='confirmar_pagamento'),
+path('parcelamentos/', views.parcelamento_list, name='parcelamento_list'),
+path('parcelamentos/<int:pk>/', views.parcelamento_detail, name='parcelamento_detail'),
 ]

@@ -11,7 +11,8 @@ urlpatterns = [
     path('lixeira/<str:model_key>/<int:pk>/deletar/', views.deletar_permanente, name='deletar_permanente'),
 path('criar-admin/', views.criar_novo_admin, name='criar_novo_admin'),
 path('editar/', views.editar_configuracoes, name='editar_configuracoes'),
-
+    path('lixeira/<str:model_key>/acoes-em-massa/', views.acoes_lixeira_em_massa, name='acoes_lixeira_em_massa'),
+    path('lixeira/<str:model_key>/esvaziar/', views.esvaziar_lixeira, name='esvaziar_lixeira'),
 ]
 
 

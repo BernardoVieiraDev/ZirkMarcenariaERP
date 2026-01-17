@@ -1,0 +1,165 @@
+{% extends 'core/base.html' %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+
+    <div class="row mb-4">
+        <div class="col-12">
+            <h1 class="h3 text-gray-800"><i class="fas fa-user-friends me-2"></i>Manual do Usuário: Recursos Humanos</h1>
+            <p class="lead text-muted">
+                Gerencie todo o ciclo de vida dos colaboradores: da contratação à rescisão, passando por férias e horas extras.
+            </p>
+        </div>
+    </div>
+
+    <div class="card shadow mb-4 border-left-primary">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary"><i class="fas fa-id-card me-2"></i>O Time (Cadastro de Funcionários)</h6>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-8">
+                    <h5 class="font-weight-bold text-dark">Tudo em um só lugar</h5>
+                    <p>
+                        Este é o coração do RH. Aqui você cadastra os dados pessoais, contratuais e bancários de cada colaborador.
+                        O sistema mantém um histórico organizado, permitindo anexar documentos importantes (como cópia de RG, CPF e Comprovante de Residência) digitalmente.
+                    </p>
+                    <div class="alert alert-primary bg-light border-0 small">
+                        <strong><i class="fas fa-link"></i> Integração Automática:</strong> 
+                        Ao cadastrar o salário base e a conta bancária aqui, o Módulo Financeiro já saberá quanto e onde pagar no final do mês.
+                    </div>
+                </div>
+                <div class="col-md-4 text-center border-left">
+                    <i class="fas fa-user-plus fa-4x text-gray-300 mb-3"></i>
+                    <p class="small text-muted">Mantenha os dados de contato e emergência sempre atualizados.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-6 mb-4">
+            <div class="card shadow h-100 border-bottom-info">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-info"><i class="fas fa-clock me-2"></i>Banco de Horas e Extras</h6>
+                </div>
+                <div class="card-body">
+                    <p>Controle rígido sobre o tempo trabalhado além da jornada.</p>
+                    
+                    <ul class="list-group list-group-flush small">
+                        <li class="list-group-item">
+                            <strong><i class="fas fa-stopwatch text-info"></i> Lançamento de Horas:</strong>
+                            Você registra o dia e a quantidade de horas extras. O sistema calcula o valor baseado no salário do funcionário (ex: 50% ou 100%).
+                        </li>
+                        <li class="list-group-item">
+                            <strong><i class="fas fa-robot text-info"></i> Pagamento Automático:</strong>
+                            Não precisa somar na calculadora. Quando o Financeiro gerar a folha do mês, o sistema "puxa" todas as horas não pagas desse banco e inclui no contracheque.
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-6 mb-4">
+            <div class="card shadow h-100 border-bottom-success">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-success"><i class="fas fa-hammer me-2"></i>Empreitadas e Produção</h6>
+                </div>
+                <div class="card-body">
+                    <p>Para pagamentos baseados em entrega ou obras específicas.</p>
+                    <p class="small">
+                        Se um funcionário ou prestador de serviço recebe por "obra entregue" (ex: "Instalação Elétrica do Projeto X"), você lança aqui.
+                    </p>
+                    <div class="d-flex align-items-center bg-light p-2 rounded">
+                        <i class="fas fa-check-circle text-success fa-2x mr-3"></i>
+                        <span class="small ml-2">Isso separa o que é "Salário Fixo" do que é "Produção Variável", facilitando a análise de custo por obra.</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card shadow mb-4 border-left-warning">
+        <div class="card-header py-3 bg-warning text-white">
+            <h6 class="m-0 font-weight-bold"><i class="fas fa-umbrella-beach me-2"></i>Gestão de Férias</h6>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-6">
+                    <h5 class="h6 font-weight-bold text-dark">Controle de Períodos</h5>
+                    <p class="small">
+                        O sistema avisa quando um funcionário está prestes a "vencer" a segunda férias (o que geraria multa). 
+                        Você visualiza facilmente quem tem direito a descansar (Período Aquisitivo completo).
+                    </p>
+                </div>
+                <div class="col-md-6 border-left">
+                    <h5 class="h6 font-weight-bold text-dark">O Cálculo do 1/3</h5>
+                    <p class="small">
+                        Ao agendar as férias, o sistema calcula automaticamente:
+                        <br>
+                        <code>(Salário + Médias) / 3</code>.
+                        <br>
+                        Ele gera o contas a pagar para o funcionário receber antes de sair para o descanso, conforme a lei.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card shadow mb-4 border-left-danger">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-danger"><i class="fas fa-door-open me-2"></i>Desligamento e Rescisão</h6>
+        </div>
+        <div class="card-body">
+            <p>O processo mais delicado do RH tratado com segurança.</p>
+            <div class="row align-items-center">
+                <div class="col-auto">
+                    <i class="fas fa-calculator fa-3x text-gray-300"></i>
+                </div>
+                <div class="col">
+                    <p class="mb-0">
+                        Ao registrar uma rescisão, o sistema ajuda a calcular as verbas devidas (saldo de salário, férias proporcionais, 13º proporcional).
+                        Ele encerra o contrato no sistema, impedindo que novas folhas de pagamento sejam geradas indevidamente para este colaborador no futuro.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card shadow mb-4 bg-light">
+        <div class="card-body text-center">
+            <h6 class="font-weight-bold text-gray-700 mb-4">O Ciclo Mensal do RH</h6>
+            
+            <div class="row justify-content-center">
+                <div class="col-md-3">
+                    <div class="p-3 border rounded bg-white shadow-sm">
+                        <i class="fas fa-calendar-alt text-primary mb-2"></i><br>
+                        <small>1. Registrar Pontos e <br>Horas Extras</small>
+                    </div>
+                </div>
+                <div class="col-md-1 align-self-center">
+                    <i class="fas fa-chevron-right text-muted d-none d-md-block"></i>
+                    <i class="fas fa-chevron-down text-muted d-md-none"></i>
+                </div>
+                <div class="col-md-3">
+                    <div class="p-3 border rounded bg-white shadow-sm">
+                        <i class="fas fa-tasks text-success mb-2"></i><br>
+                        <small>2. Conferir Produção <br>(Empreitadas)</small>
+                    </div>
+                </div>
+                <div class="col-md-1 align-self-center">
+                    <i class="fas fa-chevron-right text-muted d-none d-md-block"></i>
+                    <i class="fas fa-chevron-down text-muted d-md-none"></i>
+                </div>
+                <div class="col-md-3">
+                    <div class="p-3 border rounded bg-white shadow-sm">
+                        <i class="fas fa-file-invoice-dollar text-dark mb-2"></i><br>
+                        <small>3. Gerar Folha <br>(Automático no Financeiro)</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+{% endblock %}

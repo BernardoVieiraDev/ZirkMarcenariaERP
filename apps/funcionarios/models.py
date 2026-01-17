@@ -47,6 +47,8 @@ class Funcionario(SoftDeleteMixin):
 
     def __str__(self):
         return self.nome
+    
+    
 
 # Endereço separado
 class EnderecoFuncionario(models.Model):

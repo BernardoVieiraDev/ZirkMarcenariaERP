@@ -1,0 +1,52 @@
+{% extends 'core/base.html' %}
+
+{% block title %}Central de Ajuda - Zirk{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <h2 class="mb-4"><i class="fas fa-book"></i> Manual do Usuário</h2>
+    <p class="lead">Bem-vindo à documentação do sistema. Escolha um módulo abaixo para ver as instruções detalhadas.</p>
+    
+    <div class="row mt-4">
+        <div class="col-md-6 col-lg-3 mb-3">
+            <div class="card h-100">
+                <div class="card-body text-center">
+                    <h5 class="card-title">Recursos Humanos</h5>
+                    <p class="card-text">Funcionários, Férias, Rescisões e Banco de Horas.</p>
+                    <a href="{% url 'docs:rh' %}" class="btn btn-primary btn-sm">Ver Manual RH</a>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6 col-lg-3 mb-3">
+            <div class="card h-100">
+                <div class="card-body text-center">
+                    <h5 class="card-title">Financeiro</h5>
+                    <p class="card-text">Contas a Pagar/Receber e Fluxo de Caixa.</p>
+                    <a href="{% url 'docs:financeiro' %}" class="btn btn-primary btn-sm">Ver Manual Fin.</a>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6 col-lg-3 mb-3">
+            <div class="card h-100">
+                <div class="card-body text-center">
+                    <h5 class="card-title">Comercial & Obras</h5>
+                    <p class="card-text">Clientes, Sócios, Empreitadas e Comissões.</p>
+                    <a href="{% url 'docs:comercial' %}" class="btn btn-primary btn-sm">Ver Manual Com.</a>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-6 col-lg-3 mb-3">
+            <div class="card h-100">
+                <div class="card-body text-center">
+                    <h5 class="card-title">Relatórios</h5>
+                    <p class="card-text">Dashboards e exportação de dados.</p>
+                    <a href="{% url 'docs:relatorios' %}" class="btn btn-primary btn-sm">Ver Relatórios</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

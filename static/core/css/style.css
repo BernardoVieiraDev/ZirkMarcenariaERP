@@ -1,32 +1,55 @@
-/* Definindo variáveis de cores, fontes e outras propriedades gerais */
+/* =========================================
+   DEFINIÇÃO DE VARIÁVEIS (TEMA CLARO/PADRÃO)
+   ========================================= */
 :root {
-  /* Cores principais */
-  --bg: #f5f7fb; /* Fundo da página */
-  --surface: #ffffff; /* Cor de fundo dos elementos */
-  --muted: #6b7280; /* Cor de texto desbotado */
-  --text: #111827; /* Cor de texto principal */
-  --primary: #1f6feb; /* Cor principal (azul) */
-  --accent: #13a38c; /* Cor de destaque (verde) */
-  --danger: #e5544b; /* Cor de erro ou perigo (vermelho) */
+  /* Cores de Estrutura */
+  --bg: #f5f7fb;
+  --surface: #ffffff;
+  --surface-secondary: #f7faff; /* Usado em busca/inputs */
   
-  /* Propriedades de layout e fontes */
-  --radius: 10px; /* Raio para bordas arredondadas */
-  --gap: 18px; /* Espaçamento entre elementos */
-  font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial; /* Família de fontes */
-  font-size: 15px; /* Tamanho base da fonte */
+  /* Tipografia */
+  --text: #111827;
+  --text-secondary: #4b5563; /* Cor para títulos secundários */
+  --muted: #6b7280;
+  
+  /* Cores da Marca e Ações */
+  --primary: #1f6feb;
+  --primary-hover: #1a5dbd;
+  --accent: #13a38c;
+  --danger: #e5544b;
+  
+  /* Elementos de Interface (Bordas, Tabelas, Inputs) */
+  --border-color: #e5e7eb;
+  --input-bg: #fbfcfe;
+  --input-border: #e7edf8;
+  --table-header-bg: #f4f4f4;
+  --table-row-hover: #f9f9f9;
+  --nav-hover: #F3F6FB;
+  --shadow-color: rgba(15, 23, 42, 0.06);
+  --shadow-primary: rgba(31, 111, 235, 0.12);
+  
+  /* Layout */
+  --radius: 10px;
+  --gap: 18px;
+  
+  /* Fontes */
+  font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+  font-size: 15px;
 }
 
-/* Definindo o comportamento básico para todos os elementos */
+/* =========================================
+   RESET E ESTRUTURA GLOBAL
+   ========================================= */
 * {
-  box-sizing: border-box; /* Inclui o padding e border no cálculo de largura e altura */
+  box-sizing: border-box;
 }
 
 html, body {
-  height: 100%; /* Garante que o body ocupe toda a altura da tela */
-  margin: 0; /* Remove as margens padrões */
-  background: var(--bg); /* Cor de fundo geral */
-  color: var(--text); /* Cor do texto geral */
-  -webkit-font-smoothing: antialiased; /* Melhora a suavização das fontes no Webkit */
+  height: 100%;
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  -webkit-font-smoothing: antialiased;
 }
 
 /* Links */
@@ -40,200 +63,228 @@ a:not(.btn):focus {
   color: inherit !important;
 }
 
-
-/* Botões */
 button {
-  font: inherit; /* Herda a fonte do elemento pai */
+  font: inherit;
 }
 
-/* Estrutura da aplicação */
+/* =========================================
+   LAYOUT DA APLICAÇÃO (GRID)
+   ========================================= */
 .app {
-  display: grid; /* Usa grid layout para disposição dos elementos */
-  grid-template-columns: 260px 1fr; /* Sidebar fixa e conteúdo flexível */
-  gap: var(--gap); /* Espaçamento entre os elementos */
+  display: grid;
+  grid-template-columns: 260px 1fr;
+  gap: var(--gap);
   padding: 28px;
-  min-height: 100vh; /* A altura mínima da tela será 100% da altura da janela */
+  min-height: 100vh;
 }
 
-/* Sidebar */
+/* =========================================
+   SIDEBAR
+   ========================================= */
 .sidebar {
-  background: var(--surface); /* Cor de fundo da sidebar */
-  border-radius: var(--radius); /* Bordas arredondadas */
+  background: var(--surface);
+  border-radius: var(--radius);
   padding: 18px;
-  box-shadow: 0 8px 28px rgba(15, 23, 42, 0.06); /* Sombras sutis */
+  box-shadow: 0 8px 28px var(--shadow-color);
   display: flex;
   flex-direction: column;
-  gap: 14px; /* Espaçamento entre os elementos */
+  gap: 14px;
+  border: 1px solid transparent; 
 }
 
-/* Brand (logo + título) */
 .brand {
   display: flex;
   gap: 12px;
-  align-items: center; /* Alinha o logo e título no centro */
+  align-items: center;
 }
 
-/* Logo */
 .logo {
   width: 44px;
   height: 44px;
-  border-radius: 8px; /* Bordas arredondadas */
-  background: linear-gradient(135deg, var(--primary), #6ea8ff); /* Gradiente de cor */
+  border-radius: 8px;
+  background: linear-gradient(135deg, var(--primary), #6ea8ff);
   display: flex;
   align-items: center;
   justify-content: center;
   color: white;
   font-weight: 700;
-  box-shadow: 0 6px 18px rgba(31, 111, 235, 0.12); /* Sombra leve */
+  box-shadow: 0 6px 18px var(--shadow-primary);
 }
 
-/* Título da marca */
 .brand h3 {
   margin: 0;
   font-size: 1.03rem;
+  color: var(--text);
 }
 
-/* Resumo do usuário (ex. nome ou avatar) */
 .user-summary {
-  color: var(--muted); /* Texto desbotado */
+  color: var(--muted);
   font-size: 0.92rem;
 }
 
 /* Navegação */
 .nav {
   display: flex;
-  flex-direction: column; /* Organiza os itens verticalmente */
-  gap: 6px; /* Espaçamento entre os links */
+  flex-direction: column;
+  gap: 6px;
   margin-top: 6px;
 }
 
-/* Links de navegação */
 .nav a {
   display: flex;
   align-items: center;
-  gap: 10px; /* Espaçamento entre o ícone e o texto */
+  gap: 10px;
   padding: 10px;
-  border-radius: 8px; /* Bordas arredondadas */
-  color: var(--text); /* Cor do texto */
-  transition: background .14s, transform .08s; /* Efeito de transição ao passar o mouse */
+  border-radius: 8px;
+  color: var(--text);
+  transition: background .14s, transform .08s;
 }
 
-/* Efeito de hover nos links de navegação */
 .nav a:hover {
-  background: #F3F6FB; /* Cor de fundo ao passar o mouse */
-  transform: translateY(-1px); /* Leve animação de movimento */
+  background: var(--nav-hover);
+  transform: translateY(-1px);
 }
 
-/* Estado ativo da navegação */
 .nav a.active {
-  background: linear-gradient(90deg, rgba(31, 111, 235, 0.06), rgba(31, 111, 235, 0.02)); /* Gradiente suave */
-  border-left: 4px solid var(--primary); /* Linha à esquerda do link ativo */
-  padding-left: 8px; /* Ajuste no padding */
+  background: linear-gradient(90deg, rgba(31, 111, 235, 0.15), rgba(31, 111, 235, 0.02));
+  border-left: 4px solid var(--primary);
+  padding-left: 8px;
+  color: var(--primary) !important; /* Força cor primária no ativo */
 }
 
-/* Texto pequeno */
+/* Ícones do menu */
+.nav a svg, .nav-item-link svg {
+    color: var(--muted); /* Ícones padrão muted */
+    transition: color 0.2s;
+}
+.nav a:hover svg, .nav-item-link:hover svg {
+    color: var(--primary);
+}
+.nav a.active svg, .nav-item-link.active svg {
+    color: var(--primary);
+}
+
 .small {
   color: var(--muted);
   font-size: 0.88rem;
 }
 
-/* Conteúdo principal */
+/* =========================================
+   CONTEÚDO PRINCIPAL
+   ========================================= */
 .content {
   display: flex;
   flex-direction: column;
   gap: var(--gap);
 }
 
-/* Topbar (barra superior) */
+/* Topbar */
 .topbar {
   display: flex;
-  justify-content: space-between; /* Espaço entre os itens */
+  justify-content: space-between;
   align-items: center;
-  background: var(--surface); /* Cor de fundo */
+  background: var(--surface);
   padding: 14px;
-  border-radius: 12px; /* Bordas arredondadas */
-  box-shadow: 0 8px 28px rgba(15, 23, 42, 0.05); /* Sombra suave */
+  border-radius: 12px;
+  box-shadow: 0 8px 28px var(--shadow-color);
 }
 
-/* Barra de pesquisa */
+/* Busca */
 .search {
   display: flex;
   align-items: center;
   gap: 10px;
-  background: #F7FAFF; /* Cor de fundo */
+  background: var(--surface-secondary);
   padding: 8px 12px;
   border-radius: 8px;
-  width: 520px; /* Largura fixa */
+  width: 520px;
+  border: 1px solid var(--border-color); /* Adicionado borda sutil para definição */
 }
 
 .search input {
   border: 0;
   background: transparent;
-  outline: none; /* Remove o contorno ao focar */
+  outline: none;
   width: 100%;
+  color: var(--text);
 }
 
-
-/* Botões */
+/* =========================================
+   BOTÕES
+   ========================================= */
 .btn {
-  background: var(--primary); /* Cor de fundo do botão */
+  background: var(--primary);
   color: white;
   border: 0;
   padding: 8px 16px; 
-  cursor: pointer; /* Cursor de pointer para indicar que é clicável */
+  cursor: pointer;
   font-weight: 600;
-  box-shadow: 0 8px 26px rgba(31, 111, 235, 0.12); /* Sombra suave */
-  font-size: 0.9rem; /* Ajuste o tamanho da fonte dos botões */
-  border-radius: var(--radius); /* Adicione bordas arredondadas consistentes */
-  box-shadow: 0 6px 20px rgba(31, 111, 235, 0.1); /* Suaviza a sombra */
-  transition: all 0.2s ease; /* Adiciona transição para efeito visual */
-
+  font-size: 0.9rem;
+  border-radius: var(--radius);
+  box-shadow: 0 6px 20px var(--shadow-primary);
+  transition: all 0.2s ease;
 }
 
-/* Botão específico com a classe .btn-accent */
 .btn-accent {
-  background: var(--primary); /* Cor de fundo do botão */
+  background: var(--primary);
   color: white;
   border: 0;
   padding: 8px 16px;
-  cursor: pointer; /* Cursor de pointer para indicar que é clicável */
+  cursor: pointer;
   font-weight: 600;
-  box-shadow: 0 8px 26px rgba(31, 111, 235, 0.12); /* Sombra suave */
-  font-size: 0.9rem; /* Ajuste o tamanho da fonte dos botões */
-  border-radius: var(--radius); /* Bordas arredondadas consistentes */
-  box-shadow: 0 6px 20px rgba(31, 111, 235, 0.1); /* Suaviza a sombra */
-  transition: all 0.2s ease; /* Adiciona transição para efeito visual */
+  font-size: 0.9rem;
+  border-radius: var(--radius);
+  box-shadow: 0 6px 20px var(--shadow-primary);
+  transition: all 0.2s ease;
 }
 
-/* Efeito de hover somente no botão com a classe .btn-accent */
 .btn-accent:hover {
-  background: #1a5dbd; /* Um tom mais escuro de #1f6feb */
+  background: var(--primary-hover);
   color: #fff !important;
 }
 
-
-
-/* Botão "ghost" (transparente) */
+/* Botão Ghost */
 .btn.ghost {
   background: transparent;
-  color: var(--primary); /* Cor do texto igual à cor primária */
-  border: 1px solid rgba(31, 111, 235, 0.08); /* Borda fina */
-  box-shadow: none; /* Sem sombra */
+  color: var(--primary);
+  border: 1px solid rgba(31, 111, 235, 0.2); /* Aumentado um pouco a visibilidade */
+  box-shadow: none;
+}
+.btn.ghost:hover {
+    background: rgba(31, 111, 235, 0.1);
 }
 
-/* Cartões */
+/* Botão Primário (Formulários) */
+.btn-primary {
+  background-color: var(--primary);
+  color: #fff;
+  border: none;
+  padding: 0.8rem 2rem;
+  border-radius: 8px;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.btn-primary:hover {
+  background-color: var(--primary-hover);
+}
+
+/* =========================================
+   CARDS E PAINÉIS
+   ========================================= */
 .cards {
   display: grid;
-  grid-template-columns: repeat(3, 1fr); /* Três colunas de cartões */
-  gap: 14px; /* Espaçamento entre os cartões */
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
 }
 
-/* Cartão individual */
-.card {
+.card, .panel {
   background: var(--surface);
   padding: 14px;
   border-radius: 12px;
-  box-shadow: 0 8px 30px rgba(15, 23, 42, 0.04);
+  box-shadow: 0 8px 30px var(--shadow-color);
+  border: 1px solid transparent; /* Preparação */
 }
 
 .card h4 {
@@ -242,73 +293,70 @@ button {
   font-size: 0.92rem;
 }
 
-/* Métricas dentro dos cartões */
 .metric {
   font-weight: 700;
   font-size: 1.35rem;
   margin-top: 6px;
-}
-
-/* Painel de controle */
-.panel {
-  background: var(--surface);
-  padding: 14px;
-  border-radius: 12px;
-  box-shadow: 0 8px 30px rgba(15, 23, 42, 0.04);
+  color: var(--text);
 }
 
 .panel-header {
   display: flex;
-  justify-content: space-between; /* Alinha os itens nas extremidades */
+  justify-content: space-between;
   align-items: center;
   margin-bottom: 12px;
 }
 
-/* Controles dentro de um painel */
+.panel-header h3 {
+    color: var(--text);
+}
+
 .controls {
   display: flex;
-  gap: 8px; /* Espaçamento entre os controles */
+  gap: 8px;
   align-items: center;
 }
 
-/* Campos de input */
-.input {
+/* =========================================
+   INPUTS E FORMULÁRIOS
+   ========================================= */
+.input,
+.form-container input,
+.form-container select,
+.form-container textarea {
   padding: 8px 10px;
   border-radius: 8px;
-  border: 1px solid #E7EDF8; /* Borda leve */
-  background: #FBFCFE; /* Cor de fundo do input */
+  border: 1px solid var(--input-border);
+  background: var(--input-bg);
+  color: var(--text);
   min-width: 140px;
+  transition: all 0.2s ease;
 }
 
-/* Tabelas */
-table {
-  width: 100%; /* Tabela ocupa toda a largura disponível */
-  border-collapse: collapse; /* Remove o espaço entre as bordas das células */
-  font-size: 0.95rem;
+.form-container input:focus,
+.form-container select:focus,
+.form-container textarea:focus,
+.input:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 2px rgba(31, 111, 235, 0.2);
+  outline: none;
 }
 
-thead th {
-  text-align: left;
-  padding: 10px 8px;
-  color: var(--muted); /* Texto de cabeçalho desbotado */
-  font-weight: 700;
-  border-bottom: 1px solid
-}
-
-/* ---------- FORM STYLE ---------- */
+/* Wrapper de formulário específico */
 .form-wrapper {
-  background: #fff;
+  background: var(--surface);
   padding: 2rem;
   border-radius: 16px;
-  box-shadow: 0 0 20px rgba(0,0,0,0.05);
+  box-shadow: 0 0 20px var(--shadow-color);
   max-width: 800px;
   margin: 2rem auto;
+  border: 1px solid transparent;
 }
 
 .form-wrapper h1 {
   font-size: 1.8rem;
   margin-bottom: 1.5rem;
-  color: #333;
+  color: var(--text);
   text-align: center;
 }
 
@@ -319,8 +367,8 @@ thead th {
 .form-section h2 {
   font-size: 1.2rem;
   margin-bottom: 1rem;
-  color: #555;
-  border-bottom: 2px solid #eee;
+  color: var(--text-secondary);
+  border-bottom: 2px solid var(--border-color);
   padding-bottom: 0.4rem;
 }
 
@@ -333,25 +381,7 @@ thead th {
 .form-container label {
   font-weight: 600;
   margin-bottom: 0.3rem;
-  color: #444;
-}
-
-.form-container input,
-.form-container select,
-.form-container textarea {
-  padding: 0.7rem;
-  border: 1px solid #ccc;
-  border-radius: 8px;
-  font-size: 1rem;
-  transition: all 0.2s ease;
-}
-
-.form-container input:focus,
-.form-container select:focus,
-.form-container textarea:focus {
-  border-color: #008cff;
-  box-shadow: 0 0 0 2px rgba(0,140,255,0.2);
-  outline: none;
+  color: var(--text-secondary);
 }
 
 .form-actions {
@@ -359,78 +389,69 @@ thead th {
   margin-top: 2rem;
 }
 
-.btn-primary {
-  background-color: #008cff;
-  color: #fff;
-  border: none;
-  padding: 0.8rem 2rem;
-  border-radius: 8px;
-  font-size: 1rem;
-  cursor: pointer;
-  transition: background 0.2s ease;
+/* =========================================
+   TABELAS
+   ========================================= */
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.95rem;
 }
 
-.btn-primary:hover {
-  background-color: #0073d1;
+thead th {
+  text-align: left;
+  padding: 10px 8px;
+  color: var(--muted);
+  font-weight: 700;
+  border-bottom: 1px solid var(--border-color);
 }
-
 
 th, td {
-    padding: 12px 20px; /* Aumente o padding para mais espaçamento */
-    text-align: left;
-    border-bottom: 1px solid #ddd;
+  padding: 12px 20px;
+  text-align: left;
+  border-bottom: 1px solid var(--border-color);
+  color: var(--text);
 }
 
 th {
-    background-color: #f4f4f4; /* Cor de fundo para os cabeçalhos */
+  background-color: var(--table-header-bg);
 }
 
 tbody tr:hover {
-    background-color: #f9f9f9; /* Destaca a linha quando o mouse passa */
+  background-color: var(--table-row-hover);
 }
 
 .row-actions {
-    display: flex;
-    gap: 12px; 
-    padding: 10 !important;
-
+  display: flex;
+  gap: 12px; 
+  padding: 10px !important;
 }
 
 .row-actions a.btn {
-    line-height: normal !important;
-    padding: 5px 10px !important;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    height: auto !important;
-}
-/* Botão "ghost" */
-.btn.ghost {
-    background: transparent;
-    color: var(--primary);
-    border: 1px solid rgba(31, 111, 235, 0.08);
-    box-shadow: none;
+  line-height: normal !important;
+  padding: 5px 10px !important;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: auto !important;
 }
 
-/* =====================
-   TABLE BASE STRUCTURE
-===================== */
-
+/* Table Responsive Styles */
 .table-container {
   width: 100%;
-  overflow-x: auto; /* Permite rolagem horizontal no mobile */
+  overflow-x: auto;
 }
 
 .responsive-table {
   width: 100%;
   border-collapse: collapse;
-  table-layout: fixed; /* 🔹 Garante que todas as colunas mantenham o alinhamento */
+  table-layout: fixed;
   font-size: 0.95rem;
-  min-width: 500px; /* Evita quebra em telas pequenas */
+  min-width: 500px;
 }
 
 .responsive-table thead {
-  background: #f4f4f4;
+  background: var(--table-header-bg);
   color: var(--muted);
   font-weight: 700;
 }
@@ -439,14 +460,14 @@ tbody tr:hover {
 .responsive-table td {
   padding: 12px 16px;
   text-align: left;
-  border-bottom: 1px solid #e5e7eb;
-  white-space: nowrap; /* Evita quebras estranhas de texto */
+  border-bottom: 1px solid var(--border-color);
+  white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
 .responsive-table tbody tr:hover {
-  background-color: #f9fafb;
+  background-color: var(--table-row-hover);
 }
 
 .responsive-table .empty-row {
@@ -454,55 +475,55 @@ tbody tr:hover {
   color: var(--muted);
 }
 
-
-/* item normal */
+/* =========================================
+   ITENS DE MENU ALTERNATIVOS
+   ========================================= */
 .nav-item-link {
   display: flex;
   align-items: center;
   justify-content: space-between;
   padding: 10px;
   border-radius: 8px;
-  color: #e5e7eb;
+  color: var(--text);
   transition: background 0.15s ease, transform 0.08s ease;
 }
 
 .nav-item-link:hover {
-  background: rgba(31, 111, 235, 0.08);
+  background: var(--nav-hover);
   transform: translateY(-1px);
 }
 
-/* ITEM ATIVO */
 .nav-item-link.active {
   background: linear-gradient(
     90deg,
     rgba(31, 111, 235, 0.18),
     rgba(31, 111, 235, 0.05)
   );
-  border-left: 4px solid #1f6feb;
+  border-left: 4px solid var(--primary);
   padding-left: 6px;
-  color: #1f6feb;
+  color: var(--primary);
   font-weight: 600;
 }
 
-/* ícones também ficam azuis */
-.nav-item-link.active svg {
-  color: #1f6feb;
-}
-
-/* submenus */
 .nav-link.small.active {
-  color: #1f6feb !important;
+  color: var(--primary) !important;
   font-weight: 600;
 }
 
-
-
-/* =====================
+/* =========================================
    RESPONSIVIDADE
-===================== */
-
-/* Ajuste em telas menores */
+   ========================================= */
 @media (max-width: 768px) {
+  .app {
+    grid-template-columns: 1fr;
+    padding: 14px;
+  }
+  
+  /* Sidebar some ou vira menu hambúrguer (ajuste conforme lógica JS) */
+  .sidebar {
+    display: none; 
+  }
+
   .responsive-table,
   .responsive-table thead,
   .responsive-table tbody,
@@ -513,15 +534,15 @@ tbody tr:hover {
   }
 
   .responsive-table thead {
-    display: none; /* Oculta o cabeçalho */
+    display: none;
   }
 
   .responsive-table tr {
     margin-bottom: 12px;
-    border: 1px solid #e5e7eb;
+    border: 1px solid var(--border-color);
     border-radius: 8px;
     padding: 10px;
-    background: #fff;
+    background: var(--surface);
   }
 
   .responsive-table td {
@@ -530,7 +551,8 @@ tbody tr:hover {
     padding: 8px 10px;
     text-align: right;
     border: none;
-    border-bottom: 1px dashed #e5e7eb;
+    border-bottom: 1px dashed var(--border-color);
+    color: var(--text);
   }
 
   .responsive-table td:last-child {
@@ -538,27 +560,24 @@ tbody tr:hover {
   }
 
   .responsive-table td::before {
-    content: attr(data-label); /* Exibe o nome da coluna antes do dado */
+    content: attr(data-label);
     font-weight: 600;
     text-align: left;
     color: var(--muted);
   }
 
-.nav a:not(.btn) {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 10px;
-}
+  .nav a:not(.btn) {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px;
+  }
 
-
-.nav a:hover,
-.nav a:focus,
-.nav a:active {
-  text-decoration: none !important;
-  border-bottom: none !important;
-  box-shadow: none !important;
-}
-
-  
+  .nav a:hover,
+  .nav a:focus,
+  .nav a:active {
+    text-decoration: none !important;
+    border-bottom: none !important;
+    box-shadow: none !important;
+  }
 }

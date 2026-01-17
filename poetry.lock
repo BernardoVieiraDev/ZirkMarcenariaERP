@@ -386,6 +386,21 @@ argon2 = ["argon2-cffi (>=19.1.0)"]
 bcrypt = ["bcrypt"]
 
 [[package]]
+name = "django-widget-tweaks"
+version = "1.5.1"
+description = "Tweak the form field rendering in templates, not in python-level form definitions."
+optional = false
+python-versions = ">=3.9"
+groups = ["main"]
+files = [
+    {file = "django_widget_tweaks-1.5.1-py3-none-any.whl", hash = "sha256:3f5080f8365740fc1c14607498c975cbfed896dd0c40e1b563095716ee31e3b5"},
+    {file = "django_widget_tweaks-1.5.1.tar.gz", hash = "sha256:084acc9eeb5a3208f2670522de6284287973e54d54488ce6d402f4b99bc5f452"},
+]
+
+[package.dependencies]
+django = ">=4.2"
+
+[[package]]
 name = "djfernet"
 version = "0.8.1"
 description = ""
@@ -805,4 +820,4 @@ files = [
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.12"
-content-hash = "6d9e2ca1a8093655bb12228aeebe2db4436fc9a929fcd08e953522007081d95c"
+content-hash = "194385d7b2c67c8df03285b05ce8da4d03acf7c13d768d90cfb466c93d084b63"

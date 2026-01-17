@@ -1,11 +1,14 @@
-from django.urls import reverse_lazy
 from django.contrib import messages
+from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.http import HttpResponse
-from django.views.generic import ListView, CreateView, UpdateView, DeleteView
-from .models import Rescisao
+from django.urls import reverse_lazy
+from django.views.generic import CreateView, DeleteView, ListView, UpdateView
+
 from .forms import RescisaoForm
+from .models import Rescisao
 from .services import RescisaoExcelService
+
 
 class RescisaoListView(LoginRequiredMixin, ListView):
     model = Rescisao
@@ -42,8 +45,8 @@ class RescisaoDeleteView(LoginRequiredMixin, DeleteView):
         messages.success(self.request, "Rescisão excluída com sucesso.")
         return super().form_valid(form)
 
-# --- AQUI REMOVEMOS A CLASSE RescisaoDetailView ---
 
+@login_required
 def gerar_excel_rescisao(request, pk):
     rescisao = Rescisao.objects.get(pk=pk)
     

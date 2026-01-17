@@ -3,6 +3,7 @@ from django.shortcuts import render
 from django.http import HttpResponse
 from .services import FluxoCaixaService
 from apps.relatorios.services.fluxo_caixa_export import RelatorioFluxoCaixaExport
+from django.contrib.auth.decorators import login_required
 
 def _calcular_data_inicio(request, tipo):
     """
@@ -20,6 +21,7 @@ def _calcular_data_inicio(request, tipo):
             return hoje.replace(day=1)
     return hoje
 
+@login_required
 def fluxo_semanal(request):
     data_inicio = _calcular_data_inicio(request, 'semanal')
     # Gera 7 dias
@@ -34,6 +36,7 @@ def fluxo_semanal(request):
     }
     return render(request, 'core/fluxo/fluxo_list.html', context)
 
+@login_required
 def fluxo_mensal(request):
     data_inicio = _calcular_data_inicio(request, 'mensal')
     # Gera 30 dias (ou ajuste conforme necessidade)
@@ -48,6 +51,7 @@ def fluxo_mensal(request):
     }
     return render(request, 'core/fluxo/fluxo_list.html', context)
 
+@login_required
 def exportar_fluxo(request, tipo):
     """
     Gera o download do arquivo Excel.

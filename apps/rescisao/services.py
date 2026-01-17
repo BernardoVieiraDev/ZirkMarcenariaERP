@@ -155,19 +155,19 @@ class RescisaoExcelService:
         # --- Montagem dos Itens ---
         itens = []
         
-        # add agora recebe explicitamente o base_calc. Se for None, fica vazio.
+        # FUNÇÃO AUXILIAR COM LÓGICA DE FILTRO
+        # Se valor for None, 0 ou 0.00, o item NÃO é adicionado à lista.
         def add(nome, valor, tipo, ref="", base_calc=None):
             if valor and valor > 0:
                 base_final = base_calc if base_calc is not None else ""
                 itens.append((nome, valor, tipo, ref, base_final))
 
         # -- Proventos --
-        # AQUI ESTÁ A REGRA: Salário Base APENAS nestes 3 campos
         add("Saldo de Salário", rescisao.val_dias_trabalhados, 'P', base_calc=salario_base)
         add("Férias Vencidas", rescisao.val_ferias, 'P', base_calc=salario_base)
-        add("1/3 Constitucional de Férias", rescisao.val_terco_ferias, 'P', ref="") # Sem base
+        add("1/3 Constitucional de Férias", rescisao.val_terco_ferias, 'P', ref="") 
         add("13º Salário Proporcional", rescisao.val_13_salario, 'P', base_calc=salario_base)
-        add("Remunerados (DSR)", rescisao.val_remunerados, 'P') # Sem base
+        add("Remunerados (DSR)", rescisao.val_remunerados, 'P') 
         
         # Outros (Provento)
         if rescisao.outro_tipo == 'P' and rescisao.outro_valor:
@@ -179,6 +179,7 @@ class RescisaoExcelService:
         add("Atrasos", rescisao.val_atrasos, 'D')
         add("Multa Art. 480 CLT", rescisao.val_multa_480, 'D')
         
+        # Descrição dinâmica para faltas
         desc_falta = f"Faltas ({rescisao.desc_faltas})" if rescisao.desc_faltas else "Faltas"
         add(desc_falta, rescisao.val_faltas, 'D')
 
@@ -190,9 +191,9 @@ class RescisaoExcelService:
         # Escrita na Planilha
         total_p = Decimal(0)
         total_d = Decimal(0)
-        linhas_minimas = 6
-        linhas_usadas = 0
-
+        
+        # Loop apenas pelos itens que passaram no filtro (> 0)
+        # REMOVIDA LÓGICA DE LINHAS MÍNIMAS (WHILE)
         for nome, valor, tipo, ref, base_val in itens:
             ws.write(row, 0, f"  {nome}", fmt['texto'])
             ws.write(row, 1, ref, fmt['center'])
@@ -213,15 +214,6 @@ class RescisaoExcelService:
                 total_d += valor
             
             row += 1
-            linhas_usadas += 1
-
-        # Linhas vazias estéticas
-        while linhas_usadas < linhas_minimas:
-            for c in range(5):
-                f_vazio = fmt['money'] if c >= 2 else fmt['texto']
-                ws.write(row, c, "", f_vazio) 
-            row += 1
-            linhas_usadas += 1
 
         # Totais
         ws.write(row, 0, "SUBTOTAL", fmt['total_label'])

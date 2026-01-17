@@ -1,0 +1,195 @@
+{% extends 'core/base.html' %}
+{% load static %}
+
+{% block title %}Gestão de Parcelamentos{% endblock %}
+
+{% block content %}
+<style>
+    /* === DESIGN SYSTEM === */
+    :root {
+        --font-sans: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+        
+        /* Cores Neutras */
+        --slate-50: #f8fafc; 
+        --slate-100: #f1f5f9; 
+        --slate-200: #e2e8f0; 
+        --slate-300: #cbd5e1;
+        --slate-400: #94a3b8; 
+        --slate-500: #64748b; 
+        --slate-600: #475569; 
+        --slate-700: #334155;
+        --slate-900: #0f172a;
+
+        /* Cores de Destaque */
+        --blue-50: #eff6ff; --blue-500: #3b82f6; --blue-600: #2563eb; --blue-700: #1d4ed8;
+        --green-50: #ecfdf5; --green-500: #10b981; --green-700: #047857;
+        --red-500: #ef4444;
+        --white: #ffffff;
+    }
+
+    /* --- CORREÇÃO DO "TUDO BRANCO" --- */
+    /* Força o fundo da página para um cinza leve, criando contraste com os cards */
+    body {
+        background-color: var(--slate-100) !important;
+    }
+
+    .dash-container {
+        font-family: var(--font-sans); color: var(--slate-900); padding-bottom: 60px; max-width: 1200px; margin: 0 auto;
+    }
+
+    /* HEADER */
+    .dash-header { 
+        margin-bottom: 32px; display: flex; justify-content: space-between; align-items: center; padding-top: 10px;
+    }
+    .dash-title { font-size: 24px; font-weight: 800; color: var(--slate-900); margin: 0; letter-spacing: -0.5px; }
+    
+    /* GRID */
+    .cards-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+        gap: 24px;
+    }
+
+    /* CARD INDIVIDUAL */
+    .parcela-card {
+        background-color: var(--white);
+        border: 1px solid var(--slate-200); /* Borda sutil */
+        border-radius: 16px;
+        overflow: hidden;
+        display: flex; flex-direction: column;
+        
+        /* Sombra mais pronunciada para destacar do fundo cinza */
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+        transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s;
+    }
+    
+    .parcela-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 15px 30px -5px rgba(0, 0, 0, 0.1);
+        border-color: var(--blue-500);
+    }
+
+    .card-body { padding: 24px; flex: 1; }
+    
+    /* Footer com cor diferente para quebrar o branco do card */
+    .card-footer { 
+        padding: 16px 24px; 
+        background-color: var(--slate-50); 
+        border-top: 1px solid var(--slate-100); 
+        text-align: center;
+    }
+
+    /* CONTEÚDO */
+    .card-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px; gap: 12px; }
+    .card-title { font-size: 16px; font-weight: 700; color: var(--slate-900); line-height: 1.4; margin: 0; }
+    
+    /* BADGES */
+    .badge { padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: 600; text-transform: uppercase; white-space: nowrap; }
+    
+    .bg-success-soft { 
+        background-color: var(--green-50); color: var(--green-700); 
+        border: 1px solid #86efac; /* Borda verde mais visível */
+    }
+    .bg-blue-soft { 
+        background-color: var(--blue-50); color: var(--blue-700); 
+        border: 1px solid #bfdbfe; /* Borda azul mais visível */
+    }
+
+    /* PROGRESSO */
+    .progresso-container { margin-bottom: 24px; }
+    .progresso-info { display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 8px; color: var(--slate-500); font-weight: 600; }
+    .progress-track { height: 8px; background-color: var(--slate-100); border-radius: 99px; overflow: hidden; border: 1px solid var(--slate-200); }
+    .progress-fill { height: 100%; border-radius: 99px; transition: width 0.5s ease; }
+    .fill-green { background-color: var(--green-500); }
+    .fill-blue { background-color: var(--blue-500); }
+
+    /* VALORES */
+    .valores-grid { 
+        display: grid; grid-template-columns: 1fr 1fr; gap: 16px; 
+        border-top: 1px dashed var(--slate-200); /* Separador tracejado */
+        padding-top: 16px; 
+    }
+    .val-label { font-size: 11px; text-transform: uppercase; color: var(--slate-500); font-weight: 600; margin-bottom: 4px; letter-spacing: 0.5px; }
+    .val-valor { font-size: 15px; font-weight: 700; color: var(--slate-700); }
+    .text-danger { color: var(--red-500); }
+
+    /* BOTÃO */
+    .btn-link-card {
+        color: var(--blue-600); font-weight: 600; font-size: 14px; text-decoration: none;
+        display: inline-flex; align-items: center; gap: 6px;
+        transition: gap 0.2s;
+    }
+    .btn-link-card:hover { color: var(--blue-700); gap: 10px; }
+
+    /* EMPTY STATE */
+    .empty-state {
+        grid-column: 1 / -1; text-align: center; padding: 60px; background: rgba(255,255,255,0.5);
+        border-radius: 16px; border: 2px dashed var(--slate-300); color: var(--slate-500);
+    }
+</style>
+
+<div class="dash-container">
+    
+    <div class="dash-header">
+        <h1 class="dash-title">Gestão de Parcelamentos</h1>
+    </div>
+
+    <div class="cards-grid">
+        {% for p in parcelamentos %}
+            {% with resumo=p.resumo %}
+            <div class="parcela-card">
+                <div class="card-body">
+                    <div class="card-top">
+                        <h3 class="card-title">{{ p.descricao }}</h3>
+                        {% if resumo.progresso == 100 %}
+                            <span class="badge bg-success-soft">Concluído</span>
+                        {% else %}
+                            <span class="badge bg-blue-soft">Em Aberto</span>
+                        {% endif %}
+                    </div>
+
+                    <div class="progresso-container">
+                        <div class="progresso-info">
+                            <span>Progresso</span>
+                            <span style="color: var(--slate-700);">{{ resumo.qtd_pagas }} de {{ resumo.total_parcelas }} pagas</span>
+                        </div>
+                        <div class="progress-track">
+                            <div class="progress-fill {% if resumo.progresso == 100 %}fill-green{% else %}fill-blue{% endif %}" 
+                                 style="width: {{ resumo.progresso }}%"></div>
+                        </div>
+                    </div>
+
+                    <div class="valores-grid">
+                        <div>
+                            <div class="val-label">Valor Total</div>
+                            <div class="val-valor">R$ {{ resumo.valor_total_atual|floatformat:"2g" }}</div>
+                        </div>
+                        <div style="text-align: right;">
+                            <div class="val-label">Restante</div>
+                            {% if resumo.valor_aberto > 0 %}
+                                <div class="val-valor text-danger">R$ {{ resumo.valor_aberto|floatformat:"2g" }}</div>
+                            {% else %}
+                                <div class="val-valor" style="color: var(--green-500);">Quitado</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card-footer">
+                    <a href="{% url 'pagar:parcelamento_detail' p.pk %}" class="btn-link-card">
+                        Ver Detalhes
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
+                    </a>
+                </div>
+            </div>
+            {% endwith %}
+        {% empty %}
+            <div class="empty-state">
+                <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round" style="margin-bottom: 16px; opacity: 0.5;"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>
+                <p>Nenhum parcelamento registrado.</p>
+            </div>
+        {% endfor %}
+    </div>
+
+</div>
+{% endblock %}

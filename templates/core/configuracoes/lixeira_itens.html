@@ -10,79 +10,110 @@
                 <li class="breadcrumb-item active fw-bold" aria-current="page">{{ verbose_name }}</li>
             </ol>
         </nav>
-        <span class="badge bg-secondary rounded-pill px-3 py-2">
-            Total: {{ itens.paginator.count }}
-        </span>
+        
+        <div>
+            {% if itens %}
+            <a href="{% url 'configuracoes:esvaziar_lixeira' model_key %}" 
+               class="btn btn-danger btn-sm me-2"
+               onclick="return confirm('⚠️ TEM CERTEZA? Isso apagará TODOS os itens desta lixeira permanentemente (não apenas os desta página). Esta ação é irreversível.');">
+                <i class="fas fa-dumpster-fire me-1"></i> Esvaziar Lixeira
+            </a>
+            {% endif %}
+            
+            <span class="badge bg-secondary rounded-pill px-3 py-2">
+                Total: {{ itens.paginator.count }}
+            </span>
+        </div>
     </div>
 
-    <div class="card shadow-sm border-0">
-        {% if itens %}
-        <div class="table-responsive">
-            <table class="table table-hover align-middle mb-0">
-                <thead class="bg-light">
-                    <tr>
-                        <th class="ps-4 py-3 text-secondary text-uppercase small fw-bold" style="width: 50%;">Registro</th>
-                        <th class="py-3 text-secondary text-uppercase small fw-bold">Excluído em</th>
-                        <th class="pe-4 py-3 text-end text-secondary text-uppercase small fw-bold">Ações</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for item in itens %}
-                    <tr>
-                        <td class="ps-4 py-3">
-                            <div class="d-flex align-items-center">
-                                <div class="bg-light rounded p-2 me-3 text-danger">
-                                    <i class="fas fa-file-alt"></i>
-                                </div>
-                                <div>
-                                    <div class="fw-bold text-dark">{{ item }}</div>
-                                    <small class="text-muted">ID: #{{ item.pk }}</small>
-                                </div>
-                            </div>
-                        </td>
-                        <td class="py-3">
-                            <div class="d-flex flex-column">
-                                <span class="fw-500 text-dark">{{ item.deleted_at|date:"d M Y" }}</span>
-                                <small class="text-muted">{{ item.deleted_at|date:"H:i" }} ({{ item.deleted_at|timesince }} atrás)</small>
-                            </div>
-                        </td>
-                        <td class="pe-4 py-3 text-end">
-                            <a href="{% url 'configuracoes:restaurar_item' model_key item.pk %}" 
-                               class="btn btn-outline-success btn-sm hover-lift me-1"
-                               data-bs-toggle="tooltip" 
-                               title="Restaurar este item"
-                               onclick="return confirm('Tem certeza que deseja restaurar este item?');">
-                                <i class="fas fa-trash-restore me-1"></i> Restaurar
-                            </a>
-                            
-                            <a href="{% url 'configuracoes:deletar_permanente' model_key item.pk %}" 
-                               class="btn btn-outline-danger btn-sm hover-lift"
-                               data-bs-toggle="tooltip" 
-                               title="Excluir Permanentemente"
-                               onclick="return confirm('ATENÇÃO: Isso apagará o registro para sempre. Continuar?');">
-                                <i class="fas fa-times"></i>
-                            </a>
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
-        {% else %}
-        <div class="text-center py-5">
-            <div class="mb-3">
-                <div class="bg-light rounded-circle d-inline-flex justify-content-center align-items-center" style="width: 80px; height: 80px;">
-                    <i class="fas fa-trash-restore fa-3x text-muted opacity-50"></i>
-                </div>
+    <form method="POST" action="{% url 'configuracoes:acoes_lixeira_em_massa' model_key %}" id="bulkForm">
+        {% csrf_token %}
+        
+        <div class="card shadow-sm border-0">
+            {% if itens %}
+            
+            <div class="card-header bg-white py-3 border-0 d-flex gap-2">
+                <button type="submit" name="acao" value="restaurar" class="btn btn-outline-success btn-sm" onclick="return confirm('Restaurar itens selecionados?')">
+                    <i class="fas fa-trash-restore me-1"></i> Restaurar Selecionados
+                </button>
+                <button type="submit" name="acao" value="excluir" class="btn btn-outline-danger btn-sm" onclick="return confirm('⚠️ Excluir permanentemente os itens selecionados?')">
+                    <i class="fas fa-times me-1"></i> Excluir Selecionados
+                </button>
             </div>
-            <h4 class="text-secondary fw-bold">Tudo limpo!</h4>
-            <p class="text-muted">Não há itens excluídos nesta categoria.</p>
-            <a href="{% url 'configuracoes:lixeira_dashboard' %}" class="btn btn-primary mt-2">
-                Voltar para Categorias
-            </a>
+
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="bg-light">
+                        <tr>
+                            <th class="ps-4 py-3" style="width: 40px;">
+                                <input type="checkbox" class="form-check-input" id="select-all">
+                            </th>
+                            <th class="py-3 text-secondary text-uppercase small fw-bold" style="width: 50%;">Registro</th>
+                            <th class="py-3 text-secondary text-uppercase small fw-bold">Excluído em</th>
+                            <th class="pe-4 py-3 text-end text-secondary text-uppercase small fw-bold">Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in itens %}
+                        <tr>
+                            <td class="ps-4 py-3">
+                                <input type="checkbox" name="item_ids" value="{{ item.pk }}" class="form-check-input item-checkbox">
+                            </td>
+                            <td class="py-3">
+                                <div class="d-flex align-items-center">
+                                    <div class="bg-light rounded p-2 me-3 text-danger">
+                                        <i class="fas fa-file-alt"></i>
+                                    </div>
+                                    <div>
+                                        <div class="fw-bold text-dark">{{ item }}</div>
+                                        <small class="text-muted">ID: #{{ item.pk }}</small>
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="py-3">
+                                <div class="d-flex flex-column">
+                                    <span class="fw-500 text-dark">{{ item.deleted_at|date:"d M Y" }}</span>
+                                    <small class="text-muted">{{ item.deleted_at|date:"H:i" }} ({{ item.deleted_at|timesince }} atrás)</small>
+                                </div>
+                            </td>
+                            <td class="pe-4 py-3 text-end">
+                                <a href="{% url 'configuracoes:restaurar_item' model_key item.pk %}" 
+                                   class="btn btn-outline-success btn-sm hover-lift me-1"
+                                   data-bs-toggle="tooltip" 
+                                   title="Restaurar este item"
+                                   onclick="return confirm('Tem certeza que deseja restaurar este item?');">
+                                    <i class="fas fa-trash-restore"></i>
+                                </a>
+                                
+                                <a href="{% url 'configuracoes:deletar_permanente' model_key item.pk %}" 
+                                   class="btn btn-outline-danger btn-sm hover-lift"
+                                   data-bs-toggle="tooltip" 
+                                   title="Excluir Permanentemente"
+                                   onclick="return confirm('ATENÇÃO: Isso apagará o registro para sempre. Continuar?');">
+                                    <i class="fas fa-times"></i>
+                                </a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="text-center py-5">
+                <div class="mb-3">
+                    <div class="bg-light rounded-circle d-inline-flex justify-content-center align-items-center" style="width: 80px; height: 80px;">
+                        <i class="fas fa-trash-restore fa-3x text-muted opacity-50"></i>
+                    </div>
+                </div>
+                <h4 class="text-secondary fw-bold">Tudo limpo!</h4>
+                <p class="text-muted">Não há itens excluídos nesta categoria.</p>
+                <a href="{% url 'configuracoes:lixeira_dashboard' %}" class="btn btn-primary mt-2">
+                    Voltar para Categorias
+                </a>
+            </div>
+            {% endif %}
         </div>
-        {% endif %}
-    </div>
+    </form>
     
     {% if itens.has_other_pages %}
     <div class="mt-4 d-flex justify-content-center">
@@ -123,9 +154,18 @@
 </style>
 
 <script>
+    // Tooltips do Bootstrap
     var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
     var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
       return new bootstrap.Tooltip(tooltipTriggerEl)
     })
+
+    // Lógica do Checkbox "Selecionar Tudo"
+    document.getElementById('select-all').addEventListener('change', function() {
+        var checkboxes = document.querySelectorAll('.item-checkbox');
+        for (var i = 0; i < checkboxes.length; i++) {
+            checkboxes[i].checked = this.checked;
+        }
+    });
 </script>
 {% endblock %}

@@ -1,14 +1,17 @@
 from django.contrib import messages
+from django.contrib.auth.decorators import login_required
 from django.shortcuts import get_object_or_404, redirect, render
 
 from .forms import EmpreitadaForm, PagamentoEmpreitadaForm
 from .models import Empreitada, PagamentoEmpreitada
 
 
+@login_required
 def empreitada_list(request):
     empreitadas = Empreitada.objects.filter(is_deleted=False).order_by('status', '-data_inicio')
     return render(request, 'core/empreitadas/list.html', {'empreitadas': empreitadas})
 
+@login_required
 def empreitada_detail(request, pk):
     empreitada = get_object_or_404(Empreitada, pk=pk)
     
@@ -35,6 +38,7 @@ def empreitada_detail(request, pk):
         'form': form
     })
 
+@login_required
 def empreitada_create(request):
     if request.method == 'POST':
         form = EmpreitadaForm(request.POST)
@@ -47,7 +51,7 @@ def empreitada_create(request):
     
     return render(request, 'core/empreitadas/form.html', {'form': form, 'title': 'Nova Empreitada'})
 
-
+@login_required
 def empreitada_edit(request, pk):
     empreitada = get_object_or_404(Empreitada, pk=pk)
     
@@ -65,6 +69,7 @@ def empreitada_edit(request, pk):
         'titulo': f'Editar: {empreitada.funcionario.nome}'
     })
 
+@login_required
 def empreitada_delete(request, pk):
     empreitada = get_object_or_404(Empreitada, pk=pk)
     

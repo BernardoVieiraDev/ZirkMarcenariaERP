@@ -8,7 +8,7 @@ class ConfiguracaoGlobalForm(forms.ModelForm):
             'lixeira_ativa', 
             'dias_retencao_lixeira', 
             'limpeza_automatica_ativa', 
-            'meses_retencao_historico'
+            'meses_retencao_historico',
         ]
         widgets = {
             'lixeira_ativa': forms.CheckboxInput(attrs={'class': 'form-check-input'}),

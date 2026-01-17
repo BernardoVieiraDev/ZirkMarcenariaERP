@@ -1,0 +1,136 @@
+{% extends 'core/base.html' %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+
+    <div class="row mb-4">
+        <div class="col-12">
+            <h1 class="h3 text-gray-800"><i class="fas fa-print me-2"></i>Manual do Usuário: Central de Relatórios</h1>
+            <p class="lead text-muted">
+                Transforme dados brutos em decisões inteligentes. Exporte planilhas, PDFs e análises detalhadas de toda a operação.
+            </p>
+        </div>
+    </div>
+
+    <div class="card shadow mb-4 border-left-primary">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary"><i class="fas fa-chart-pie me-2"></i>Financeiro Essencial</h6>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-4 mb-3">
+                    <div class="p-3 border rounded bg-light h-100">
+                        <strong class="text-dark d-block mb-2"><i class="fas fa-calendar-alt text-primary"></i> Contas Mensais</strong>
+                        <p class="small mb-0">
+                            Gera um espelho completo do que foi <strong>Pago</strong> e <strong>Recebido</strong> no mês. 
+                            Ideal para conferência de saldo e fechamento de caixa mensal.
+                        </p>
+                    </div>
+                </div>
+                <div class="col-md-4 mb-3">
+                    <div class="p-3 border rounded bg-light h-100">
+                        <strong class="text-dark d-block mb-2"><i class="fas fa-university text-primary"></i> Movimento Bancário</strong>
+                        <p class="small mb-0">
+                            Extrato detalhado de todas as transações que passaram pelos bancos cadastrados. 
+                            Cruze isso com o extrato real do banco para auditoria.
+                        </p>
+                    </div>
+                </div>
+                <div class="col-md-4 mb-3">
+                    <div class="p-3 border rounded bg-light h-100">
+                        <strong class="text-dark d-block mb-2"><i class="fas fa-money-bill-wave text-primary"></i> Caixa Diário</strong>
+                        <p class="small mb-0">
+                            Relatório específico para controle de dinheiro vivo (espécie). Entradas e saídas de pequenos valores do dia a dia.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-6 mb-4">
+            <div class="card shadow h-100 border-bottom-info">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-info"><i class="fas fa-cogs me-2"></i>Operacional e Custos</h6>
+                </div>
+                <div class="card-body">
+                    <p>Entenda para onde o dinheiro está indo nos detalhes.</p>
+                    <ul class="list-group list-group-flush small">
+                        <li class="list-group-item">
+                            <strong><i class="fas fa-gas-pump text-danger mr-2"></i> Relatório de Gasolina:</strong>
+                            Veja o consumo por veículo ou por motorista. Essencial para identificar gastos excessivos com frota.
+                        </li>
+                        <li class="list-group-item">
+                            <strong><i class="fas fa-credit-card text-warning mr-2"></i> Cartões e Cheques:</strong>
+                            Listagens específicas para controlar faturas de cartão de crédito e cheques pré-datados emitidos.
+                        </li>
+                        <li class="list-group-item">
+                            <strong><i class="fas fa-receipt text-secondary mr-2"></i> Gastos Gerais:</strong>
+                            Um "Raio-X" das pequenas despesas (materiais, lanches, manutenção) categorizadas.
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-6 mb-4">
+            <div class="card shadow h-100 border-bottom-warning">
+                <div class="card-header py-3 bg-warning text-white">
+                    <h6 class="m-0 font-weight-bold"><i class="fas fa-chess me-2"></i>Estratégico e Contabilidade</h6>
+                </div>
+                <div class="card-body">
+                    <p>Relatórios pensados para a diretoria e para o contador.</p>
+                    
+                    <div class="mb-3">
+                        <strong class="text-dark"><i class="fas fa-file-excel text-success"></i> Relatório Anual Consolidado</strong>
+                        <p class="small text-muted">
+                            A "visão de águia". Soma tudo o que aconteceu no ano, mês a mês. 
+                            Mostra a evolução do faturamento e das despesas para análise de crescimento anual.
+                        </p>
+                    </div>
+
+                    <div class="mb-3">
+                        <strong class="text-dark"><i class="fas fa-briefcase text-info"></i> Exportação para Contabilidade</strong>
+                        <p class="small text-muted">
+                            Gera um arquivo organizado com todas as notas e movimentos para enviar ao escritório de contabilidade, economizando tempo de digitação.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card shadow mb-4 border-left-success">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-success"><i class="fas fa-users me-2"></i>Relatórios de RH</h6>
+        </div>
+        <div class="card-body">
+            <div class="row align-items-center">
+                <div class="col-md-2 text-center">
+                    <i class="fas fa-file-invoice-dollar fa-3x text-gray-300"></i>
+                </div>
+                <div class="col-md-10">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h5 class="h6 font-weight-bold">Folha de Pagamento Detalhada</h5>
+                            <p class="small mb-2">Lista todos os funcionários, salários, horas extras e descontos do mês em uma única planilha.</p>
+                        </div>
+                        <div class="col-md-6 border-left">
+                            <h5 class="h6 font-weight-bold">Holerites (Recibos)</h5>
+                            <p class="small mb-0">Gera os recibos individuais prontos para impressão e assinatura dos colaboradores.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="alert alert-secondary shadow-sm text-center">
+        <i class="fas fa-lightbulb text-warning mb-2 fa-lg"></i><br>
+        <strong>Dica Pro:</strong> Quase todos os relatórios permitem filtrar por <strong>Período (Data Início - Data Fim)</strong>. 
+        Use isso para tirar extratos semanais, quinzenais ou de períodos personalizados.
+    </div>
+
+</div>
+{% endblock %}

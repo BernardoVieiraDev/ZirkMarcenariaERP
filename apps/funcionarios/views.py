@@ -2,6 +2,7 @@ import os
 
 import requests
 from django.conf import settings
+from django.contrib.auth.decorators import login_required
 from django.db.models import Sum  # <--- Importante: Adicionar este import
 from django.http import FileResponse, HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
@@ -12,137 +13,131 @@ from .models import (DadosTrabalhistas, DocumentosFuncionario,
                      EnderecoFuncionario, Funcionario)
 from .services import CadastroFuncionarioExcelService
 
-def criar_funcionario(request):
-    if request.method == 'POST':
-        funcionario_form = FuncionarioForm(request.POST)
-        endereco_form = EnderecoFuncionarioForm(request.POST)
-        documentos_form = DocumentosFuncionarioForm(request.POST)
-        dados_trabalhistas_form = DadosTrabalhistasForm(request.POST)
 
-        if funcionario_form.is_valid() and endereco_form.is_valid() and documentos_form.is_valid() and dados_trabalhistas_form.is_valid():
-            funcionario = funcionario_form.save()
-            
-            endereco = endereco_form.save(commit=False)
-            endereco.funcionario = funcionario
-            endereco.save()
-
-            documentos = documentos_form.save(commit=False)
-            documentos.funcionario = funcionario
-            documentos.save()
-
-            dados_trabalhistas = dados_trabalhistas_form.save(commit=False)
-            dados_trabalhistas.funcionario = funcionario
-            dados_trabalhistas.save()
-
-            return redirect('funcionarios:funcionarios')
-    else:
-        funcionario_form = FuncionarioForm()
-        endereco_form = EnderecoFuncionarioForm()
-        documentos_form = DocumentosFuncionarioForm()
-        dados_trabalhistas_form = DadosTrabalhistasForm()
-
-    return render(request, 'core/funcionarios/form.html', {
-        'funcionario_form': funcionario_form,
-        'endereco_form': endereco_form,
-        'documentos_form': documentos_form,
-        'dados_trabalhistas_form': dados_trabalhistas_form,
-        'title': 'Criar Novo Funcionário'
-    })
-
-def lista_funcionarios(request):
+def _get_dashboard_context():
+    """Retorna o contexto padrão da lista de funcionários"""
     qs = Funcionario.objects.all().select_related('dados_trabalhistas', 'endereco')
-    
-    # Cálculos para os Cards
     total_funcionarios = qs.count()
-    
-    # Soma dos salários (trata caso não tenha ninguém ou salário nulo)
-    total_folha = DadosTrabalhistas.objects.aggregate(
-        soma=Sum('salario')
-    )['soma'] or 0
-
-    funcionario_form = FuncionarioForm()
-    endereco_form = EnderecoFuncionarioForm()
-    documentos_form = DocumentosFuncionarioForm()
-    dados_trabalhistas_form = DadosTrabalhistasForm()
-
-    return render(request, 'core/funcionarios/list.html', {
+    total_folha = DadosTrabalhistas.objects.aggregate(soma=Sum('salario'))['soma'] or 0
+    return {
         'funcionarios': qs,
         'total_funcionarios': total_funcionarios,
         'total_folha': total_folha,
-        # Passamos os forms para o template
+    }
+@login_required
+def criar_funcionario(request):
+    # GET: Redireciona para a lista (onde o modal de criação vive)
+    if request.method != 'POST':
+        return redirect('funcionarios:funcionarios')
+
+    # POST: Processa o formulário
+    funcionario_form = FuncionarioForm(request.POST)
+    endereco_form = EnderecoFuncionarioForm(request.POST)
+    documentos_form = DocumentosFuncionarioForm(request.POST)
+    dados_trabalhistas_form = DadosTrabalhistasForm(request.POST)
+
+    if funcionario_form.is_valid() and endereco_form.is_valid() and documentos_form.is_valid() and dados_trabalhistas_form.is_valid():
+        funcionario = funcionario_form.save()
+        
+        endereco = endereco_form.save(commit=False)
+        endereco.funcionario = funcionario
+        endereco.save()
+
+        documentos = documentos_form.save(commit=False)
+        documentos.funcionario = funcionario
+        documentos.save()
+
+        dados_trabalhistas = dados_trabalhistas_form.save(commit=False)
+        dados_trabalhistas.funcionario = funcionario
+        dados_trabalhistas.save()
+
+        return redirect('funcionarios:funcionarios')
+
+    # ERRO: Renderiza a lista novamente, mas com os forms preenchidos e flag para abrir modal
+    context = _get_dashboard_context()
+    context.update({
         'funcionario_form': funcionario_form,
         'endereco_form': endereco_form,
         'documentos_form': documentos_form,
         'dados_trabalhistas_form': dados_trabalhistas_form,
+        'abrir_modal': 'modalFuncionario' # Flag para seu template abrir o modal via JS se necessário
     })
+    return render(request, 'core/funcionarios/list.html', context)
 
+@login_required
+def lista_funcionarios(request):
+    context = _get_dashboard_context()
+    # Adiciona forms vazios para o modal de criação
+    context.update({
+        'funcionario_form': FuncionarioForm(),
+        'endereco_form': EnderecoFuncionarioForm(),
+        'documentos_form': DocumentosFuncionarioForm(),
+        'dados_trabalhistas_form': DadosTrabalhistasForm(),
+    })
+    return render(request, 'core/funcionarios/list.html', context)
+
+@login_required
 def editar_funcionario(request, pk):
     funcionario = get_object_or_404(Funcionario, pk=pk)
     
-    # Recupera ou cria instâncias relacionadas (igual ao seu código)
-    try:
-        endereco = funcionario.endereco
-    except EnderecoFuncionario.DoesNotExist:
-        endereco = EnderecoFuncionario(funcionario=funcionario)
+    # Recupera instâncias (mesma lógica anterior)
+    try: endereco = funcionario.endereco
+    except EnderecoFuncionario.DoesNotExist: endereco = EnderecoFuncionario(funcionario=funcionario)
 
-    try:
-        documentos = funcionario.documentos
-    except DocumentosFuncionario.DoesNotExist:
-        documentos = DocumentosFuncionario(funcionario=funcionario)
+    try: documentos = funcionario.documentos
+    except DocumentosFuncionario.DoesNotExist: documentos = DocumentosFuncionario(funcionario=funcionario)
 
-    try:
-        dados_trabalhistas = funcionario.dados_trabalhistas
-    except DadosTrabalhistas.DoesNotExist:
-        dados_trabalhistas = DadosTrabalhistas(funcionario=funcionario)
+    try: dados_trabalhistas = funcionario.dados_trabalhistas
+    except DadosTrabalhistas.DoesNotExist: dados_trabalhistas = DadosTrabalhistas(funcionario=funcionario)
 
     if request.method == 'POST':
-        # Instancia forms com dados do POST
         funcionario_form = FuncionarioForm(request.POST, instance=funcionario)
         endereco_form = EnderecoFuncionarioForm(request.POST, instance=endereco)
-        documentos_form = DocumentosFuncionarioForm(request.POST, instance=documentos) # Adicionado
+        documentos_form = DocumentosFuncionarioForm(request.POST, instance=documentos)
         dados_trabalhistas_form = DadosTrabalhistasForm(request.POST, instance=dados_trabalhistas)
 
         if funcionario_form.is_valid() and endereco_form.is_valid() and documentos_form.is_valid() and dados_trabalhistas_form.is_valid():
             funcionario_form.save()
             endereco_form.save()
-            documentos_form.save() # Adicionado
+            documentos_form.save()
             dados_trabalhistas_form.save()
             return redirect('funcionarios:funcionarios')
     else:
-        # Instancia forms com dados do banco
         funcionario_form = FuncionarioForm(instance=funcionario)
         endereco_form = EnderecoFuncionarioForm(instance=endereco)
-        documentos_form = DocumentosFuncionarioForm(instance=documentos) # Adicionado
+        documentos_form = DocumentosFuncionarioForm(instance=documentos)
         dados_trabalhistas_form = DadosTrabalhistasForm(instance=dados_trabalhistas)
 
     context = {
         'funcionario_form': funcionario_form,
         'endereco_form': endereco_form,
-        'documentos_form': documentos_form, # Adicionado
+        'documentos_form': documentos_form,
         'dados_trabalhistas_form': dados_trabalhistas_form,
         'title': 'Editar Funcionário'
     }
 
-    # LÓGICA DO MODAL: Se for requisição AJAX, retorna apenas o modal parcial
+    # SÓ RETORNA SE FOR AJAX (Modal)
     if request.headers.get('x-requested-with') == 'XMLHttpRequest':
         return render(request, 'core/funcionarios/form_modal.html', context)
 
-    # Fallback para acesso direto via URL (opcional, ou pode manter form.html)
-    return render(request, 'core/funcionarios/form.html', context)
+    # Fallback: Redireciona para lista se tentar acessar direto via URL
+    return redirect('funcionarios:funcionarios')
 
+@login_required
 def deletar_funcionario(request, pk):
     obj = get_object_or_404(Funcionario, pk=pk)
     if request.method == 'POST':
         obj.delete()
         return redirect('funcionarios:funcionarios')
     
-    # LÓGICA DO MODAL
+    # SÓ RETORNA SE FOR AJAX
     if request.headers.get('x-requested-with') == 'XMLHttpRequest':
         return render(request, 'core/funcionarios/delete_modal.html', {'object': obj})
 
-    return render(request, 'core/funcionarios/delete.html', {'object': obj})
+    # Fallback
+    return redirect('funcionarios:funcionarios')
 
-
+@login_required
 def gerar_excel_funcionario(request, pk):
     funcionario = get_object_or_404(Funcionario, pk=pk)
     
@@ -157,7 +152,11 @@ def gerar_excel_funcionario(request, pk):
         )
     
     return HttpResponse("Erro ao gerar o arquivo Excel.", status=500)
+
+@login_required
 def buscar_endereco_por_cep(request):
+
+
     cep = request.GET.get('cep', '').replace('-', '')
     
     if len(cep) != 8:

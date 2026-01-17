@@ -1,0 +1,293 @@
+{% extends "core/base.html" %}
+{% load static %}
+
+{% block title %}Detalhes do Parcelamento{% endblock %}
+
+{% block content %}
+<style>
+    /* === DESIGN SYSTEM === */
+    :root {
+        --font-sans: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+        --slate-50: #f8fafc; --slate-100: #f1f5f9; --slate-200: #e2e8f0; --slate-300: #cbd5e1;
+        --slate-400: #94a3b8; --slate-500: #64748b; --slate-600: #475569; --slate-900: #0f172a;
+        --blue-500: #3b82f6; --blue-600: #2563eb;
+        --green-50: #ecfdf5; --green-500: #10b981; --green-700: #047857;
+        --amber-50: #fffbeb; --amber-500: #f59e0b; --amber-600: #d97706;
+        --red-50: #fef2f2; --red-500: #ef4444;
+        --white: #ffffff;
+        --bg-blue-original: #1e3a5f; --bg-green-original: #10b981; --bg-orange-original: #f59e0b; 
+    }
+
+    .dash-container {
+        font-family: var(--font-sans); color: var(--slate-900); padding-bottom: 60px; max-width: 1200px; margin: 0 auto;
+    }
+
+    /* HEADER */
+    .dash-header { 
+        margin-bottom: 32px; display: flex; justify-content: space-between; align-items: flex-end; flex-wrap: wrap; gap: 16px;
+    }
+    .dash-title { font-size: 24px; font-weight: 700; color: var(--slate-900); margin: 0; }
+    .dash-subtitle { font-size: 14px; color: var(--slate-500); margin-top: 4px; }
+
+    /* BOTÕES */
+    .btn-ghost { 
+        background: white; border: 1px solid var(--slate-300); color: var(--slate-600); 
+        padding: 8px 16px; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 14px;
+        transition: all 0.2s; text-decoration: none; display: inline-flex; align-items: center; gap: 8px;
+    }
+    .btn-ghost:hover { background-color: var(--slate-100); color: var(--slate-900); }
+
+    /* CARDS DE TOPO */
+    .top-stats-grid { 
+        display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; margin-bottom: 32px; 
+    }
+    .top-card {
+        border-radius: 16px; padding: 24px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        display: flex; justify-content: space-between; align-items: flex-start; color: white;
+    }
+    .bg-blue-original { background-color: var(--bg-blue-original); }
+    .bg-green-original { background-color: var(--bg-green-original); }
+    .bg-orange-original { background-color: var(--bg-orange-original); }
+    .bg-white-card { background-color: var(--white); color: var(--slate-900); border: 1px solid var(--slate-200); }
+
+    .top-label { font-size: 13px; font-weight: 600; opacity: 0.9; margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.05em; }
+    .top-value { font-size: 24px; font-weight: 700; letter-spacing: -0.5px; }
+    .top-icon { width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center; }
+    
+    /* TABELA */
+    .standard-card {
+        background-color: var(--white); border: 1px solid var(--slate-200); border-radius: 16px; overflow: hidden;
+        box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05);
+    }
+    .rh-table { width: 100%; border-collapse: collapse; text-align: left; }
+    .rh-table th { padding: 14px 24px; font-size: 12px; font-weight: 600; text-transform: uppercase; color: var(--slate-500); background-color: var(--slate-50); border-bottom: 1px solid var(--slate-200); }
+    .rh-table td { padding: 16px 24px; font-size: 14px; vertical-align: middle; border-bottom: 1px solid var(--slate-100); color: var(--slate-900); }
+    .rh-table tr:hover td { background-color: #fcfcfc; }
+
+    /* STATUS BADGES */
+    .badge { padding: 2px 8px; border-radius: 6px; font-size: 11px; font-weight: 600; border: 1px solid transparent; }
+    .st-pago { background-color: var(--green-50); color: var(--green-700); border-color: #bbf7d0; }
+    .st-pendente { background-color: var(--amber-50); color: var(--amber-600); border-color: #fde68a; }
+
+    /* MODAL */
+    .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.4); z-index: 1000; overflow-y: auto; padding: 20px; align-items: flex-start; justify-content: center; backdrop-filter: blur(2px); }
+    .modal-overlay.open { display: flex; }
+    .modal-window { background: white; width: 100%; max-width: 600px; margin: 40px auto; border-radius: 16px; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25); display: flex; flex-direction: column; animation: modalFadeIn 0.2s ease-out; }
+    @keyframes modalFadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    .loading-spinner { text-align: center; padding: 48px; color: var(--slate-400); font-size: 14px; }
+    
+    /* Utility para botões lado a lado */
+    .action-buttons { display: flex; gap: 8px; align-items: center; }
+</style>
+
+<div class="dash-container">
+    
+    <div class="dash-header">
+        <div>
+            <h1 class="dash-title">{{ parcelamento.descricao }}</h1>
+            <p class="dash-subtitle">Criado em {{ parcelamento.data_criacao|date:"d/m/Y" }}</p>
+        </div>
+        <div>
+            <a href="{% url 'pagar:pagar_list' %}" class="btn-ghost">
+                <i class="fas fa-arrow-left"></i> Voltar
+            </a>
+        </div>
+    </div>
+
+    <div class="top-stats-grid">
+        <div class="top-card bg-blue-original" style="flex-direction: column; justify-content: center;">
+            <div style="width: 100%; display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                <span class="top-label" style="color: rgba(255,255,255,0.8);">Progresso</span>
+                <span style="font-weight: 700; font-size: 14px;">{{ resumo.qtd_pagas }}/{{ resumo.total_parcelas }} pagas</span>
+            </div>
+            <div class="progress" style="width: 100%; height: 6px; background: rgba(255,255,255,0.2); border-radius: 99px; overflow: hidden;">
+                <div class="progress-bar bg-white" style="width: {{ resumo.progresso }}%"></div>
+            </div>
+            <div class="top-sub" style="color: rgba(255,255,255,0.8); margin-top: 8px;">
+                {{ resumo.progresso }}% concluído
+            </div>
+        </div>
+
+        <div class="top-card bg-white-card">
+            <div>
+                <div class="top-label" style="color: var(--slate-500);">Valor Total</div>
+                <div class="top-value">R$ {{ resumo.valor_total_atual|floatformat:"2g" }}</div>
+            </div>
+            <div class="top-icon" style="background: var(--slate-100); color: var(--slate-600);">
+                <i class="fas fa-dollar-sign"></i>
+            </div>
+        </div>
+
+        <div class="top-card bg-green-original">
+            <div>
+                <div class="top-label">Já Pago</div>
+                <div class="top-value">R$ {{ resumo.valor_pago|floatformat:"2g" }}</div>
+            </div>
+            <div class="top-icon" style="background: rgba(255,255,255,0.2);">
+                <i class="fas fa-check"></i>
+            </div>
+        </div>
+
+        <div class="top-card bg-orange-original">
+            <div>
+                <div class="top-label">Restante</div>
+                <div class="top-value">R$ {{ resumo.valor_aberto|floatformat:"2g" }}</div>
+            </div>
+            <div class="top-icon" style="background: rgba(255,255,255,0.2);">
+                <i class="fas fa-clock"></i>
+            </div>
+        </div>
+    </div>
+
+    <div class="standard-card">
+        <div style="padding: 20px 24px; border-bottom: 1px solid var(--slate-200);">
+            <h2 style="font-size: 16px; font-weight: 700; color: var(--slate-900); margin: 0;">Detalhamento das Parcelas</h2>
+        </div>
+        <div class="table-responsive">
+            <table class="rh-table">
+                <thead>
+                    <tr>
+                        <th width="15%">Vencimento</th>
+                        <th width="35%">Descrição</th>
+                        <th width="15%">Valor</th>
+                        <th width="15%">Status</th>
+                        <th width="10%">Ações</th>
+                    </tr>
+                </thead>
+                <tbody>
+        {% for p in lista_parcelas %}
+            <tr>
+                <td>{{ p.get_data_consolidada|date:"d/m/Y" }}</td>
+                <td>{{ p }}</td>
+                <td>R$ {{ p.get_valor_consolidado }}</td>
+                <td>
+                    {% if p.status == 'Pago' or p.status == 'PG' or p.status == 'Recebido' %}
+                        <span class="badge st-pago">Pago</span>
+                    {% else %}
+                        <span class="badge st-pendente">Pendente</span>
+                    {% endif %}
+                </td>
+                <td>
+                    <div class="action-buttons">
+                        {% if p.status != 'Pago' and p.status != 'PG' and p.status != 'Recebido' %}
+                            <button onclick="openRemoteModal('{% url 'pagar:confirmar_pagamento' p.pk %}?tipo={{ p.get_tipo_classe }}')" 
+                               class="btn btn-sm btn-success text-white" 
+                               style="display: inline-flex; align-items: center; gap: 5px; font-weight: 500;"
+                               title="Realizar Pagamento">
+                               <i class="fas fa-check-circle"></i> Pagar
+                            </button>
+                        {% endif %}
+                        
+                        <button onclick="openRemoteModal('{% url 'pagar:pagar_edit' p.pk %}?tipo={{ p.get_tipo_classe }}')" 
+                           class="btn btn-sm btn-link text-muted" 
+                           style="padding: 4px 8px; border: none; background: none; cursor: pointer;"
+                           title="Editar Parcela">
+                           <i class="fas fa-edit"></i>
+                        </button>
+
+                    </div>
+                </td>
+            </tr>
+        {% endfor %}
+        </tbody>
+            </table>
+        </div>
+    </div>
+
+</div>
+
+<div id="modalGeneric" class="modal-overlay">
+    <div class="modal-window" id="modalGenericContent">
+        <div class="loading-spinner">Carregando...</div>
+    </div>
+</div>
+
+<script>
+    function closeModal(id) {
+        document.getElementById(id).classList.remove('open');
+        document.body.style.overflow = '';
+    }
+
+    // Fechar ao clicar fora
+    document.querySelectorAll('.modal-overlay').forEach(m => {
+        m.addEventListener('click', e => { if(e.target === m) closeModal(m.id); });
+    });
+
+    function setupModalForm(containerId) {
+        const container = document.getElementById(containerId);
+        const form = container.querySelector('form');
+        
+        if (!form) return;
+
+        form.onsubmit = function(e) {
+            e.preventDefault(); 
+            const formData = new FormData(form);
+            const actionUrl = form.action;
+
+            const btn = form.querySelector('button[type="submit"]');
+            if(btn) {
+                var originalText = btn.innerHTML;
+                btn.innerHTML = "<i class='fas fa-spinner fa-spin'></i> Salvando...";
+                btn.disabled = true;
+            }
+
+            fetch(actionUrl, {
+                method: 'POST',
+                body: formData,
+                headers: { 'X-Requested-With': 'XMLHttpRequest' }
+            })
+            .then(response => {
+                if (response.redirected) {
+                    window.location.reload(); 
+                    return;
+                }
+                return response.text();
+            })
+            .then(html => {
+                if (html) {
+                    // Verifica se retornou página inteira (erro de redirect) ou form parcial
+                    if(html.includes('<html') || html.includes('<!DOCTYPE')) {
+                         window.location.reload();
+                    } else {
+                        container.innerHTML = html;
+                        setupModalForm(containerId);
+                        
+                        // Garante que scripts dentro do modal rodem (ex: máscaras)
+                        const scripts = container.getElementsByTagName("script");
+                        for (let i = 0; i < scripts.length; i++) {
+                            eval(scripts[i].innerText);
+                        }
+                    }
+                }
+            })
+            .catch(error => {
+                console.error('Erro:', error);
+                if(btn) {
+                    btn.innerHTML = originalText;
+                    btn.disabled = false;
+                }
+            });
+        };
+    }
+
+    function openRemoteModal(url) {
+        const modal = document.getElementById('modalGeneric');
+        const content = document.getElementById('modalGenericContent');
+        
+        content.innerHTML = '<div class="loading-spinner"><i class="fas fa-spinner fa-spin fa-2x"></i><br><br>Carregando...</div>';
+        modal.classList.add('open');
+        document.body.style.overflow = 'hidden';
+
+        const separator = url.includes('?') ? '&' : '?';
+        const finalUrl = url + separator + 'modal=true';
+
+        fetch(finalUrl)
+            .then(res => res.text())
+            .then(html => {
+                content.innerHTML = html;
+                setupModalForm('modalGenericContent');
+            })
+            .catch(err => { content.innerHTML = '<div class="empty-msg">Erro de conexão.</div>'; });
+    }
+</script>
+{% endblock %}

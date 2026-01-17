@@ -2,6 +2,7 @@ from datetime import date
 from decimal import ROUND_HALF_UP, Decimal
 
 from django.contrib import messages
+from django.contrib.auth.decorators import login_required
 from django.db import transaction
 from django.http import HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
@@ -21,7 +22,7 @@ from .services import FeriasExcelService
 
 # ... outros imports ...
 
-
+@login_required
 def listar_funcionarios(request):
     funcionarios = (
         Funcionario.objects
@@ -43,7 +44,7 @@ def listar_funcionarios(request):
         "form_ferias": form_ferias,
         "form_ferias_coletivas": form_ferias_coletivas, # Passando para o template
     })
-
+@login_required
 def registrar_periodo(request):
     if request.method == 'POST':
         form = PeriodoAquisitivoForm(request.POST)
@@ -55,6 +56,7 @@ def registrar_periodo(request):
         form = PeriodoAquisitivoForm()
     return render(request, 'core/ferias/registrar_periodo.html', {'form': form})
 
+@login_required
 def editar_periodo(request, pk):
     periodo = get_object_or_404(PeriodoAquisitivo, pk=pk)
     if request.method == 'POST':
@@ -67,6 +69,7 @@ def editar_periodo(request, pk):
         form = PeriodoAquisitivoForm(instance=periodo)
     return render(request, 'core/ferias/registrar_periodo.html', {'form': form, 'editar': True})
 
+@login_required
 @require_POST
 def deletar_periodo(request, pk):
     periodo = get_object_or_404(PeriodoAquisitivo, pk=pk)
@@ -76,7 +79,7 @@ def deletar_periodo(request, pk):
 
 
 # Em zirk_rh_financeiro/apps/ferias/views.py
-
+@login_required
 def registrar_ferias(request):
     if request.method == 'POST':
         form = FeriasForm(request.POST)
@@ -113,6 +116,8 @@ def registrar_ferias(request):
     # Caso seja um GET direto para essa URL (opcional, ou mantem o comportamento antigo)
     return render(request, 'core/ferias/registrar_ferias.html', {'form': form})
 
+
+@login_required
 def editar_ferias(request, pk):
     registro = get_object_or_404(Ferias, pk=pk)
     
@@ -142,14 +147,14 @@ def editar_ferias(request, pk):
         })
 
     return render(request, 'core/ferias/registrar_ferias.html', {'form': form, 'editar': True})
-
+@login_required
 @require_POST
 def deletar_ferias(request, pk):
     registro = get_object_or_404(Ferias, pk=pk)
     registro.delete()
     messages.success(request, "Registro de férias deletado.")
     return redirect('ferias:listar_funcionarios')
-
+@login_required
 def listar_pagamentos(request):
     pagamentos = (
         PagamentoFerias.objects
@@ -164,6 +169,7 @@ def listar_pagamentos(request):
         "pagamentos": pagamentos,
         "form_pagamento": form_pagamento
     })
+@login_required
 def registrar_pagamento(request):
     if request.method == 'POST':
         form = PagamentoFeriasForm(request.POST)
@@ -182,6 +188,7 @@ def calcular_saldo_total(funcionario):
         saldo_total += periodo.saldo_restante  # ou outra lógica que você use para saldo
     return saldo_total
 
+@login_required
 def editar_pagamento(request, pk):
     pagamento = get_object_or_404(PagamentoFerias, pk=pk)
     form = PagamentoFeriasForm(request.POST or None, instance=pagamento)
@@ -201,6 +208,7 @@ def editar_pagamento(request, pk):
     # Fallback caso alguém acesse a URL diretamente pelo navegador (opcional)
     return render(request, 'core/ferias/form_modal.html', {'form': form})
 
+@login_required
 def deletar_pagamento(request, pk):
     pagamento = get_object_or_404(PagamentoFerias, pk=pk)
 
@@ -216,7 +224,7 @@ def deletar_pagamento(request, pk):
         
     return redirect('ferias:listar_pagamentos')
 
-
+@login_required
 def exportar_planilha_geral(request):
     """
     Gera o relatório GERAL com todas as seções (Férias, Pgto, Recibos, Banco Horas).
@@ -237,7 +245,7 @@ def exportar_planilha_geral(request):
     return response
 
 
-
+@login_required
 def listar_recibos(request):
     recibos = (
         RecibosContabilidade.objects
@@ -253,6 +261,7 @@ def listar_recibos(request):
         "form_recibo": form_recibo
     })
 
+@login_required
 def registrar_recibo(request):
     if request.method == 'POST':
         form = RecibosContabilidadeForm(request.POST)
@@ -265,6 +274,7 @@ def registrar_recibo(request):
     return render(request, 'core/ferias/registrar_recibo.html', {'form': form}) # Fallback se não usar modal
 
 
+@login_required
 def editar_recibo(request, pk):
     recibo = get_object_or_404(RecibosContabilidade, pk=pk)
     
@@ -290,6 +300,7 @@ def editar_recibo(request, pk):
     
     return redirect('ferias:listar_recibos')
 
+@login_required
 def deletar_recibo(request, pk):
     recibo = get_object_or_404(RecibosContabilidade, pk=pk)
 
@@ -308,7 +319,9 @@ def deletar_recibo(request, pk):
     
     # Fallback
     return redirect('ferias:listar_recibos')
-# View auxiliar para o modal de exclusão (opcional, igual ao padrão que você já usa)
+
+
+@login_required
 def confirmar_delete_recibo(request, pk):
     recibo = get_object_or_404(RecibosContabilidade, pk=pk)
     if request.headers.get('x-requested-with') == 'XMLHttpRequest':
@@ -318,6 +331,7 @@ def confirmar_delete_recibo(request, pk):
         })
     return redirect('ferias:listar_recibos')
 
+@login_required
 def calcular_valor_ferias_api(request):
     """
     API para calcular automaticamente 1/3 de férias com base no salário.
@@ -347,6 +361,11 @@ def calcular_valor_ferias_api(request):
 
 
 
+import logging
+
+logger = logging.getLogger(__name__)
+
+@login_required
 def registrar_ferias_coletivas(request):
     if request.method == 'POST':
         form = FeriasColetivasForm(request.POST)
@@ -356,51 +375,95 @@ def registrar_ferias_coletivas(request):
             funcionarios = data['funcionarios']
             data_inicio = data['data_inicio']
             data_fim = data['data_fim']
-            observacao = data['observacao_geral']
+            observacao = data.get('observacao_geral', '')
             
-            # 1. Capturar os valores do formulário
-            dias_recesso = data['ferias_no_recesso_final_ano']
-            dias_carnaval = data['ferias_no_carnaval']
+            # Captura os dias especiais para distribuir
+            dias_recesso_total = data.get('ferias_no_recesso_final_ano', 0) or 0
+            dias_carnaval_total = data.get('ferias_no_carnaval', 0) or 0
             
-            # Calcula total de dias
             dias_totais = (data_fim - data_inicio).days + 1
 
-            for func in funcionarios:
-                # CORREÇÃO AQUI:
-                # 1. Buscamos todos os períodos do funcionário ordenados pelo mais antigo
-                periodos = PeriodoAquisitivo.objects.filter(funcionario=func).order_by('data_inicio')
+            funcionarios_processados = 0
+            funcionarios_sem_saldo = []
+
+            try:
+                with transaction.atomic():
+                    for func in funcionarios:
+                        # 1. Busca todos os períodos do funcionário
+                        periodos = PeriodoAquisitivo.objects.filter(funcionario=func).order_by('data_inicio')
+                        
+                        # 2. Verifica saldo TOTAL disponível somando todos os períodos
+                        saldo_total_disponivel = sum(p.saldo_restante() for p in periodos)
+                        
+                        if saldo_total_disponivel < dias_totais:
+                            # Se não tem saldo suficiente no total, ignora e avisa
+                            funcionarios_sem_saldo.append(func.nome)
+                            continue
+
+                        # 3. Lógica de Distribuição (Split)
+                        dias_a_distribuir = dias_totais
+                        
+                        # Controladores para distribuir os dias especiais proporcionalmente
+                        recesso_restante = dias_recesso_total
+                        carnaval_restante = dias_carnaval_total
+                        
+                        teve_registro = False
+
+                        for p in periodos:
+                            saldo_p = p.saldo_restante()
+                            
+                            if saldo_p <= 0:
+                                continue
+                            
+                            # O quanto vamos tirar deste período? (O que couber ou o que falta)
+                            dias_para_este_periodo = min(dias_a_distribuir, saldo_p)
+                            
+                            # Distribui dias especiais (tenta alocar no primeiro período possível)
+                            recesso_neste = min(dias_para_este_periodo, recesso_restante)
+                            carnaval_neste = min(dias_para_este_periodo, carnaval_restante)
+
+                            Ferias.objects.create(
+                                periodo=p,
+                                dias_tirados=dias_para_este_periodo,
+                                observacoes=observacao,
+                                ferias_no_recesso_final_ano=recesso_neste,
+                                ferias_no_carnaval=carnaval_neste
+                            )
+                            
+                            # Atualiza os contadores
+                            dias_a_distribuir -= dias_para_este_periodo
+                            recesso_restante -= recesso_neste
+                            carnaval_restante -= carnaval_neste
+                            teve_registro = True
+                            
+                            # Se já distribuímos tudo, para o loop de períodos
+                            if dias_a_distribuir == 0:
+                                break
+                        
+                        if teve_registro:
+                            funcionarios_processados += 1
+                            logger.info(f"Férias coletivas registradas para {func.nome}")
+
+                # --- FEEDBACK ---
+                if funcionarios_processados > 0:
+                    messages.success(request, f"Férias coletivas processadas para {funcionarios_processados} funcionário(s).")
                 
-                periodo_encontrado = None
+                if funcionarios_sem_saldo:
+                    lista_nomes = ", ".join(funcionarios_sem_saldo)
+                    messages.warning(request, f"Saldo insuficiente para realizar o período completo ({dias_totais} dias): {lista_nomes}")
+
+                return redirect('ferias:listar_funcionarios')
                 
-                # 2. Iteramos no Python para achar o primeiro com saldo positivo
-                # Como 'saldo_restante' é calculado no Python, precisamos fazer assim:
-                for p in periodos:
-                    if p.saldo_restante() > 0:
-                        periodo_encontrado = p
-                        break
-                
-                if periodo_encontrado:
-                    Ferias.objects.create(
-                        periodo=periodo_encontrado,
-                        dias_tirados=dias_totais,
-                        observacoes=observacao,
-                        ferias_no_recesso_final_ano=dias_recesso,
-                        ferias_no_carnaval=dias_carnaval
-                    )
-                else:
-                    # Opcional: Adicionar aviso se algum funcionário não tiver período com saldo
-                    # messages.warning(request, f"Funcionário {func.nome} não possui saldo suficiente.")
-                    pass
-            
-            messages.success(request, "Férias coletivas registradas com sucesso!")
-            return redirect('ferias:listar_funcionarios')
+            except Exception as e:
+                logger.error(f"Erro no processamento de coletivas: {e}")
+                messages.error(request, "Ocorreu um erro interno ao processar as férias.")
     else:
         form = FeriasColetivasForm()
 
-    # Se der erro no form, reabre o modal na listagem
     return listar_funcionarios_com_erro_coletivas(request, form)
 
-# Helper necessário para reabrir o modal com erro
+
+@login_required
 def listar_funcionarios_com_erro_coletivas(request, form_coletivas_com_erro):
     funcionarios = Funcionario.objects.select_related("banco_horas").prefetch_related("periodos_aquisitivos__ferias_registradas").order_by("nome")
     return render(request, "core/ferias/listar_funcionarios.html", {

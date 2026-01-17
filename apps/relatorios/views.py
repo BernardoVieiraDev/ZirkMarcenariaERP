@@ -47,11 +47,11 @@ from .extensions import (BNDESExcelService, BoletoExcelService,
 from .services.fluxo_caixa_export import RelatorioFluxoCaixaExport
 from .services.relatorio_anual_consolidado import RelatorioAnualConsolidado
 
-
+@login_required
 def list_planilhas(request):
     return render(request, 'core/planilhas/list.html')
 
-
+@login_required
 def exportar_todos_boletos(request):
     # 1. Busca os dados
     boletos = Boleto.objects.all().order_by('-data_vencimento')
@@ -74,7 +74,7 @@ def exportar_todos_boletos(request):
     except Exception as e:
         return HttpResponse(f"Erro interno: {str(e)}", status=500)
 
-
+@login_required
 def exportar_utilidades(request):
     gastos = GastoUtilidade.objects.all().order_by('-data_vencimento')
     data_hoje = datetime.now().strftime("%Y-%m-%d")
@@ -86,7 +86,7 @@ def exportar_utilidades(request):
     except Exception as e:
         return HttpResponse(f"Erro interno: {str(e)}", status=500)
 
-
+@login_required
 def exportar_cheques(request):
     cheques = Cheque.objects.all().order_by('-data_emissao')
     data_hoje = datetime.now().strftime("%Y-%m-%d")
@@ -98,7 +98,7 @@ def exportar_cheques(request):
     except Exception as e:
         return HttpResponse(f"Erro interno: {str(e)}", status=500)
 
-
+@login_required
 def exportar_contabilidade(request):
     gastos = GastoContabilidade.objects.all().order_by('-data_vencimento')
     data_hoje = datetime.now().strftime("%Y-%m-%d")
@@ -110,7 +110,7 @@ def exportar_contabilidade(request):
     except Exception as e:
         return HttpResponse(f"Erro interno: {str(e)}", status=500)
 
-
+@login_required
 def exportar_cartoes(request):
     # Filtro Sicoob e Bradesco
     gastos = FaturaCartao.objects.filter(
@@ -126,7 +126,7 @@ def exportar_cartoes(request):
     except Exception as e:
         return HttpResponse(f"Erro interno: {str(e)}", status=500)
 
-
+@login_required
 def exportar_bndes(request):
     # Filtro BNDES
     gastos = FaturaCartao.objects.filter(cartao='BNDES').order_by('-data_vencimento')
@@ -139,7 +139,7 @@ def exportar_bndes(request):
     except Exception as e:
         return HttpResponse(f"Erro interno: {str(e)}", status=500)
 
-
+@login_required
 def exportar_gastos_gerais(request):
     gastos = GastoGeral.objects.all().order_by('-data_gasto')
     data_hoje = datetime.now().strftime("%Y-%m-%d")
@@ -151,7 +151,7 @@ def exportar_gastos_gerais(request):
     except Exception as e:
         return HttpResponse(f"Erro interno: {str(e)}", status=500)
 
-
+@login_required
 def exportar_veiculos(request):
     gastos = GastoVeiculoConsorcio.objects.all().order_by('-data_vencimento')
     data_hoje = datetime.now().strftime("%Y-%m-%d")
@@ -163,7 +163,7 @@ def exportar_veiculos(request):
     except Exception as e:
         return HttpResponse(f"Erro interno: {str(e)}", status=500)
 
-
+@login_required
 def exportar_condominio(request):
     tipos_desejados = ['CONDO', 'TAXA', 'ACORDO']
     gastos = GastoImovel.objects.filter(
@@ -179,7 +179,7 @@ def exportar_condominio(request):
     except Exception as e:
         return HttpResponse(f"Erro interno: {str(e)}", status=500)
 
-
+@login_required
 def exportar_iptu(request):
     gastos = GastoImovel.objects.filter(tipo_gasto='IPTU').order_by('-data_vencimento')
     data_hoje = datetime.now().strftime("%Y-%m-%d")
@@ -191,7 +191,7 @@ def exportar_iptu(request):
     except Exception as e:
         return HttpResponse(f"Erro interno: {str(e)}", status=500)
 
-
+@login_required
 def exportar_gasolina(request):
     gastos = GastoGasolina.objects.all().order_by('-data_gasto')
     data_hoje = datetime.now().strftime("%Y-%m-%d")
@@ -203,7 +203,7 @@ def exportar_gasolina(request):
     except Exception as e:
         return HttpResponse(f"Erro interno: {str(e)}", status=500)
 
-
+@login_required
 def exportar_comissoes(request):
     # CORREÇÃO: Usando ComissaoArquiteto em vez de ContratoRT
     pagamentos = ComissaoArquiteto.objects.select_related('arquiteto', 'contrato_rt', 'contrato_rt__cliente')\
@@ -220,6 +220,7 @@ def exportar_comissoes(request):
         return HttpResponse(f"Erro interno: {str(e)}", status=500)
     
 
+@login_required
 def exportar_prestacoes(request):
     gastos = PrestacaoEmprestimo.objects.all().order_by('-data_vencimento')
     data_hoje = datetime.now().strftime("%Y-%m-%d")
@@ -231,7 +232,7 @@ def exportar_prestacoes(request):
     except Exception as e:
         return HttpResponse(f"Erro interno: {str(e)}", status=500)
 
-
+@login_required
 def exportar_folha(request):
     pagamentos = FolhaPagamento.objects.select_related(
         'funcionario', 
@@ -247,7 +248,7 @@ def exportar_folha(request):
     except Exception as e:
         return HttpResponse(f"Erro interno: {str(e)}", status=500)
 
-
+@login_required
 def exportar_multiplas_planilhas(request):
     """
     Consolidado Rápido (Todas as datas/Geral)
@@ -324,7 +325,7 @@ def exportar_multiplas_planilhas(request):
     output.seek(0)
     return FileResponse(output, as_attachment=True, filename=filename)
 
-
+@login_required
 def exportar_receber(request):
     dados = Receber.objects.all().order_by('data_vencimento')
     data_hoje = datetime.now().strftime("%Y-%m-%d")
@@ -336,7 +337,7 @@ def exportar_receber(request):
     except Exception as e:
         return HttpResponse(f"Erro interno: {str(e)}", status=500)
     
-
+@login_required
 def exportar_rt(request):
     arquiteta_id = request.GET.get('arquiteta_id')
     if not arquiteta_id:
@@ -357,6 +358,7 @@ def exportar_rt(request):
     
     return response
 
+@login_required
 def list_planilhas_periodo(request):
     bancos = Banco.objects.all()
     meses = [
@@ -370,6 +372,7 @@ def list_planilhas_periodo(request):
     }
     return render(request, 'core/planilhas/list_periodo.html', context)
 
+@login_required
 def exportar_por_periodo(request):
     if request.method != 'POST':
         return redirect('relatorios:planilhas_por_periodo')
@@ -385,6 +388,7 @@ def exportar_por_periodo(request):
     dt_fim = parse_date(fim_str)
     if not dt_inicio or not dt_fim:
         return HttpResponse("Datas inválidas.", status=400)
+    
     periodo_str = f"{dt_inicio.strftime('%d%m')}_{dt_fim.strftime('%d%m')}"
     
     buffer = None
@@ -399,6 +403,12 @@ def exportar_por_periodo(request):
             dados = GastoUtilidade.objects.filter(data_vencimento__range=[dt_inicio, dt_fim]).order_by('data_vencimento')
             buffer = GastoUtilidadeExcelService.gerar_relatorio_utilidades(dados)
             
+        elif tipo == 'relatorio_anual_consolidado':
+            service = RelatorioAnualConsolidado(inicio=dt_inicio, fim=dt_fim)
+            buffer = service.gerar()
+            filename = f"Relatorio_Anual_Consolidado_{periodo_str}.xlsx"    
+
+
         elif tipo == 'fluxo_caixa':
             # Calcula a diferença de dias entre Inicio e Fim
             dias_delta = (dt_fim - dt_inicio).days + 1
@@ -406,6 +416,7 @@ def exportar_por_periodo(request):
             
             # Gera usando o serviço já existente
             buffer = RelatorioFluxoCaixaExport.gerar_excel(dt_inicio, dias_delta, periodo_nome)
+
         elif tipo == 'cheques':
             dados = Cheque.objects.filter(data_emissao__range=[dt_inicio, dt_fim]).order_by('data_emissao')
             buffer = ChequeExcelService.gerar_relatorio_cheques(dados)
@@ -478,48 +489,31 @@ def exportar_por_periodo(request):
             # Reutiliza o serviço existente (passando ano/mês do inicio apenas para referência no título)
             buffer = CaixaDiarioExcelService.gerar_relatorio(movimentacoes, resumo, dt_inicio.year, dt_inicio.month)
 
-
         elif tipo == 'socios':
-            # === CORREÇÃO: Volta a filtrar pelas datas selecionadas ===
             dados = LancamentoSocio.objects.filter(
                 data__range=[dt_inicio, dt_fim]
             ).select_related('socio', 'categoria').order_by('data')
 
-            # Gera Excel
             output = io.BytesIO()
             workbook = xlsxwriter.Workbook(output, {'in_memory': True})
             worksheet = workbook.add_worksheet("Sócios")
 
-            # Formatos
             bold = workbook.add_format({'bold': True, 'bg_color': '#f0f0f0', 'border': 1})
             date_format = workbook.add_format({'num_format': 'dd/mm/yyyy', 'border': 1})
             money_format = workbook.add_format({'num_format': '#,##0.00', 'border': 1})
             cell_format = workbook.add_format({'border': 1})
 
-            # Cabeçalho
             headers = ['Data', 'Sócio', 'Categoria', 'Descrição/Obs', 'Valor']
             worksheet.write_row('A1', headers, bold)
 
-            # Dados
             for idx, item in enumerate(dados, start=1):
-                # Data
                 worksheet.write(idx, 0, item.data, date_format)
-                
-                # Nome do Sócio
                 worksheet.write(idx, 1, item.socio.nome if item.socio else 'Indefinido', cell_format)
-                
-                # Categoria
                 worksheet.write(idx, 2, item.categoria.nome if item.categoria else '-', cell_format)
-                
-                # Descrição / Observação (Proteção contra erro de atributo)
-                # Tenta pegar 'observacao', se não existir tenta 'descricao' ou 'obs'.
                 obs_texto = getattr(item, 'observacao', getattr(item, 'descricao', getattr(item, 'obs', '')))
                 worksheet.write(idx, 3, obs_texto, cell_format)
-                
-                # Valor
                 worksheet.write(idx, 4, item.valor, money_format)
 
-            # Ajuste de largura das colunas
             worksheet.set_column('A:A', 12)
             worksheet.set_column('B:C', 25)
             worksheet.set_column('D:D', 45)
@@ -529,9 +523,7 @@ def exportar_por_periodo(request):
             output.seek(0)
             buffer = output
 
-
         elif tipo == 'comissoes':
-            # CORREÇÃO: Usando ComissaoArquiteto
             dados = ComissaoArquiteto.objects.filter(
                 data_pagamento__range=[dt_inicio, dt_fim]
             ).select_related('arquiteto', 'contrato_rt', 'contrato_rt__cliente').order_by('data_pagamento')
@@ -544,6 +536,95 @@ def exportar_por_periodo(request):
         elif tipo == 'receber':
             dados = Receber.objects.filter(data_vencimento__range=[dt_inicio, dt_fim]).order_by('data_vencimento')
             buffer = ReceberExcelService.gerar_relatorio_receber(dados, ano=dt_inicio.year)
+        
+        elif tipo == 'pacote_pagar':
+            # === PACOTE CONTAS A PAGAR (POR PERÍODO) ===
+            output = io.BytesIO()
+            wb = xlsxwriter.Workbook(output, {'in_memory': True})
+            
+            # 1. Boletos
+            BoletoExcelService.gerar_relatorio_geral(
+                Boleto.objects.filter(data_vencimento__range=[dt_inicio, dt_fim]).order_by('data_vencimento'), 
+                workbook=wb
+            )
+            # 2. Utilidades
+            GastoUtilidadeExcelService.gerar_relatorio_utilidades(
+                GastoUtilidade.objects.filter(data_vencimento__range=[dt_inicio, dt_fim]).order_by('data_vencimento'), 
+                workbook=wb
+            )
+            # 3. Cheques
+            ChequeExcelService.gerar_relatorio_cheques(
+                Cheque.objects.filter(data_emissao__range=[dt_inicio, dt_fim]).order_by('data_emissao'), 
+                workbook=wb
+            )
+            # 4. Contabilidade
+            GastoContabilidadeExcelService.gerar_relatorio_contabilidade(
+                GastoContabilidade.objects.filter(data_vencimento__range=[dt_inicio, dt_fim]).order_by('data_vencimento'), 
+                workbook=wb
+            )
+            # 5. Prestações
+            PrestacaoEmprestimoExcelService.gerar_relatorio_prestacoes(
+                PrestacaoEmprestimo.objects.filter(data_vencimento__range=[dt_inicio, dt_fim]).order_by('data_vencimento'), 
+                workbook=wb
+            )
+            # 6. Cartões
+            FaturaCartaoExcelService.gerar_relatorio_cartoes(
+                FaturaCartao.objects.filter(cartao__in=['PF_SICOOB', 'PF_BRADESCO'], data_vencimento__range=[dt_inicio, dt_fim]).order_by('data_vencimento'), 
+                workbook=wb
+            )
+            # 7. BNDES
+            BNDESExcelService.gerar_relatorio_bndes(
+                FaturaCartao.objects.filter(cartao='BNDES', data_vencimento__range=[dt_inicio, dt_fim]).order_by('data_vencimento'), 
+                workbook=wb
+            )
+            # 8. Gastos Gerais
+            GastoGeralExcelService.gerar_relatorio_geral(
+                GastoGeral.objects.filter(data_gasto__range=[dt_inicio, dt_fim]).order_by('data_gasto'), 
+                workbook=wb
+            )
+            # 9. Veículos
+            GastoVeiculoConsorcioExcelService.gerar_relatorio_veiculos(
+                GastoVeiculoConsorcio.objects.filter(data_vencimento__range=[dt_inicio, dt_fim]).order_by('data_vencimento'), 
+                workbook=wb
+            )
+            # 10. IPTU
+            GastoIPTUExcelService.gerar_relatorio_iptu(
+                GastoImovel.objects.filter(tipo_gasto='IPTU', data_vencimento__range=[dt_inicio, dt_fim]).order_by('data_vencimento'), 
+                workbook=wb
+            )
+            # 11. Condomínio
+            GastoImovelExcelService.gerar_relatorio_condominio(
+                GastoImovel.objects.filter(tipo_gasto__in=['CONDO', 'TAXA', 'ACORDO'], data_vencimento__range=[dt_inicio, dt_fim]).order_by('data_vencimento'), 
+                workbook=wb
+            )
+            # 12. Gasolina
+            GastoGasolinaExcelService.gerar_relatorio_gasolina(
+                GastoGasolina.objects.filter(data_gasto__range=[dt_inicio, dt_fim]).order_by('data_gasto'), 
+                workbook=wb
+            )
+            # 13. Comissões
+            ComissaoExcelService.gerar_relatorio_comissoes(
+                ComissaoArquiteto.objects.select_related('arquiteto', 'contrato_rt', 'contrato_rt__cliente')
+                .filter(data_pagamento__range=[dt_inicio, dt_fim])
+                .order_by('-data_pagamento'), 
+                workbook=wb
+            )
+            # 14. Folha
+            FuncionarioFolhaExcelService.gerar_relatorio_folha(
+                FolhaPagamento.objects.filter(data_referencia__range=[dt_inicio, dt_fim]).order_by('data_referencia'), 
+                workbook=wb
+            )
+
+            # SUBSTITUIÇÃO: Relatório Anual Consolidado
+            RelatorioAnualConsolidado(ano=dt_inicio.year, workbook=wb).gerar()
+            
+            wb.close()
+            output.seek(0)
+            buffer = output
+            
+            # Ajusta nome do arquivo para Pacote
+            filename = f"Pacote_Pagar_{periodo_str}.xlsx"
+
         else:
             return HttpResponse(f"Relatório '{tipo}' desconhecido.", status=400)
 
@@ -552,7 +633,7 @@ def exportar_por_periodo(request):
     except Exception as e:
         return HttpResponse(f"Erro ao gerar planilha: {e}", status=500)
 
-
+@login_required
 def exportar_consolidado_periodo(request):
     """
     Consolidado por Período (Com filtro de datas)
@@ -644,6 +725,10 @@ def exportar_consolidado_periodo(request):
         if 'receber_mensal' in relatorios:
             RelatorioReceberMensalService.gerar_arquivo(inicio=dt_inicio, fim=dt_fim, workbook=wb)
 
+        # ADIÇÃO: Relatório Anual Consolidado
+        if 'relatorio_anual_consolidado' in relatorios:
+            RelatorioAnualConsolidado(inicio=dt_inicio, fim=dt_fim, workbook=wb).gerar()
+
 
     except Exception as e:
         wb.close()
@@ -668,7 +753,7 @@ def exportar_consolidado_periodo(request):
     return FileResponse(output, as_attachment=True, filename=filename)
 
 
-
+@login_required
 def exportar_caixa_diario(request):
     hoje = date.today()
     try:
@@ -707,7 +792,7 @@ def exportar_caixa_diario(request):
     except Exception as e:
         return HttpResponse(f"Erro ao gerar Excel: {str(e)}", status=500)
     
-
+@login_required
 def exportar_movimentacao_bancaria(request):
     hoje = datetime.now()
     try:
@@ -745,6 +830,7 @@ def _get_mes_ano(request):
         mes, ano = hoje.month, hoje.year
     return mes, ano
 
+@login_required
 def exportar_pagar_mensal(request):
     dt_inicio = request.GET.get('data_inicio')
     dt_fim = request.GET.get('data_fim')
@@ -766,6 +852,7 @@ def exportar_pagar_mensal(request):
     response['Content-Disposition'] = f'attachment; filename="{filename}"'
     return response
 
+@login_required
 def exportar_receber_mensal(request):
     dt_inicio = request.GET.get('data_inicio')
     dt_fim = request.GET.get('data_fim')
@@ -788,6 +875,7 @@ def exportar_receber_mensal(request):
     response['Content-Disposition'] = f'attachment; filename="{filename}"'
     return response
 
+@login_required
 def exportar_pacote(request, tipo_pacote):
     # Tenta pegar datas específicas do request (para exportação por período)
     dt_inicio_get = request.GET.get('data_inicio')
@@ -891,8 +979,11 @@ def exportar_pacote(request, tipo_pacote):
                 FolhaPagamento.objects.filter(data_referencia__range=[dt_inicio, dt_fim]).order_by('data_referencia'), 
                 workbook=wb
             )
-            # Atualizado para aceitar range se disponível
-            RelatorioPagarMensalService.gerar_arquivo(inicio=dt_inicio, fim=dt_fim, workbook=wb)
+            
+            # --- ALTERAÇÃO: Removido RelatorioPagarMensalService e adicionado RelatorioAnualConsolidado ---
+            # Passamos o 'ano' calculado no início da função e o 'workbook' atual
+            relatorio_anual = RelatorioAnualConsolidado(ano=ano, workbook=wb)
+            relatorio_anual.gerar()
 
         elif tipo_pacote == 'sebrae':
             # Nota: Alguns relatórios gerenciais do pacote SEBRAE são projetados para lógica MENSAL/ANUAL estrita.
@@ -963,7 +1054,7 @@ def exportar_pacote(request, tipo_pacote):
 
 # Em apps/financeiro/pagar/views.py ou local similar
 
-
+@login_required
 def download_holerite_view(request, folha_id):
     folha = FolhaPagamento.objects.get(id=folha_id)
     funcionario = folha.funcionario
@@ -1034,7 +1125,8 @@ def download_holerite_view(request, folha_id):
             'nome': funcionario.nome.upper(),
             'cbo': dados_trabalhistas.cbo if dados_trabalhistas else '',
             'cargo': dados_trabalhistas.funcao.upper() if dados_trabalhistas else 'NÃO INFORMADO',
-            'admissao': dados_trabalhistas.data_admissao_contabilidade.strftime('%d/%m/%Y') if dados_trabalhistas else ''
+            'admissao': (dados_trabalhistas.data_admissao_marcenaria or dados_trabalhistas.data_admissao_contabilidade).strftime('%d/%m/%Y') if dados_trabalhistas else ''
+
         },
         'cabecalho': {
             'titulo': titulo,
@@ -1097,6 +1189,7 @@ def exportar_consolidado_anual(request):
     
     return response
 
+@login_required
 def exportar_fluxo_caixa(request):
     """
     Gera o Fluxo de Caixa padrão de 7 dias a partir de hoje.
@@ -1111,3 +1204,5 @@ def exportar_fluxo_caixa(request):
         return FileResponse(buffer, as_attachment=True, filename=filename)
     except Exception as e:
         return HttpResponse(f"Erro ao gerar fluxo de caixa: {str(e)}", status=500)
+    
+

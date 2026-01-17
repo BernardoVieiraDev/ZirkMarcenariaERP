@@ -1,6 +1,7 @@
 import os
-import sys
 from pathlib import Path
+
+from django.contrib.messages import constants as messages
 from dotenv import load_dotenv
 
 # --- CONFIGURAÇÃO DE CAMINHOS ---
@@ -48,6 +49,7 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     'django.contrib.humanize',
     'fernet_fields',
+    'widget_tweaks',
     
     # Seus apps
     'apps.funcionarios.apps.FuncionariosConfig',
@@ -63,7 +65,8 @@ INSTALLED_APPS = [
     'apps.financeiro.fluxo.apps.FluxoConfig',
     'apps.configuracoes.apps.ConfiguracoesConfig',
     'apps.clientes.apps.ClientesConfig',
-    'apps.empreitadas.apps.EmpreitadasConfig'
+    'apps.empreitadas.apps.EmpreitadasConfig',
+    'apps.docs.apps.DocsConfig'
 ]
 
 MIDDLEWARE = [
@@ -90,6 +93,7 @@ TEMPLATES = [
                 "django.template.context_processors.request",
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
+                'apps.configuracoes.context_processors.configuracoes_globais', 
             ],
         },
     },
@@ -100,6 +104,9 @@ WSGI_APPLICATION = "config.wsgi.application"
 # --- BANCO DE DADOS (LÓGICA HÍBRIDA) ---
 # Se as variáveis existirem (MySQL/Postgres), usa elas.
 # Se NÃO existirem, cai automaticamente para SQLite (Ideal para seu teste).
+# zirk_rh_financeiro/config/settings.py
+
+# --- BANCO DE DADOS ---
 DB_NAME = os.getenv('DB_NAME')
 DB_USER = os.getenv('DB_USER')
 DB_PASSWORD = os.getenv('DB_PASSWORD')
@@ -108,23 +115,38 @@ DB_HOST = os.getenv('DB_HOST')
 if all([DB_NAME, DB_USER, DB_PASSWORD, DB_HOST]):
     DATABASES = {
         'default': {
-            'ENGINE': 'django.db.backends.postgresql', # Preparado para Postgres futuro
-            # Se for testar MySQL no PA agora, mude a linha acima para 'django.db.backends.mysql'
+            'ENGINE': 'django.db.backends.mysql',  # <--- MUDANÇA AQUI (Era postgresql)
             'NAME': DB_NAME,
             'USER': DB_USER,
             'PASSWORD': DB_PASSWORD,
             'HOST': DB_HOST,
-            'PORT': os.getenv('DB_PORT', '5432'),
+            'PORT': os.getenv('DB_PORT', '3306'),
+            'OPTIONS': {
+                'init_command': "SET sql_mode='STRICT_TRANS_TABLES'",
+                'charset': 'utf8mb4',
+            },
         }
     }
 else:
-    # Fallback para SQLite
+    # Fallback para SQLite (Desenvolvimento Local)
     DATABASES = {
         "default": {
             "ENGINE": "django.db.backends.sqlite3",
             "NAME": BASE_DIR / "db.sqlite3",
         }
     }
+
+CACHES = {
+    'default': {
+        'BACKEND': 'django.core.cache.backends.db.DatabaseCache',
+        'LOCATION': 'my_cache_table',
+    }
+}
+
+SESSION_ENGINE = "django.contrib.sessions.backends.db"
+SESSION_CACHE_ALIAS = "default"
+
+
 
 # --- LOGGING ---
 LOGGING = {
@@ -198,3 +220,11 @@ LOGIN_URL = '/'
 LOGIN_REDIRECT_URL = '/dashboard/'
 LOGOUT_REDIRECT_URL = '/'
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+
+
+MESSAGE_TAGS = {
+    messages.ERROR: 'danger',
+    messages.SUCCESS: 'success',
+    messages.WARNING: 'warning',
+    messages.INFO: 'info',
+}

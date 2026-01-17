@@ -1,4 +1,3 @@
-import uuid
 from decimal import Decimal
 
 from django.db import models
@@ -7,6 +6,85 @@ from apps.comissionamento.models import Arquiteta
 from apps.configuracoes.mixin import SoftDeleteMixin
 from apps.funcionarios.models import Funcionario
 
+
+class ParcelamentoPagar(SoftDeleteMixin):
+    """
+    Entidade pai que agrupa diversas contas (parcelas).
+    """
+    descricao = models.CharField(max_length=255, verbose_name="Descrição do Parcelamento")
+    data_criacao = models.DateTimeField(auto_now_add=True, verbose_name="Criado em")
+    
+    # Congelamos o valor total original aqui para facilitar consultas
+    valor_total_original = models.DecimalField(max_digits=12, decimal_places=2, default=Decimal('0.00'))
+    qtd_parcelas = models.IntegerField(default=1)
+
+    class Meta:
+        verbose_name = "Parcelamento (A Pagar)"
+        verbose_name_plural = "Gestão de Parcelamentos"
+        ordering = ['-data_criacao']
+
+    def __str__(self):
+        return f"{self.descricao} ({self.qtd_parcelas}x)"
+
+    # --- Lógica de Negócio (Dashboards) ---
+
+    def get_related_objects(self):
+        """
+        Retorna todas as parcelas vinculadas, independente da classe filha (Boleto, Cheque, etc).
+        Como GastoBase é abstrata, precisamos varrer os reverse relations conhecidos ou
+        usar uma lógica polimórfica. Aqui, faremos uma busca dinâmica simples.
+        """
+        parcelas = []
+        # Lista de related_names gerados pelo GastoBase no padrão 'parcelas_NOMECLASSE'
+        # Você deve garantir que os models filhos herdam de GastoBase
+        modelos_filhos = [
+            'parcelas_boleto', 'parcelas_gastogeral', 'parcelas_cheque', 
+            'parcelas_faturacartao', 'parcelas_gastoveiculoconsorcio',
+            'parcelas_gastocontabilidade', 'parcelas_gastoimovel', 
+            'parcelas_gastoutilidade', 'parcelas_gastogasolina',
+            'parcelas_comissaoarquiteto'
+        ]
+        
+        for related in modelos_filhos:
+            if hasattr(self, related):
+                manager = getattr(self, related)
+                parcelas.extend(list(manager.filter(is_deleted=False)))
+        
+        # Ordena por vencimento
+        parcelas.sort(key=lambda x: x.data_vencimento if hasattr(x, 'data_vencimento') else x.data_gasto)
+        return parcelas
+
+    @property
+    def resumo(self):
+        """Retorna dicionário com status atualizado"""
+        parcelas = self.get_related_objects()
+        total_obj = len(parcelas)
+        if total_obj == 0:
+            return {'pendente': 0, 'pago': 0, 'progresso': 0, 'valor_pago': 0, 'valor_aberto': 0}
+
+        pagas = [p for p in parcelas if p.status in ['Pago', 'Recebido', 'PG', 'COM']]
+        qtd_pagas = len(pagas)
+        
+        valor_pago = sum([p.get_valor_consolidado() for p in pagas])
+        # O valor total atual pode diferir do original se houver juros nas parcelas
+        valor_total_atual = sum([p.get_valor_consolidado() for p in parcelas])
+        valor_aberto = valor_total_atual - valor_pago
+
+        progresso = (qtd_pagas / total_obj) * 100
+
+        return {
+            'total_parcelas': total_obj,
+            'qtd_pagas': qtd_pagas,
+            'qtd_pendentes': total_obj - qtd_pagas,
+            'progresso': round(progresso, 1),
+            'valor_pago': valor_pago,
+            'valor_aberto': valor_aberto,
+            'valor_total_atual': valor_total_atual
+        }
+
+
+    
+    # ... resto da classe ...
 
 class FormaPagamento(models.TextChoices):
     DINHEIRO = 'DINHEIRO', 'Dinheiro'
@@ -29,7 +107,17 @@ class GastoBase(SoftDeleteMixin):
     - Para contas que 'nascem pagas': 'valor' é o valor pago e 'data_vencimento' é a data do pagamento.
     - Para contas 'a pagar': 'valor' é o valor nominal/previsto e 'data_vencimento' é o vencimento do título.
     """
-    parcelamento_uuid = models.UUIDField(null=True, blank=True, editable=False)
+
+    parcelamento = models.ForeignKey(
+            ParcelamentoPagar, 
+            on_delete=models.CASCADE, # Se apagar o pai, apaga as parcelas (ou use PROTECT/SET_NULL conforme regra)
+            null=True, 
+            blank=True,
+            related_name='parcelas_%(class)s', # Ex: parcelas_boleto, parcelas_cheque
+            verbose_name="Vínculo de Parcelamento"
+        )
+
+
     banco_origem = models.ForeignKey(
         'receber.Banco', 
         on_delete=models.PROTECT,  # Alterado para PROTECT (Segurança Financeira)
@@ -114,6 +202,11 @@ class GastoBase(SoftDeleteMixin):
             models.Index(fields=['data_vencimento', 'status']),
         ]
         
+    def __str__(self):
+        """Representação padrão caso a sub-classe não defina."""
+        identificacao = self.descricao or self.credor or "Despesa"
+        valor_fmt = f"R$ {self.valor}" if self.valor else "R$ 0,00"
+        return f"{identificacao} - {valor_fmt}"
 
     def get_valor_consolidado(self):
         """Retorna o valor principal por padrão."""
@@ -145,6 +238,12 @@ class Boleto(GastoBase):
         verbose_name = "Boleto"
         verbose_name_plural = "Boletos"
 
+    def __str__(self):
+        desc = self.descricao or self.credor or "Boleto"
+        if self.nota_fiscal:
+            return f"{desc} (NF: {self.nota_fiscal})"
+        return f"{desc} - {self.data_vencimento.strftime('%d/%m')}"
+
     def get_valor_consolidado(self):
         """Para fluxo de caixa: se já pagou, retorna o valor pago (com juros). Se não, o nominal."""
         if self.status in [StatusPagamento.PAGO, 'Pago'] and self.valor_pago:
@@ -172,6 +271,11 @@ class GastoVeiculoConsorcio(GastoBase):
         verbose_name = "Gasto de Veículo/Consórcio"
         verbose_name_plural = "Consórcios e Carros"
 
+    def __str__(self):
+        tipo = self.get_tipo_gasto_display()
+        veiculo = f" - {self.veiculo_referencia}" if self.veiculo_referencia else ""
+        return f"{tipo}{veiculo}"
+
     def get_valor_consolidado(self):
         if self.status in [StatusPagamento.PAGO, 'Pago'] and self.valor_pago:
             return self.valor_pago
@@ -198,7 +302,9 @@ class GastoUtilidade(GastoBase):
         verbose_name = "Gasto com Utilidade"
         verbose_name_plural = "Água, Luz e Telefone"
     
-    # Sugestão: Forçar status pago no save() se desejar, ou definir default no form.
+    def __str__(self):
+        # Ex: Escelsa - Alphaville (05/2024)
+        return f"{self.get_tipo_cliente_display()} ({self.data_vencimento.strftime('%m/%Y')})"
 
 class FaturaCartao(GastoBase):
     TIPO_CHOICES = [
@@ -212,12 +318,18 @@ class FaturaCartao(GastoBase):
         verbose_name = "Fatura de Cartão"
         verbose_name_plural = "Faturas de Cartão"
 
+    def __str__(self):
+        return f"Fatura {self.get_cartao_display()} - {self.data_vencimento.strftime('%m/%Y')}"
+
 class PrestacaoEmprestimo(GastoBase):
     prestacao = models.IntegerField(null=True, blank=True, verbose_name="Prestação")
     
     class Meta:
         verbose_name = "Prestação de Empréstimo"
         verbose_name_plural = "Prestações de Empréstimos"
+    
+    def __str__(self):
+        return f"{self.descricao or 'Empréstimo'} - Parc. {self.prestacao or '?'}"
 
 class GastoContabilidade(GastoBase):
     TIPO_CHOICES = [
@@ -233,6 +345,9 @@ class GastoContabilidade(GastoBase):
     class Meta:
         verbose_name = "Gasto Contábil"
         verbose_name_plural = "Encargos e Contabilidade"
+
+    def __str__(self):
+        return f"{self.get_tipo_gasto_display()} - {self.data_vencimento.strftime('%m/%Y')}"
 
 class GastoImovel(GastoBase):
     TIPO_CHOICES = [
@@ -250,38 +365,62 @@ class GastoImovel(GastoBase):
         verbose_name = "Gasto Imobiliário"
         verbose_name_plural = "IPTU e Condomínios"
 
+    def __str__(self):
+        return f"{self.get_tipo_gasto_display()} - {self.local_lote or ''}"
+
 # ==============================================================================
 # CLASSES INDEPENDENTES (Não herdam de GastoBase ou já possuem estrutura própria)
 # ==============================================================================
 
+# Em zirk_rh_financeiro/apps/financeiro/pagar/models.py
+
 class Cheque(SoftDeleteMixin):
     TIPO_ENTIDADE_CHOICES = [('F', 'Física'), ('J', 'Jurídica')]
-    STATUS_CHOICES = [('EMI', 'Emitido'), ('COM', 'Compensado'), ('DEV', 'Devolvido'), ('CAN', 'Cancelado')]
-    parcelamento_uuid = models.UUIDField(null=True, blank=True, editable=False)
+    
+    # ALTERADO: A opção 'Compensado' agora grava o valor 'Pago'
+    STATUS_CHOICES = [
+        ('EMI', 'Emitido'),
+        ('Pago', 'Compensado'),  # Valor: Pago, Label: Compensado
+        ('DEV', 'Devolvido'),
+        ('CAN', 'Cancelado')
+    ]    
+    
     descricao = models.CharField(max_length=255, verbose_name="Despesa")
     valor = models.DecimalField(max_digits=10, decimal_places=2, verbose_name="Valor")
     data_emissao = models.DateField(verbose_name="Data de Emissão")
     numero_cheque = models.CharField(max_length=20, verbose_name="Nº do Cheque")
-    status = models.CharField(max_length=3, choices=STATUS_CHOICES, default='EMI', verbose_name="Status")
+    
+    # ALTERADO: max_length aumentado para 20 (era 3) para aceitar 'Pago'
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='EMI', verbose_name="Status")
+    
     tipo_entidade = models.CharField(max_length=1, choices=TIPO_ENTIDADE_CHOICES, verbose_name="Tipo de Entidade")
+
+    parcelamento = models.ForeignKey(
+        ParcelamentoPagar, 
+        on_delete=models.CASCADE,
+        null=True, 
+        blank=True,
+        related_name='parcelas_%(class)s',
+        verbose_name="Vínculo de Parcelamento"
+    )
 
     banco_origem = models.ForeignKey(
         'receber.Banco', 
-        on_delete=models.PROTECT, # Alterado para PROTECT
+        on_delete=models.PROTECT,
         null=True, 
         blank=True, 
         verbose_name="Conta de Saída"
     )
     movimento_banco = models.OneToOneField(
         'receber.MovimentoBanco', 
-        on_delete=models.PROTECT, # Alterado para PROTECT
+        on_delete=models.PROTECT,
         null=True, 
         blank=True, 
         related_name='cheque_origem'
     )
     movimento_caixa = models.OneToOneField(
         'receber.CaixaDiario', 
-        on_delete=models.PROTECT, # Alterado para PROTECT
+        on_delete=models.PROTECT,
         null=True, 
         blank=True, 
         related_name='cheque_origem_origem'
@@ -291,10 +430,13 @@ class Cheque(SoftDeleteMixin):
         verbose_name = "Cheque"
         verbose_name_plural = "Cheques"
 
+    def __str__(self):
+        return f"Cheque {self.numero_cheque} - {self.descricao}"
+
     def get_model_name(self): return self.__class__.__name__
     def get_valor_consolidado(self): return self.valor
     def get_data_consolidada(self): return self.data_emissao
-    def get_tipo_classe(self): return self.__class__.__name__    
+    def get_tipo_classe(self): return self.__class__.__name__ 
 
 class Emprestimo(SoftDeleteMixin):
     descricao = models.CharField(max_length=255, verbose_name="Descrição do Empréstimo")
@@ -349,8 +491,15 @@ class ComissaoArquiteto(SoftDeleteMixin):
     # ALTERADO: Default para PENDENTE (nasce como conta a pagar)
     status = models.CharField('Status', max_length=20, choices=StatusPagamento.choices, default=StatusPagamento.PENDENTE)
     
-    parcelamento_uuid = models.UUIDField(null=True, blank=True, editable=False)
-    
+    parcelamento = models.ForeignKey(
+        ParcelamentoPagar, 
+        on_delete=models.CASCADE, # Se apagar o pai, apaga as parcelas (ou use PROTECT/SET_NULL conforme regra)
+        null=True, 
+        blank=True,
+        related_name='parcelas_%(class)s', # Ex: parcelas_boleto, parcelas_cheque
+        verbose_name="Vínculo de Parcelamento"
+    )
+
     banco_origem = models.ForeignKey(
         'receber.Banco', 
         on_delete=models.PROTECT, # Alterado para PROTECT
@@ -385,6 +534,9 @@ class ComissaoArquiteto(SoftDeleteMixin):
     class Meta:
         verbose_name = "Comissão de Arquiteto"
         verbose_name_plural = "Comissões de Arquitetos"
+
+    def __str__(self):
+        return f"Comissão: {self.arquiteto} - {self.valor_comissao}"
 
     # Lógica ajustada para considerar o valor pago se o status for 'Pago'
     def get_valor_consolidado(self): 
@@ -446,6 +598,9 @@ class GastoGeral(SoftDeleteMixin):
         verbose_name = "Gasto Geral"
         verbose_name_plural = "Gastos Gerais (Almoço, Material, etc.)"
 
+    def __str__(self):
+        return f"{self.descricao} - {self.valor_total}"
+
     def get_valor_consolidado(self): return self.valor_total
     def get_data_consolidada(self): return self.data_gasto
     def get_model_name(self): return self.__class__.__name__
@@ -458,6 +613,14 @@ class GastoGasolina(SoftDeleteMixin):
     carro = models.CharField(max_length=50, null=True, blank=True, verbose_name="Carro/Veículo")
     status = models.CharField('Status', max_length=20, choices=StatusPagamento.choices, default=StatusPagamento.PAGO)
     
+
+    forma_pagamento = models.CharField(
+        max_length=20, 
+        choices=FormaPagamento.choices, 
+        default=FormaPagamento.PIX, 
+        verbose_name="Forma de Pagamento"
+    )
+
     banco_origem = models.ForeignKey(
         'receber.Banco', 
         on_delete=models.PROTECT, # Alterado para PROTECT
@@ -483,6 +646,9 @@ class GastoGasolina(SoftDeleteMixin):
     class Meta:
         verbose_name = "Gasto com Gasolina"
         verbose_name_plural = "Gastos com Gasolina"
+
+    def __str__(self):
+        return f"Combustível: {self.descricao} ({self.valor_total})"
         
     def get_valor_consolidado(self): return self.valor_total
     def get_data_consolidada(self): return self.data_gasto
@@ -503,8 +669,16 @@ class FolhaPagamento(SoftDeleteMixin):
     vale = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal('0.00'), verbose_name="Vales")
     horas_extras_valor = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal('0.00'), verbose_name="Horas Extras (R$)")
     observacoes = models.TextField(blank=True, null=True, verbose_name="Observações")
-    parcelamento_uuid = models.UUIDField(null=True, blank=True, editable=False)
-    
+
+    parcelamento = models.ForeignKey(
+        ParcelamentoPagar, 
+        on_delete=models.CASCADE, # Se apagar o pai, apaga as parcelas (ou use PROTECT/SET_NULL conforme regra)
+        null=True, 
+        blank=True,
+        related_name='parcelas_%(class)s', # Ex: parcelas_boleto, parcelas_cheque
+        verbose_name="Vínculo de Parcelamento"
+    )
+
     banco_origem = models.ForeignKey(
         'receber.Banco', 
         on_delete=models.PROTECT, # Alterado para PROTECT

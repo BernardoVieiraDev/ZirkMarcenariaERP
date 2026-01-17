@@ -1,0 +1,153 @@
+{% extends 'core/base.html' %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+
+    <div class="row mb-4">
+        <div class="col-12">
+            <h1 class="h3 text-gray-800"><i class="fas fa-handshake me-2"></i>Manual do Usuário: Comercial e Vendas</h1>
+            <p class="lead text-muted">
+                Gerencie sua carteira de clientes, feche contratos e controle automaticamente as comissões de parceiros (RT).
+            </p>
+        </div>
+    </div>
+
+    <div class="card shadow mb-4 border-left-primary">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary"><i class="fas fa-address-book me-2"></i>Gestão de Clientes</h6>
+        </div>
+        <div class="card-body">
+            <div class="row align-items-center">
+                <div class="col-md-9">
+                    <h5 class="font-weight-bold text-dark">O ponto de partida</h5>
+                    <p>
+                        Antes de lançar qualquer venda, o cliente deve estar cadastrado. O sistema permite o cadastro completo de:
+                    </p>
+                    <ul class="mb-0">
+                        <li><strong>Pessoa Física:</strong> Nome, CPF, Endereço.</li>
+                        <li><strong>Pessoa Jurídica:</strong> Razão Social, CNPJ, Contato Financeiro.</li>
+                    </ul>
+                    <p class="text-muted small mt-2">
+                        <i class="fas fa-info-circle"></i> <strong>Dica:</strong> Mantenha o cadastro limpo. Esse nome é o que aparecerá nos relatórios financeiros e nos recibos.
+                    </p>
+                </div>
+                <div class="col-md-3 text-center border-left">
+                    <i class="fas fa-user-tie fa-4x text-gray-300"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-6 mb-4">
+            <div class="card shadow h-100 border-bottom-success">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-success"><i class="fas fa-file-signature me-2"></i>Contratos e Obras</h6>
+                </div>
+                <div class="card-body">
+                    <p>É aqui que a mágica acontece. Ao fechar uma venda, você cria um <strong>"Contrato"</strong> no sistema.</p>
+                    
+                    <div class="alert alert-success bg-light border-0">
+                        <strong>O que você define aqui?</strong>
+                        <ul class="small mb-0 mt-1">
+                            <li>Quem é o Cliente.</li>
+                            <li>Qual é o valor total fechado (Orçamento).</li>
+                            <li>Data da assinatura.</li>
+                            <li><strong>Quem indicou (Parceiro/Arquiteto).</strong></li>
+                        </ul>
+                    </div>
+                    <p class="small text-muted mb-0">
+                        Esse contrato se torna o "pai" de todas as parcelas que o cliente vai pagar. Assim, você sabe exatamente quanto já recebeu de cada obra.
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-6 mb-4">
+            <div class="card shadow h-100 border-bottom-warning">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-warning"><i class="fas fa-pencil-ruler me-2"></i>Parceiros e Arquitetos (RT)</h6>
+                </div>
+                <div class="card-body">
+                    <p>Gerencie quem traz negócios para a empresa.</p>
+                    
+                    <ul class="list-group list-group-flush small">
+                        <li class="list-group-item">
+                            <i class="fas fa-percentage text-warning mr-2"></i> <strong>Comissão Automática:</strong>
+                            Ao vincular um Arquiteto a um Contrato, o sistema já sabe que existe uma "Reserva Técnica" (RT) a ser paga.
+                        </li>
+                        <li class="list-group-item">
+                            <i class="fas fa-eye text-warning mr-2"></i> <strong>Transparência:</strong>
+                            O sistema mostra exatamente quanto cada parceiro gerou de vendas para a Zirk. Isso ajuda a identificar quem são seus melhores aliados comerciais.
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card shadow mb-4 border-left-info">
+        <div class="card-header py-3 bg-info text-white">
+            <h6 class="m-0 font-weight-bold"><i class="fas fa-tachometer-alt me-2"></i>Painel RT (Reserva Técnica)</h6>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-7">
+                    <h5 class="h6 font-weight-bold text-dark">O controle que evita erros</h5>
+                    <p>
+                        Existe uma tela exclusiva chamada <strong>"Painel RT"</strong>. Ela cruza dados do Comercial com o Financeiro para responder perguntas difíceis:
+                    </p>
+                    <ul class="small">
+                        <li><em>"Já recebi do cliente para poder pagar o arquiteto?"</em></li>
+                        <li><em>"Quanto ainda devo de comissão para o parceiro X?"</em></li>
+                    </ul>
+                    <p class="mb-0">
+                        Isso evita que você pague uma comissão antes de receber do cliente (fluxo de caixa negativo) ou que esqueça de pagar um parceiro importante.
+                    </p>
+                </div>
+                <div class="col-md-5 text-center d-flex align-items-center justify-content-center bg-light rounded">
+                    <div class="p-3">
+                        <span class="d-block font-weight-bold text-info">Visão Geral</span>
+                        <small>Vendas Totais | Comissões Pagas | Comissões Pendentes</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card shadow mb-4">
+        <div class="card-body">
+            <h6 class="font-weight-bold text-gray-700 mb-4 text-center">O Ciclo da Venda Perfeita</h6>
+            
+            <div class="d-flex justify-content-between align-items-center text-center flex-wrap px-lg-5">
+                <div class="mb-3">
+                    <div class="btn btn-primary btn-circle btn-lg mb-2"><i class="fas fa-user-plus"></i></div>
+                    <div class="small font-weight-bold">1. Cadastrar<br>Cliente</div>
+                </div>
+                
+                <i class="fas fa-arrow-right text-muted d-none d-md-block mb-3"></i>
+                
+                <div class="mb-3">
+                    <div class="btn btn-success btn-circle btn-lg mb-2"><i class="fas fa-file-contract"></i></div>
+                    <div class="small font-weight-bold">2. Criar Contrato<br>(Vincular Arquiteto)</div>
+                </div>
+
+                <i class="fas fa-arrow-right text-muted d-none d-md-block mb-3"></i>
+
+                <div class="mb-3">
+                    <div class="btn btn-warning btn-circle btn-lg mb-2"><i class="fas fa-money-bill-wave"></i></div>
+                    <div class="small font-weight-bold">3. Lançar Parcelas<br>(Contas a Receber)</div>
+                </div>
+
+                <i class="fas fa-arrow-right text-muted d-none d-md-block mb-3"></i>
+
+                <div class="mb-3">
+                    <div class="btn btn-info btn-circle btn-lg mb-2"><i class="fas fa-hand-holding-usd"></i></div>
+                    <div class="small font-weight-bold">4. Pagar Comissão<br>(Painel RT)</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+{% endblock %}

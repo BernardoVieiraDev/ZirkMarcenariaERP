@@ -23,3 +23,4 @@ path('bancos/', views.bancos_list, name='bancos_list'),
     path('movimento-banco/<int:pk>/edit/', views.movimento_banco_edit, name='movimento_banco_edit'), # NOVA
     path('movimento-banco/<int:pk>/delete/', views.movimento_banco_delete, name='movimento_banco_delete'),]
 
+

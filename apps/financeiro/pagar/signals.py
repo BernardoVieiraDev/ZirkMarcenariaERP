@@ -63,9 +63,27 @@ def atualizar_extrato(sender, instance, **kwargs):
     forma = getattr(instance, 'forma_pagamento', '') or getattr(instance, 'forma_recebimento', '')
     banco_obj = getattr(instance, 'banco_origem', None) or getattr(instance, 'banco_destino', None)
 
-    # Descrição para o extrato
-    prefixo = 'Rec.' if eh_receita else 'Pgto.'
-    descricao_historico = f"{prefixo}: {str(instance)}"[:255]
+    # =========================================================================
+    # CORREÇÃO: Construção melhorada da descrição para o extrato/caixa
+    # =========================================================================
+    descricao_historico = str(instance)
+    
+    # Tenta obter descrição limpa e credor separadamente
+    desc_clean = getattr(instance, 'descricao', '') or ''
+    credor = getattr(instance, 'credor', '') or getattr(instance, 'cliente', '')
+    
+    # Se o modelo for GastoGeral, Boleto, etc., tentamos montar uma string "Descrição - Credor"
+    if credor:
+        credor = str(credor)
+        # Se a descrição existe e o credor NÃO está nela, adicionamos
+        if desc_clean and credor not in desc_clean and credor not in descricao_historico:
+             descricao_historico = f"{desc_clean} - {credor}"
+        # Se não tem descrição mas tem credor (caso raro), usa o credor
+        elif not desc_clean and credor not in descricao_historico:
+             descricao_historico = f"{descricao_historico} ({credor})"
+             
+    descricao_historico = descricao_historico[:255]
+    # =========================================================================
 
     # --- LÓGICA CORE DE SINCRONIZAÇÃO ---
 
@@ -96,10 +114,9 @@ def atualizar_extrato(sender, instance, **kwargs):
             )
             
             # 3. Vincular de volta (SE for novo ou mudou)
-            # USAMOS .update() PARA NÃO DISPARAR O SIGNAL NOVAMENTE (EVITA RECURSÃO)
             if instance.movimento_caixa != cx:
                 sender.objects.filter(pk=instance.pk).update(movimento_caixa=cx)
-                instance.movimento_caixa = cx # Mantém consistência na memória
+                instance.movimento_caixa = cx 
 
         # --- SUB-CASO A2: É MOVIMENTO BANCÁRIO (Tem Banco ou é Cheque Compensado) ---
         elif banco_obj:
@@ -124,20 +141,18 @@ def atualizar_extrato(sender, instance, **kwargs):
                 }
             )
             
-            # 3. Vincular de volta (Sem recursão)
+            # 3. Vincular de volta
             if instance.movimento_banco != mv:
                 sender.objects.filter(pk=instance.pk).update(movimento_banco=mv)
                 instance.movimento_banco = mv
 
-    # CASO B: O item voltou a ser PENDENTE ou valor zerou (Estorno/Correção)
+    # CASO B: O item voltou a ser PENDENTE ou valor zerou
     else:
-        # Se existia movimento bancário, apaga e desvincula
         if instance.movimento_banco:
             instance.movimento_banco.delete()
             sender.objects.filter(pk=instance.pk).update(movimento_banco=None)
             instance.movimento_banco = None
             
-        # Se existia movimento de caixa, apaga e desvincula
         if instance.movimento_caixa:
             instance.movimento_caixa.delete()
             sender.objects.filter(pk=instance.pk).update(movimento_caixa=None)
@@ -151,7 +166,7 @@ def remover_do_extrato(sender, instance, **kwargs):
         if getattr(instance, 'movimento_banco', None):
             instance.movimento_banco.delete()
     except Exception:
-        pass # Já deletado ou erro de acesso
+        pass 
         
     try:
         if getattr(instance, 'movimento_caixa', None):
@@ -160,7 +175,6 @@ def remover_do_extrato(sender, instance, **kwargs):
         pass
 
 # --- REGISTRO DOS SIGNALS ---
-# Conecta todos os modelos da lista à função única
 for model in MODELOS_FINANCEIROS:
     post_save.connect(atualizar_extrato, sender=model)
     post_delete.connect(remover_do_extrato, sender=model)

@@ -1,10 +1,14 @@
-from django.shortcuts import render, redirect, get_object_or_404
-from django.contrib import messages
-from apps.funcionarios.models import Funcionario
-from .models import BancoHoras, LancamentoHoras
-from .forms import LancamentoHorasForm
 from django import forms
+from django.contrib import messages
+from django.contrib.auth.decorators import login_required
+from django.shortcuts import get_object_or_404, redirect, render
 
+from apps.funcionarios.models import Funcionario
+
+from .forms import LancamentoHorasForm
+from .models import BancoHoras, LancamentoHoras
+
+@login_required
 def registrar_horas(request):
     if request.method == 'POST':
         form = LancamentoHorasForm(request.POST)
@@ -23,7 +27,7 @@ def registrar_horas(request):
     # Se der erro ou for GET direto (fallback), renderiza a página antiga ou redireciona
     return redirect('banco_horas:banco_horas_list')
 
-
+@login_required
 def banco_horas_list(request):
     """
     Lista todos os saldos de Banco de Horas dos funcionários.
@@ -53,7 +57,7 @@ class BancoHorasEditForm(forms.ModelForm):
         }
 
 # Mantenha os imports existentes
-
+@login_required
 def banco_horas_edit(request, pk):
     banco = get_object_or_404(BancoHoras, pk=pk)
     
@@ -79,7 +83,7 @@ def banco_horas_edit(request, pk):
     # Fallback normal
     return render(request, 'core/banco_horas/banco_horas_edit.html', context)
 
-# ADICIONE ESTA NOVA VIEW
+@login_required
 def banco_horas_delete(request, pk):
     banco = get_object_or_404(BancoHoras, pk=pk)
     

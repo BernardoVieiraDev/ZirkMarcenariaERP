@@ -4,53 +4,89 @@
 {% block content %}
 <style>
     :root {
-        --primary-blue: #1f6feb;
-        --text-dark: #0f172a;
+        --primary-blue: #2563eb;
+        --primary-hover: #1d4ed8;
+        --text-dark: #1e293b;
         --text-muted: #64748b;
         --border-color: #e2e8f0;
+        --bg-soft: #f8fafc;
+        --danger: #ef4444;
+        --danger-soft: #fef2f2;
     }
     
     .page-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 32px; }
-    .header-title h1 { font-size: 22px; font-weight: 700; color: var(--text-dark); margin: 0; }
+    .header-title h1 { font-size: 24px; font-weight: 700; color: var(--text-dark); margin: 0; letter-spacing: -0.5px; }
     
     .zirk-table-card {
-        background: #fff; border-radius: 16px; border: 1px solid var(--border-color);
+        background: #fff; border-radius: 12px; border: 1px solid var(--border-color);
         box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05); overflow: hidden;
     }
     
     .table-responsive { width: 100%; overflow-x: auto; }
     .table { width: 100%; border-collapse: collapse; }
+    
     .table th { 
-        background: #f8fafc; text-align: left; padding: 16px 24px;
-        font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted); font-weight: 600;
+        background: var(--bg-soft); text-align: left; padding: 16px 24px;
+        font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; 
+        color: var(--text-muted); font-weight: 600;
         border-bottom: 1px solid var(--border-color);
     }
-    .table td { padding: 16px 24px; border-bottom: 1px solid var(--border-color); color: var(--text-dark); vertical-align: middle; }
+    
+    .table td { padding: 16px 24px; border-bottom: 1px solid var(--border-color); vertical-align: middle; }
     .table tr:last-child td { border-bottom: none; }
+    .table tbody tr { transition: background-color 0.2s; }
+    .table tbody tr:hover { background-color: #f8fafc; }
+
+    /* --- Melhoria Visual do Sócio --- */
+    .socio-profile { display: flex; align-items: center; gap: 12px; }
     
-    .action-btn { 
-        padding: 6px 12px; border-radius: 8px; font-size: 13px; font-weight: 500; text-decoration: none; transition: all 0.2s; 
-        display: inline-flex; align-items: center; gap: 6px; border: 1px solid transparent;
+    .socio-avatar {
+        width: 40px; height: 40px; 
+        background-color: #e0e7ff; color: var(--primary-blue);
+        border-radius: 50%; display: flex; align-items: center; justify-content: center;
+        font-weight: 700; font-size: 16px; flex-shrink: 0;
     }
-    .btn-edit { background: #eff6ff; color: var(--primary-blue); border-color: #dbeafe; }
-    .btn-edit:hover { background: #dbeafe; }
     
-    .btn-delete { background: #fef2f2; color: #ef4444; border-color: #fee2e2; }
-    .btn-delete:hover { background: #fee2e2; }
+    .socio-info { display: flex; flex-direction: column; }
+    .socio-name { font-weight: 600; color: var(--text-dark); font-size: 15px; }
+    .socio-meta { font-size: 12px; color: var(--text-muted); }
+
+    /* --- Botões Lado a Lado --- */
+    .actions-wrapper {
+        display: flex;
+        align-items: center;
+        justify-content: flex-end; /* Alinha à direita */
+        gap: 8px; /* Espaço entre os botões */
+    }
+
+    .action-btn { 
+        padding: 8px 12px; border-radius: 6px; font-size: 13px; font-weight: 500; 
+        text-decoration: none; transition: all 0.2s; 
+        display: inline-flex; align-items: center; gap: 6px; border: 1px solid transparent;
+        line-height: 1;
+    }
+    
+    .btn-edit { background: #eff6ff; color: var(--primary-blue); border-color: #dbeafe; }
+    .btn-edit:hover { background: #dbeafe; color: var(--primary-hover); }
+    
+    .btn-delete { background: var(--danger-soft); color: var(--danger); border-color: #fee2e2; }
+    .btn-delete:hover { background: #fee2e2; border-color: #fecaca; }
 
     .btn-add {
-        background: var(--primary-blue); color: white; padding: 10px 20px; border-radius: 10px; 
-        text-decoration: none; font-weight: 600; font-size: 14px; display: inline-flex; align-items: center; gap: 8px;
+        background: var(--primary-blue); color: white; padding: 10px 20px; border-radius: 8px; 
+        text-decoration: none; font-weight: 600; font-size: 14px; 
+        display: inline-flex; align-items: center; gap: 8px; 
+        box-shadow: 0 2px 4px rgba(37, 99, 235, 0.2); transition: all 0.2s;
     }
-    .btn-add:hover { background: #1a5dbd; color: white; }
+    .btn-add:hover { background: var(--primary-hover); transform: translateY(-1px); }
 </style>
 
-<div class="page-container" style="padding: 0 20px;">
+<div class="page-container" style="padding: 20px; max-width: 1200px; margin: 0 auto;">
     
     <div class="page-header">
         <div class="header-title">
             <h1>Gestão de Sócios</h1>
-            <p style="color: var(--text-muted); font-size: 13px;">Gerencie os sócios cadastrados no sistema</p>
+            <p style="color: var(--text-muted); font-size: 14px; margin-top: 4px;">Gerencie os sócios cadastrados no sistema</p>
         </div>
         <a href="{% url 'socios:cadastrar_socio' %}" class="btn-add">
             <i class="fas fa-plus"></i> Novo Sócio
@@ -62,29 +98,42 @@
             <table class="table">
                 <thead>
                     <tr>
-                        <th>Nome do Sócio</th>
-                        <th style="width: 200px; text-align: right;">Ações</th>
+                        <th>Sócio</th>
+                        <th style="width: 150px; text-align: right;">Ações</th>
                     </tr>
                 </thead>
                 <tbody>
                     {% for socio in socios %}
                     <tr>
                         <td>
-                            <div style="font-weight: 600;">{{ socio.nome }}</div>
+                            <div class="socio-profile">
+                                <div class="socio-avatar">
+                                    {{ socio.nome|slice:":1"|upper }}
+                                </div>
+                                <div class="socio-info">
+                                    <span class="socio-name">{{ socio.nome }}</span>
+                                    <span class="socio-meta">ID: #{{ socio.id }}</span>
+                                </div>
+                            </div>
                         </td>
-                        <td style="text-align: right;">
-                            <a href="{% url 'socios:editar_socio' socio.id %}" class="action-btn btn-edit">
-                                <i class="fas fa-edit"></i> Editar
-                            </a>
-                            <a href="{% url 'socios:excluir_socio' socio.id %}" class="action-btn btn-delete">
-                                <i class="fas fa-trash"></i> Excluir
-                            </a>
+                        <td>
+                            <div class="actions-wrapper">
+                                <a href="{% url 'socios:editar_socio' socio.id %}" class="action-btn btn-edit" title="Editar">
+                                    <i class="fas fa-pencil-alt"></i> <span>Editar</span>
+                                </a>
+                                <a href="{% url 'socios:excluir_socio' socio.id %}" class="action-btn btn-delete" title="Excluir">
+                                    <i class="fas fa-trash-alt"></i> <span>Excluir</span>
+                                </a>
+                            </div>
                         </td>
                     </tr>
                     {% empty %}
                     <tr>
-                        <td colspan="2" style="text-align: center; padding: 40px; color: var(--text-muted);">
-                            Nenhum sócio cadastrado.
+                        <td colspan="2" style="text-align: center; padding: 60px 20px;">
+                            <div style="color: var(--text-muted); display: flex; flex-direction: column; align-items: center; gap: 10px;">
+                                <i class="fas fa-users-slash" style="font-size: 32px; opacity: 0.5;"></i>
+                                <span>Nenhum sócio cadastrado ainda.</span>
+                            </div>
                         </td>
                     </tr>
                     {% endfor %}

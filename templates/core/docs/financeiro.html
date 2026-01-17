@@ -1,0 +1,139 @@
+{% extends 'core/base.html' %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    
+    <div class="row mb-4">
+        <div class="col-12">
+            <h1 class="h3 text-gray-800"><i class="fas fa-book-reader me-2"></i>Manual do Usuário: Módulo Financeiro</h1>
+            <p class="lead text-muted">
+                Entenda como gerenciar as finanças, lançar contas, controlar a folha de pagamento e visualizar o futuro do caixa.
+            </p>
+        </div>
+    </div>
+
+    <div class="card shadow mb-4 border-left-info">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-info"><i class="fas fa-life-ring me-2"></i>Segurança: Errei, e agora?</h6>
+        </div>
+        <div class="card-body">
+            <div class="row align-items-center">
+                <div class="col-md-1 text-center">
+                    <i class="fas fa-trash-restore fa-3x text-gray-300"></i>
+                </div>
+                <div class="col-md-11">
+                    <h5 class="font-weight-bold">Nada é apagado para sempre imediatamente</h5>
+                    <p class="mb-0">
+                        O sistema possui uma "Lixeira de Segurança". Se você excluir uma conta a pagar, um funcionário ou um recebimento por engano, 
+                        <strong>o dado não some</strong>. Ele fica oculto e pode ser restaurado ou auditado pelo administrador. 
+                        Isso garante que o histórico financeiro da empresa nunca seja perdido por um clique acidental.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-6 mb-4">
+            <div class="card shadow h-100">
+                <div class="card-header py-3 bg-success text-white">
+                    <h6 class="m-0 font-weight-bold"><i class="fas fa-hand-holding-usd me-2"></i>Entradas: O Dinheiro que Entra</h6>
+                </div>
+                <div class="card-body">
+                    <p>Aqui você registra tudo o que a empresa tem para receber dos clientes.</p>
+                    
+                    <div class="mb-3">
+                        <strong class="text-success">1. Lançamento da Venda:</strong>
+                        <p class="small">Você informa o valor e a data de vencimento. O sistema permite vincular essa receita a um <strong>Contrato/Obra</strong> específico. Isso é essencial para depois sabermos quanto cada obra rendeu de lucro.</p>
+                    </div>
+
+                    <div class="mb-3">
+                        <strong class="text-success">2. Baixa (Recebimento):</strong>
+                        <p class="small">Quando o cliente paga, você marca a conta como "Recebida". O sistema perguntará: <em>"Para onde foi o dinheiro?"</em>.</p>
+                        <ul class="small mb-0">
+                            <li>Se foi dinheiro vivo &rarr; Vai para o <strong>Caixa Diário</strong>.</li>
+                            <li>Se foi Pix/Transferência &rarr; Vai para o <strong>Saldo Bancário</strong>.</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-6 mb-4">
+            <div class="card shadow h-100">
+                <div class="card-header py-3 bg-danger text-white">
+                    <h6 class="m-0 font-weight-bold"><i class="fas fa-file-invoice-dollar me-2"></i>Saídas: O Dinheiro que Sai</h6>
+                </div>
+                <div class="card-body">
+                    <p>O sistema organiza suas despesas por "tipo", para facilitar a organização.</p>
+                    
+                    <ul class="list-group list-group-flush small">
+                        <li class="list-group-item">
+                            <i class="fas fa-barcode text-danger mr-2"></i> <strong>Boletos:</strong> Para contas com código de barras, juros e nota fiscal.
+                        </li>
+                        <li class="list-group-item">
+                            <i class="fas fa-shopping-cart text-danger mr-2"></i> <strong>Gastos Gerais:</strong> Despesas do dia a dia (almoço, material de escritório). Você indica se pagou no Pix, Cartão ou Dinheiro.
+                        </li>
+                        <li class="list-group-item">
+                            <i class="fas fa-gas-pump text-danger mr-2"></i> <strong>Gasolina:</strong> Permite controlar qual carro foi abastecido e quem era o motorista.
+                        </li>
+                        <li class="list-group-item bg-light">
+                            <strong><i class="fas fa-magic text-warning"></i> Dica de Parcelamento:</strong> 
+                            Comprou algo em 10 vezes? Você não precisa lançar 10 vezes. Use a função "Parcelar": digite o valor total e o número de parcelas. O sistema cria os 10 lançamentos futuros automaticamente para você.
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card shadow mb-4">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary"><i class="fas fa-users me-2"></i>Recursos Humanos e Folha Automática</h6>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-6 border-right">
+                    <h5 class="h6 font-weight-bold text-dark">Chega de calcular na mão</h5>
+                    <p>Todo mês, você pode usar o botão <strong>"Gerar Folha Mensal"</strong>. O sistema trabalha por você:</p>
+                    <ol class="small">
+                        <li>Ele olha quem trabalhou no mês.</li>
+                        <li>Verifica no <strong>Banco de Horas</strong> se tem hora extra a pagar.</li>
+                        <li>Verifica nas <strong>Empreitadas</strong> se houve produção extra.</li>
+                        <li>Calcula os 40% de adiantamento (vale).</li>
+                        <li>Gera o valor final a pagar.</li>
+                    </ol>
+                </div>
+                <div class="col-md-6">
+                    <h5 class="h6 font-weight-bold text-dark">Comissões de Arquitetos (RT)</h5>
+                    <p class="small">
+                        O sistema conecta as vendas aos pagamentos de parceiros. 
+                        No painel de RT, você vê quanto foi vendido e se a comissão do arquiteto já foi paga.
+                        Isso evita pagar comissão duas vezes ou esquecer de pagar um parceiro importante.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card shadow mb-4 border-bottom-warning">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-warning"><i class="fas fa-chart-line me-2"></i>Fluxo de Caixa: A Bola de Cristal</h6>
+        </div>
+        <div class="card-body">
+            <p>Esta é a ferramenta mais importante para a tomada de decisão.</p>
+            <div class="alert alert-secondary">
+                <h5 class="alert-heading h6 font-weight-bold">Como funciona?</h5>
+                <p class="mb-0 small">
+                    O sistema pega o saldo que você tem <strong>hoje</strong> nos bancos e soma com tudo o que está <strong>previsto</strong> para entrar e sair nos próximos dias.
+                </p>
+            </div>
+            <p>
+                Ele gera uma linha do tempo dia após dia. Se o sistema identificar que daqui a 15 dias o saldo vai ficar negativo (vermelho), ele te avisa hoje. 
+                Assim, você não é pego de surpresa e pode negociar prazos ou cobrar clientes antes que o problema aconteça.
+            </p>
+        </div>
+    </div>
+
+</div>
+{% endblock %}

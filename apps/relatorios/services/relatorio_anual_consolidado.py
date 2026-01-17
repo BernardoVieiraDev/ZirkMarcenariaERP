@@ -12,10 +12,25 @@ from apps.financeiro.pagar.models import (
 )
 
 class RelatorioAnualConsolidado:
-    def __init__(self, ano=None):
-        self.ano = int(ano) if ano else timezone.now().year
-        self.output = BytesIO()
-        self.workbook = xlsxwriter.Workbook(self.output, {'in_memory': True})
+    def __init__(self, ano=None, inicio=None, fim=None, workbook=None):
+        # Lógica de Datas: Se passar inicio/fim, usa o range. Senão, define o ano inteiro.
+        if inicio and fim:
+            self.inicio = inicio
+            self.fim = fim
+            self.ano = inicio.year  # Define o ano base pelo início, para fins de título/referência
+        else:
+            self.ano = int(ano) if ano else timezone.now().year
+            self.inicio = date(self.ano, 1, 1)
+            self.fim = date(self.ano, 12, 31)
+        
+        if workbook:
+            self.workbook = workbook
+            self.should_close = False
+        else:
+            self.output = BytesIO()
+            self.workbook = xlsxwriter.Workbook(self.output, {'in_memory': True})
+            self.should_close = True
+            
         self.worksheet = self.workbook.add_worksheet(f"Consolidado {self.ano}")
         
         # --- Formatações (Design) ---
@@ -39,7 +54,7 @@ class RelatorioAnualConsolidado:
     def get_valor_mes(self, model, mes):
         """
         Retorna a soma dos valores para um model em um mês específico,
-        lidando dinamicamente com os nomes de campos diferentes de cada model.
+        respeitando o range de datas (self.inicio e self.fim).
         """
         
         # 1. Definição Padrão (Boleto, FaturaCartao, etc.)
@@ -56,7 +71,8 @@ class RelatorioAnualConsolidado:
             value_field = 'valor_total'
             
         elif model == ComissaoArquiteto:
-            date_field = 'data_vencimento'
+            # Verifica se o model tem data_pagamento, senão usa vencimento
+            date_field = 'data_pagamento'
             value_field = 'valor_comissao'
             
         elif model == Emprestimo:
@@ -67,12 +83,12 @@ class RelatorioAnualConsolidado:
             date_field = 'data_referencia'
             # Folha não tem um campo único de valor total salvo no banco, precisa somar os componentes
             filters = {
-                f'{date_field}__year': self.ano,
-                f'{date_field}__month': mes,
+                f'{date_field}__range': [self.inicio, self.fim], # Filtro global de data
+                f'{date_field}__month': mes,                     # Filtro da coluna (mês)
                 'is_deleted': False
             }
             qs = model.objects.filter(**filters)
-            # Soma dos campos que compõem o custo do funcionário (baseado na property total_funcionario)
+            # Soma dos campos que compõem o custo do funcionário
             soma = qs.aggregate(
                 total=Sum('salario_real') + 
                       Sum('ferias_terco') + 
@@ -84,8 +100,8 @@ class RelatorioAnualConsolidado:
 
         # 3. Query Genérica para os outros casos
         filters = {
-            f'{date_field}__year': self.ano,
-            f'{date_field}__month': mes,
+            f'{date_field}__range': [self.inicio, self.fim], # Filtro global de data
+            f'{date_field}__month': mes,                     # Filtro da coluna (mês)
             'is_deleted': False
         }
         
@@ -104,7 +120,7 @@ class RelatorioAnualConsolidado:
             'JANEIRO', 'FEVEREIRO', 'MARÇO', 'ABRIL', 'MAIO', 'JUNHO',
             'JULHO', 'AGOSTO', 'SETEMBRO', 'OUTUBRO', 'NOVEMBRO', 'DEZEMBRO'
         ]
-        headers = ['TIPO DE DESPESA'] + meses + ['TOTAL ANUAL']
+        headers = ['TIPO DE DESPESA'] + meses + ['TOTAL PERÍODO']
         
         for col_num, header in enumerate(headers):
             self.worksheet.write(0, col_num, header, self.fmt_header)
@@ -149,6 +165,7 @@ class RelatorioAnualConsolidado:
         for i, total in enumerate(totais_colunas):
             self.worksheet.write(row, i+1, total, self.fmt_currency_bold)
 
-        self.workbook.close()
-        self.output.seek(0)
-        return self.output
+        if self.should_close:
+            self.workbook.close()
+            self.output.seek(0)
+            return self.output

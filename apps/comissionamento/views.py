@@ -4,6 +4,7 @@ from decimal import Decimal
 
 from dateutil.relativedelta import relativedelta  # pip install python-dateutil
 from django.contrib import messages
+from django.contrib.auth.decorators import login_required
 from django.db.models import F, Sum
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
@@ -22,7 +23,7 @@ from .models import Arquiteta, ContratoRT
 # ... (Mantenha as views de Arquiteta iguais) ...
 
 # === VIEWS DE CONTRATO E FINANCEIRO ===
-
+@login_required
 def rt_contratos_list(request):
     contratos = ContratoRT.objects.filter(is_deleted=False).select_related('arquiteta', 'cliente').order_by('-data_contrato')
     
@@ -55,7 +56,7 @@ def rt_contratos_list(request):
 
 
 # Em zirk_rh_financeiro/apps/comissionamento/views.py
-
+@login_required
 def rt_contrato_create(request):
     if request.method == 'POST':
         form = ContratoRTForm(request.POST)
@@ -126,7 +127,7 @@ def rt_contrato_create(request):
         form.fields['primeiro_vencimento'].initial = timezone.now().date()
 
     return render(request, 'core/comissionamento/contrato_form.html', {'form': form, 'title': 'Novo Contrato'})
-
+@login_required
 def rt_contrato_edit(request, pk):
     contrato = get_object_or_404(ContratoRT, pk=pk)
     if request.method == 'POST':
@@ -140,7 +141,7 @@ def rt_contrato_edit(request, pk):
     return render(request, 'core/comissionamento/contrato_form.html', {'form': form, 'title': 'Editar Contrato'})
 
 
-
+@login_required
 def gerar_financeiro_contrato(request, pk):
     contrato = get_object_or_404(ContratoRT, pk=pk)
     
@@ -210,7 +211,7 @@ def gerar_financeiro_contrato(request, pk):
             messages.error(request, f"Erro ao gerar: {str(e)}")
             
     return redirect('comissionamento:contratos_list')
-
+@login_required
 def painel_controle_rt(request):
     """
     Dashboard para Arquiteto ver o status de seus clientes.
@@ -243,7 +244,7 @@ def painel_controle_rt(request):
         })
 
     return render(request, 'core/comissionamento/painel_rt.html', {'dados': dados_dashboard})
-
+@login_required
 def rt_contrato_delete(request, pk):
     contrato = get_object_or_404(ContratoRT, pk=pk)
     
@@ -259,7 +260,7 @@ def rt_contrato_delete(request, pk):
     }
     return render(request, 'core/comissionamento/contrato_delete.html', context)
 
-# --- VIEWS DE ARQUITETA (Sem alterações lógicas) ---
+@login_required
 def arquiteta_list(request):
     arquitetas = Arquiteta.objects.all().order_by('nome')
     form = ArquitetaForm()
@@ -270,6 +271,8 @@ def arquiteta_list(request):
         'title': 'Cadastro de Arquitetas'
     }
     return render(request, 'core/comissionamento/arquiteta_list.html', context)
+
+@login_required
 def arquiteta_create(request):
     if request.method == 'POST':
         form = ArquitetaForm(request.POST)
@@ -282,6 +285,7 @@ def arquiteta_create(request):
     context = {'form': form, 'title': 'Nova Arquiteta'}
     return render(request, 'core/comissionamento/arquiteta_form.html', context)
 
+@login_required
 def arquiteta_edit(request, pk):
     arquiteta = get_object_or_404(Arquiteta, pk=pk)
     if request.method == 'POST':
@@ -295,6 +299,7 @@ def arquiteta_edit(request, pk):
     context = {'form': form, 'title': f'Editar: {arquiteta.nome}', 'edit_mode': True}
     return render(request, 'core/comissionamento/arquiteta_form.html', context)
 
+@login_required
 def arquiteta_delete(request, pk):
     arquiteta = get_object_or_404(Arquiteta, pk=pk)
     # Verifica dependência com o novo modelo ContratoRT
@@ -309,7 +314,7 @@ def arquiteta_delete(request, pk):
     context = {'arquiteta': arquiteta, 'title': f'Excluir Arquiteta: {arquiteta.nome}'}
     return render(request, 'core/comissionamento/arquiteta_delete.html', context)
 
-
+@login_required
 def rt_contrato_detail(request, pk):
     contrato = get_object_or_404(ContratoRT, pk=pk)
     

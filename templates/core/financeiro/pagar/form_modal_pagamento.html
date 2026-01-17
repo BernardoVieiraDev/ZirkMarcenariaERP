@@ -1,0 +1,56 @@
+<div style="padding: 16px 24px; border-bottom: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center; background: #f8fafc; border-radius: 16px 16px 0 0;">
+    <h3 style="font-size: 18px; font-weight: 700; margin: 0; color: #0f172a;">
+        <i class="fas fa-money-bill-wave" style="color: #10b981; margin-right: 8px;"></i> Registrar Pagamento
+    </h3>
+    <button type="button" onclick="closeModal('modalGeneric')" style="background: none; border: none; font-size: 24px; color: #94a3b8; cursor: pointer;">&times;</button>
+</div>
+
+<div style="padding: 24px;"> <div class="alert alert-light border mb-4" style="background: #f8fafc; border: 1px solid #e2e8f0; padding: 12px; border-radius: 8px; font-size: 14px; margin-bottom: 20px;">
+        <strong>Referência:</strong> {{ object }}
+    </div>
+
+    <form method="post" action="{{ request.get_full_path }}">
+        {% csrf_token %}
+        
+        <div class="row">
+            <div class="col-md-6 mb-3">
+                <label class="form-label fw-bold small text-muted">Data do Pagamento</label>
+                {{ form.data_pagamento }}
+                {% if form.data_pagamento.errors %}
+                    <div class="text-danger small">{{ form.data_pagamento.errors.0 }}</div>
+                {% endif %}
+            </div>
+
+            <div class="col-md-6 mb-3">
+                <label class="form-label fw-bold small text-muted">Valor Pago (R$)</label>
+                {{ form.valor_pago }}
+                {% if form.valor_pago.errors %}
+                    <div class="text-danger small">{{ form.valor_pago.errors.0 }}</div>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label fw-bold small text-muted">Forma de Pagamento</label>
+            {{ form.forma_pagamento }}
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label fw-bold small text-muted">Conta de Saída / Banco</label>
+            {{ form.banco_origem }}
+            <small class="text-muted d-block mt-1" style="font-size: 12px;">Deixe em branco se foi dinheiro/caixa.</small>
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label fw-bold small text-muted">Observações</label>
+            {{ form.observacoes }}
+        </div>
+
+        <div style="display: flex; justify-content: flex-end; gap: 12px; margin-top: 24px; padding-top: 16px; border-top: 1px solid #e2e8f0;">
+            <button type="button" class="btn btn-secondary" onclick="closeModal('modalGeneric')">Cancelar</button>
+            <button type="submit" class="btn btn-success">
+                <i class="fas fa-check"></i> Confirmar Pagamento
+            </button>
+        </div>
+    </form>
+</div>

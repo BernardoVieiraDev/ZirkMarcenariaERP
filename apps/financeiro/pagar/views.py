@@ -4,22 +4,22 @@ from datetime import date, datetime, timedelta
 from decimal import Decimal
 
 from django import forms
-from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.db import transaction
-from django.db.models import Case, DecimalField, F, Q, Sum, Value, When
+from django.db.models import Case, DecimalField, F, Q, Sum, When
 from django.forms import modelformset_factory
-from django.http import FileResponse, Http404, HttpResponse, JsonResponse
+from django.http import HttpResponse 
 from django.shortcuts import get_object_or_404, redirect, render
-from django.core.paginator import EmptyPage, PageNotAnInteger, Paginator
 
-from apps.financeiro.pagar.models import FolhaPagamento
-from apps.financeiro.pagar.services import gerar_folha_mensal
-from apps.financeiro.utils import gerar_parcelas
+from apps.financeiro.pagar.models import FolhaPagamento, ParcelamentoPagar
+from apps.financeiro.pagar.services import (
+    gerar_lancamentos_parcelados,
+    gerar_folha_mensal
+)
 from apps.relatorios.services.holerite import HoleriteExcelService
 
-from .forms import (BoletoForm, ChequeForm, ComissaoArquitetoForm,
+from .forms import (BoletoForm, ChequeForm, ComissaoArquitetoForm, ConfirmarPagamentoForm,
                     FaturaCartaoForm, FolhaPagamentoForm,
                     GastoContabilidadeForm, GastoGasolinaForm, GastoGeralForm,
                     GastoImovelForm, GastoUtilidadeForm,
@@ -93,15 +93,22 @@ def sort_key(obj):
 # VIEW - LISTAGEM UNIFICADA
 # ----------------------------------------------------
 
+
+
 @login_required
 def pagar_list(request):
+    # Parâmetros de Filtro (Backend)
     mes = request.GET.get('mes')
     ano = request.GET.get('ano')
-    
+    search_query = request.GET.get('q', '').strip() # Busca textual
+    status_filter = request.GET.get('status', '')   # Filtro de Status
+    tipo_filter = request.GET.get('tipo', '')       # Filtro de Categoria
+    sort_order = request.GET.get('order', 'desc')   # Ordenação
+
     start_date = None
     end_date = None
 
-    # 1. Filtro de Data
+    # 1. Filtro de Data (Opcional - Se não informado, busca tudo)
     if mes and ano:
         try:
             mes = int(mes)
@@ -114,147 +121,148 @@ def pagar_list(request):
         except ValueError:
             pass 
 
-    # 2. Definição das Categorias para Agrupamento Visual
+    # Listas de Agrupamento
     cat_operacional = ['GastoGeral', 'GastoGasolina']
     cat_folha = ['FolhaPagamento']
     cat_comissao = ['ComissaoArquiteto']
     
-    # Listas de Resultados
     list_contas = []
     list_operacional = []
     list_folha = []
     list_comissao = []
     
-    # Totais Globais
     total_pendente = Decimal('0.00')
     total_pago = Decimal('0.00')
     total_registros = 0
     
-    # Lista de Status considerados "Pagos"
     STATUS_PAGO_LIST = ['Pago', 'PG', 'Recebido', 'COM']
     select_opts = ['banco_origem', 'movimento_banco'] 
 
-    # 3. Loop nos Modelos (Com Agregação Otimizada)
+    # Loop nos Modelos
     for key, data in MODEL_FORM_MAP.items():
+        # --- FILTRO DE TIPO ---
+        if tipo_filter and tipo_filter != key:
+            continue
+
         ModelClass = data['model']
         
-        # Define o campo de data principal para filtro e ordenação
+        # Definição do campo de data
         campo_data = 'data_vencimento'
         if key in ['GastoGeral', 'GastoGasolina']: campo_data = 'data_gasto'
         elif key == 'Cheque': campo_data = 'data_emissao'
         elif key == 'FolhaPagamento': campo_data = 'data_referencia'
+        elif key == 'ComissaoArquiteto': campo_data = 'data_vencimento'
         
-        # Filtro Base
-        filtros = {'is_deleted': False}
+        # Filtros Base
+        filtros = Q(is_deleted=False)
+        
+        # Filtro de Data (apenas se usuário selecionou)
         if start_date and end_date:
-            filtros[f"{campo_data}__range"] = (start_date, end_date)
-            
-        qs = ModelClass.objects.filter(**filtros)
+            filtros &= Q(**{f"{campo_data}__range": (start_date, end_date)})
 
-        # Otimização de Queries Relacionadas
-        related_fields = [f for f in select_opts if hasattr(ModelClass, f) or 
-                          (f == 'banco_origem' and hasattr(ModelClass, 'banco_origem'))]
+        # --- FILTRO DE STATUS ---
+        if status_filter:
+            if status_filter == 'Pago':
+                filtros &= Q(status__in=STATUS_PAGO_LIST)
+            elif status_filter == 'Pendente':
+                filtros &= ~Q(status__in=STATUS_PAGO_LIST) & ~Q(status='Atrasado')
+            elif status_filter == 'Atrasado':
+                 filtros &= Q(status='Atrasado')
+
+        # --- BUSCA TEXTUAL ---
+        if search_query:
+            if key == 'FolhaPagamento':
+                filtros &= Q(funcionario__nome__icontains=search_query)
+            elif key == 'ComissaoArquiteto':
+                filtros &= Q(arquiteto__nome__icontains=search_query)
+            elif key in ['Boleto', 'Cheque', 'FaturaCartao']:
+                q_obj = Q(descricao__icontains=search_query)
+                if hasattr(ModelClass, 'credor'):
+                    q_obj |= Q(credor__icontains=search_query)
+                filtros &= q_obj
+            else:
+                if hasattr(ModelClass, 'descricao'):
+                    filtros &= Q(descricao__icontains=search_query)
+
+        qs = ModelClass.objects.filter(filtros)
+
+        # Otimização (select_related) - CRUCIAL PARA PERFORMANCE
+        related_fields = []
+        if key == 'FolhaPagamento':
+            related_fields.append('funcionario')
+        elif key == 'ComissaoArquiteto':
+            related_fields.append('arquiteto')
+        
+        for f in select_opts:
+            if hasattr(ModelClass, f): related_fields.append(f)
+            
         if related_fields:
             qs = qs.select_related(*related_fields)
 
-        # --- LÓGICA DE VALOR CONSOLIDADO (NO BANCO DE DADOS) ---
-        # Cria uma expressão SQL para o valor, dependendo do modelo
-        
+        # --- LÓGICA DE VALOR (Anotações) ---
         val_expr = None
-        
         if key == 'FolhaPagamento':
-            # Soma dos componentes da folha
-            val_expr = (
-                F('salario_real') + 
-                F('ferias_terco') + 
-                F('empreitada') + 
-                F('decimo_terceiro') + 
-                F('horas_extras_valor')
-            )
+            val_expr = (F('salario_real') + F('ferias_terco') + F('empreitada') + F('decimo_terceiro') + F('horas_extras_valor'))
         elif key == 'ComissaoArquiteto':
-            # Se pago, usa valor_pago, senão valor_comissao
             val_expr = Case(
                 When(status__in=STATUS_PAGO_LIST, valor_pago__isnull=False, then=F('valor_pago')),
-                default=F('valor_comissao'),
-                output_field=DecimalField()
+                default=F('valor_comissao'), output_field=DecimalField()
             )
         elif key in ['Boleto', 'GastoVeiculoConsorcio']:
-            # Se pago, usa valor_pago, senão valor (nominal)
             val_expr = Case(
                 When(status__in=STATUS_PAGO_LIST, valor_pago__isnull=False, then=F('valor_pago')),
-                default=F('valor'),
-                output_field=DecimalField()
+                default=F('valor'), output_field=DecimalField()
             )
         elif key in ['GastoGeral', 'GastoGasolina']:
             val_expr = F('valor_total')
         else:
-            # Modelos simples (GastoBase, Cheque)
             val_expr = F('valor')
 
-        # Anota o QuerySet com 'val_cons' (Valor Consolidado) e 'data_sort'
-        # Isso permite somar e ordenar direto pelo banco ou usar o valor pronto no template
-        qs = qs.annotate(
-            val_cons=val_expr,
-            data_sort=F(campo_data)
-        )
+        qs = qs.annotate(val_cons=val_expr, data_sort=F(campo_data))
+        
+        # --- TRAVA DE SEGURANÇA CONTRA CRASH ---
+        # Limitamos a busca a 2000 itens por modelo. 
+        # Como sua garantia é de 1500 totais, isso nunca vai cortar dados reais,
+        # mas protege o servidor se ocorrer um loop infinito ou erro de importação.
+        qs = qs[:2000]
 
-        # --- AGREGAÇÃO DE TOTAIS (SQL SUM) ---
-        # Calcula os totais diretamente no banco, sem iterar em Python
-        agregados = qs.aggregate(
-            soma_pago=Sum(
-                Case(When(status__in=STATUS_PAGO_LIST, then=F('val_cons')), default=0, output_field=DecimalField())
-            ),
-            soma_pendente=Sum(
-                Case(When(~Q(status__in=STATUS_PAGO_LIST), then=F('val_cons')), default=0, output_field=DecimalField())
-            )
-        )
-        
-        total_pago += agregados['soma_pago'] or 0
-        total_pendente += agregados['soma_pendente'] or 0
-        
-        # Fetch dos dados para a lista
+        # Executa a query e converte para lista
         resultados = list(qs)
+        
+        # --- CÁLCULO DE TOTAIS EM PYTHON (Mais rápido que nova query) ---
+        # Iteramos a lista em memória para somar, evitando 12 idas ao banco (aggregate)
+        for item in resultados:
+            valor = item.val_cons or Decimal('0.00')
+            # Verifica status na instância carregada
+            is_pago = item.status in STATUS_PAGO_LIST
+            
+            if is_pago:
+                total_pago += valor
+            else:
+                total_pendente += valor
+
         total_registros += len(resultados)
 
-        # Distribuição nas Listas
-        if key in cat_operacional:
-            list_operacional.extend(resultados)
-        elif key in cat_folha:
-            list_folha.extend(resultados)
-        elif key in cat_comissao:
-            list_comissao.extend(resultados)
-        else:
-            list_contas.extend(resultados)
+        if key in cat_operacional: list_operacional.extend(resultados)
+        elif key in cat_folha: list_folha.extend(resultados)
+        elif key in cat_comissao: list_comissao.extend(resultados)
+        else: list_contas.extend(resultados)
 
-    # 4. Ordenação em Memória (Necessária pois misturamos tabelas diferentes)
-    list_contas.sort(key=sort_key, reverse=True)
-    list_operacional.sort(key=sort_key, reverse=True)
-    list_folha.sort(key=sort_key, reverse=True)
-    list_comissao.sort(key=sort_key, reverse=True)
-
-    # 5. Paginação
-    def paginar_lista(lista, page_param, per_page=50):
-        paginator = Paginator(lista, per_page)
-        page_number = request.GET.get(page_param)
-        try:
-            return paginator.page(page_number)
-        except PageNotAnInteger:
-            return paginator.page(1)
-        except EmptyPage:
-            return paginator.page(paginator.num_pages)
-
-    page_contas = paginar_lista(list_contas, 'p_contas')
-    page_operacional = paginar_lista(list_operacional, 'p_ops')
-    page_folha = paginar_lista(list_folha, 'p_folha')
-    page_comissao = paginar_lista(list_comissao, 'p_com')
+    # 4. Ordenação Global em Memória
+    reverse_sort = True if sort_order == 'desc' else False
     
+    def apply_sort(lista):
+        # Ordenação segura em Python
+        lista.sort(key=sort_key, reverse=reverse_sort)
+        return lista
+
     form_selecao = TipoGastoForm()
 
     return render(request, 'core/financeiro/pagar/list.html', {
-        'list_contas': page_contas,
-        'list_operacional': page_operacional,
-        'list_folha': page_folha,
-        'list_comissao': page_comissao,
+        'list_contas': apply_sort(list_contas),
+        'list_operacional': apply_sort(list_operacional),
+        'list_folha': apply_sort(list_folha),
+        'list_comissao': apply_sort(list_comissao),
         
         'total_pendente': total_pendente,
         'total_pago': total_pago,
@@ -262,11 +270,14 @@ def pagar_list(request):
         
         'tipos_disponiveis': MODEL_FORM_MAP.keys(),
         'form_selecao': form_selecao,
+        
+        'filtros_ativos': {
+            'mes': mes, 'ano': ano, 'q': search_query, 
+            'status': status_filter, 'tipo': tipo_filter, 'order': sort_order
+        },
         'mes_atual': mes if mes else '',
         'ano_atual': ano if ano else '',
-        'is_filtering': bool(mes and ano) 
     })
-
 # ----------------------------------------------------
 # VIEW - CRIAÇÃO
 # ----------------------------------------------------
@@ -286,15 +297,17 @@ def pagar_create(request):
             form = FormClass(request.POST)
 
             if form.is_valid():
-                obj = form.save(commit=False)
+                # Não fazemos obj.save() aqui para parcelamentos, o serviço cuida disso
                 
-                # Lógica de Parcelamento
                 qtd_parcelas = form.cleaned_data.get('parcelas')
-                if qtd_parcelas and isinstance(qtd_parcelas, int) and qtd_parcelas > 1:
-                    gerar_parcelas(obj, qtd_parcelas, form.cleaned_data)
-                else:
-                    obj.save()
-                    form.save_m2m()
+                
+                # 1. Recupera a classe do Model (ex: Boleto, Cheque) para passar ao serviço
+                ModelClass = MODEL_FORM_MAP[tipo]['model']
+
+                # 2. Verifica se é parcelamento
+
+                gerar_lancamentos_parcelados(form, ModelClass, user=request.user)
+
 
                 return redirect('pagar:pagar_list')
 
@@ -451,7 +464,8 @@ def folha_pagar_todos(request):
 
 @login_required
 def folha_exportar_excel(request):
-    from apps.relatorios.services.follha_pagamento import FuncionarioFolhaExcelService
+    from apps.relatorios.services.follha_pagamento import \
+        FuncionarioFolhaExcelService
     
     mes = int(request.GET.get('mes', date.today().month))
     ano = int(request.GET.get('ano', date.today().year))
@@ -483,7 +497,8 @@ def folha_fechar_mes(request):
 
             gerar_folha_mensal(prox_mes, prox_ano)
 
-            from apps.relatorios.services.follha_pagamento import FuncionarioFolhaExcelService
+            from apps.relatorios.services.follha_pagamento import \
+                FuncionarioFolhaExcelService
             pagamentos = FolhaPagamento.objects.filter(data_referencia=data_ref).select_related('funcionario', 'funcionario__dados_trabalhistas').order_by('funcionario__nome')
             excel_file = FuncionarioFolhaExcelService.gerar_relatorio_folha(pagamentos)
 
@@ -522,7 +537,8 @@ def _preparar_dados_holerite(folha, tipo_holerite):
         dados_trab = funcionario.dados_trabalhistas
         cbo = dados_trab.cbo
         funcao = dados_trab.funcao
-        admissao = dados_trab.data_admissao_contabilidade.strftime('%d/%m/%Y')
+        dt_adm = dados_trab.data_admissao_marcenaria or dados_trab.data_admissao_contabilidade
+        admissao = dt_adm.strftime('%d/%m/%Y')
     except:
         cbo = ""
         funcao = "Não Informado"
@@ -647,3 +663,101 @@ def baixar_holerite_lote_view(request):
     response = HttpResponse(output, content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
     response['Content-Disposition'] = f'attachment; filename="{filename}"'
     return response
+
+@login_required
+def parcelamento_detail(request, pk):
+    parcelamento = get_object_or_404(ParcelamentoPagar, pk=pk)
+    
+    # Pega os dados calculados no model
+    resumo = parcelamento.resumo
+    lista_parcelas = parcelamento.get_related_objects()
+    
+    return render(request, 'core/financeiro/pagar/parcelamento_detail.html', {
+        'parcelamento': parcelamento,
+        'resumo': resumo,
+        'lista_parcelas': lista_parcelas
+    })
+
+@login_required
+def parcelamento_list(request):
+    """Lista todos os parcelamentos ativos"""
+    parcelamentos = ParcelamentoPagar.objects.filter(is_deleted=False)
+    
+    # Otimização: podemos calcular status aqui ou deixar a property do model fazer (se for poucos registros)
+    return render(request, 'core/financeiro/pagar/parcelamento_list.html', {
+        'parcelamentos': parcelamentos
+    })
+
+
+# zirk_rh_financeiro/apps/financeiro/pagar/views.py
+
+@login_required
+def pagar_confirmar_pagamento(request, pk):
+    tipo = request.GET.get('tipo')
+    found = _get_gasto_object_info(pk, tipo=tipo)
+    
+    if not found:
+        messages.error(request, "Registro não encontrado.")
+        return redirect('pagar:pagar_list')
+        
+    ModelClass, obj, _, title = found
+
+    # Se já estiver pago, avisa e volta
+    if obj.status in ['Pago', 'PG', 'Recebido']:
+        messages.warning(request, f"Este item já está marcado como pago.")
+        if obj.parcelamento:
+            return redirect('pagar:parcelamento_detail', pk=obj.parcelamento.pk)
+        return redirect('pagar:pagar_list')
+
+    if request.method == 'POST':
+        form = ConfirmarPagamentoForm(request.POST)
+        if form.is_valid():
+            data = form.cleaned_data
+            
+            # --- Atualização Genérica ---
+            # Atualiza os campos comuns a todos os models
+            obj.status = 'Pago'
+            obj.observacoes = f"{obj.observacoes or ''} \n[Pagamento]: {data['observacoes']}"
+            obj.banco_origem = data['banco_origem']
+            obj.forma_pagamento = data['forma_pagamento']
+
+            # --- Atualização Específica (Campos que variam por Model) ---
+            # Models como Boleto e ComissaoArquiteto tem campos explícitos de 'data_pagamento'
+            if hasattr(obj, 'data_pagamento'):
+                obj.data_pagamento = data['data_pagamento']
+            else:
+                # Se for GastoGeral, a data do gasto vira a data do pagamento
+                if hasattr(obj, 'data_gasto'): obj.data_gasto = data['data_pagamento']
+                # Se for conta simples, a data vencimento vira a do pagamento
+                elif hasattr(obj, 'data_vencimento'): obj.data_vencimento = data['data_pagamento']
+
+            if hasattr(obj, 'valor_pago'):
+                obj.valor_pago = data['valor_pago']
+            elif hasattr(obj, 'valor_total'):
+                obj.valor_total = data['valor_pago'] # Ajusta o total para o pago
+            else:
+                obj.valor = data['valor_pago']
+
+            obj.save() # O signals.py vai detectar status='Pago' e gerar o fluxo de caixa
+
+            messages.success(request, f"Pagamento de {title} registrado com sucesso!")
+            
+            # Retorna para o parcelamento pai
+            if obj.parcelamento:
+                return redirect('pagar:parcelamento_detail', pk=obj.parcelamento.pk)
+            return redirect('pagar:pagar_list')
+    else:
+        # Preenche o formulário com valores padrão do objeto
+        initial_data = {
+            'data_pagamento': date.today(),
+            'valor_pago': obj.get_valor_consolidado(), # Pega o valor nominal
+            'observacoes': '',
+            'forma_pagamento': obj.forma_pagamento
+        }
+        form = ConfirmarPagamentoForm(initial=initial_data)
+
+    return render(request, 'core/financeiro/pagar/form_modal_pagamento.html', {
+        'form': form,
+        'object': obj,
+        'title': f'Confirmar Pagamento: {title}'
+    })

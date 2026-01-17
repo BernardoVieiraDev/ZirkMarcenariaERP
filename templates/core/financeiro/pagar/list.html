@@ -91,6 +91,9 @@
         background: white; border: 1px solid var(--slate-300); color: var(--slate-600); 
         padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 14px;
         transition: all 0.2s;
+        text-decoration: none; /* Correção para link comportar-se como botão */
+        display: inline-flex;
+        align-items: center;
     }
     .btn-ghost:hover { background-color: var(--slate-100); color: var(--slate-900); }
 
@@ -183,11 +186,28 @@
         overflow: hidden;
     }
 
-    .table-responsive { width: 100%; overflow-x: auto; }
+    /* Scroll na Tabela se muito grande */
+    .table-responsive { 
+        width: 100%; 
+        overflow-x: auto;
+        /* Scroll vertical para listas longas sem paginação */
+        max-height: 60vh; 
+        overflow-y: auto;
+    }
+    
     .rh-table { width: 100%; border-collapse: collapse; text-align: left; }
     
-    .rh-table thead { background-color: var(--slate-50); border-bottom: 1px solid var(--slate-200); }
-    .rh-table th { padding: 14px 24px; font-size: 12px; font-weight: 600; text-transform: uppercase; color: var(--slate-500); letter-spacing: 0.05em; }
+    /* Sticky Header para funcionar com o scroll vertical */
+    .rh-table thead { 
+        background-color: var(--slate-50); 
+        border-bottom: 1px solid var(--slate-200);
+        position: sticky;
+        top: 0;
+        z-index: 10;
+        box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+    }
+    
+    .rh-table th { padding: 14px 24px; font-size: 12px; font-weight: 600; text-transform: uppercase; color: var(--slate-500); letter-spacing: 0.05em; background-color: var(--slate-50); }
     
     .rh-table td { padding: 16px 24px; font-size: 14px; vertical-align: middle; border-bottom: 1px solid var(--slate-100); color: var(--slate-900); }
     .rh-table tr:last-child td { border-bottom: none; }
@@ -216,31 +236,6 @@
     .dropdown-content button { background: none; border: none; cursor: pointer; text-align: left; color: var(--slate-600); padding: 10px 16px; text-decoration: none; display: flex; align-items: center; gap: 10px; font-size: 13px; width: 100%; transition: background 0.1s; }
     .dropdown-content button:hover { background-color: var(--slate-50); color: var(--blue-600); }
     .dropdown-content .delete-item:hover { background-color: var(--red-50); color: var(--red-500); }
-
-    /* === PAGINAÇÃO (NOVO) === */
-    .pagination-container {
-        padding: 16px 24px;
-        border-top: 1px solid var(--slate-200);
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        background-color: var(--slate-50);
-    }
-    .page-info { font-size: 13px; color: var(--slate-500); }
-    .page-nav { display: flex; gap: 8px; }
-    .page-btn {
-        padding: 6px 12px;
-        border: 1px solid var(--slate-300);
-        background: white;
-        border-radius: 6px;
-        font-size: 13px;
-        color: var(--slate-600);
-        text-decoration: none;
-        transition: all 0.2s;
-    }
-    .page-btn:hover { border-color: var(--blue-500); color: var(--blue-600); }
-    .page-btn.active { background: var(--blue-500); color: white; border-color: var(--blue-500); }
-    .page-btn.disabled { opacity: 0.5; pointer-events: none; }
 
     /* === MODAIS === */
     .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.4); z-index: 1000; overflow-y: auto; padding: 20px; align-items: flex-start; justify-content: center; backdrop-filter: blur(2px); }
@@ -332,36 +327,43 @@
             </label>
         </div>
 
-        <div class="toolbar-global">
+        <form method="GET" class="toolbar-global" id="filterForm">
+            {% if mes_atual %}<input type="hidden" name="mes" value="{{ mes_atual }}">{% endif %}
+            {% if ano_atual %}<input type="hidden" name="ano" value="{{ ano_atual }}">{% endif %}
+
             <div class="rh-search">
                 <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-                <input id="searchInput" type="search" placeholder="Buscar por descrição ou fornecedor..." onkeyup="applyFilters()">
+                <input type="search" name="q" value="{{ filtros_ativos.q|default:'' }}" placeholder="Buscar por descrição ou fornecedor..." onchange="this.form.submit()">
             </div>
 
-            <select id="sortOrder" class="filter-select" onchange="applyFilters()">
-                <option value="desc">Data (Mais Recentes Primeiro)</option>
-                <option value="asc">Próximas de Vencer (Antigas Primeiro)</option>
+            <select name="order" class="filter-select" onchange="this.form.submit()">
+                <option value="desc" {% if filtros_ativos.order == 'desc' %}selected{% endif %}>Data (Mais Recentes)</option>
+                <option value="asc" {% if filtros_ativos.order == 'asc' %}selected{% endif %}>Próximas de Vencer (Antigas)</option>
             </select>
             
-            <select id="filterStatus" class="filter-select" onchange="applyFilters()">
-                <option value="">Todos os Status</option>
-                <option value="Pendente">Pendente</option>
-                <option value="Pago">Pago</option>
-                <option value="Atrasado">Atrasado</option>
+            <select name="status" class="filter-select" onchange="this.form.submit()">
+                <option value="">Status: Todos</option>
+                <option value="Pendente" {% if filtros_ativos.status == 'Pendente' %}selected{% endif %}>Pendente</option>
+                <option value="Pago" {% if filtros_ativos.status == 'Pago' %}selected{% endif %}>Pago</option>
+                <option value="Atrasado" {% if filtros_ativos.status == 'Atrasado' %}selected{% endif %}>Atrasado</option>
             </select>
 
-            <select id="filterTipo" class="filter-select" onchange="applyFilters()">
-                <option value="">Todas as Categorias</option>
+            <select name="tipo" class="filter-select" onchange="this.form.submit()">
+                <option value="">Categoria: Todas</option>
                 {% for tipo in tipos_disponiveis %}
-                    <option value="{{ tipo }}">{{ tipo }}</option>
+                    <option value="{{ tipo }}" {% if filtros_ativos.tipo == tipo %}selected{% endif %}>{{ tipo }}</option>
                 {% endfor %}
             </select>
-        </div>
+
+            {% if filtros_ativos.q or filtros_ativos.status or filtros_ativos.tipo %}
+                <a href="?mes={{ mes_atual }}&ano={{ ano_atual }}" class="btn-ghost" style="padding: 10px 12px; height: 42px;">Limpar</a>
+            {% endif %}
+        </form>
     </div>
 
     <div id="dash-contas" class="dashboard-section">
         <div class="section-header">
-            <h2 class="section-title">Contas a Pagar <span class="badge-count">{{ list_contas.paginator.count }}</span></h2>
+            <h2 class="section-title">Contas a Pagar <span class="badge-count">{{ list_contas|length }}</span></h2>
         </div>
         <div class="standard-card">
             <div class="table-responsive">
@@ -376,13 +378,9 @@
                             <th width="10%"></th>
                         </tr>
                     </thead>
-                    <tbody class="data-table-body">
+                    <tbody>
                         {% for conta in list_contas %}
-                        <tr class="conta-row" 
-                            data-search="{{ conta.descricao|default:conta.get_model_name|lower }} {{ conta.get_model_name|lower }}"
-                            data-status="{% if conta.status == 'PG' or conta.status == 'Pago' %}Pago{% elif conta.status == 'Atrasado' %}Atrasado{% else %}Pendente{% endif %}"
-                            data-tipo="{{ conta.get_tipo_classe }}"
-                            data-vencimento="{{ conta.get_data_consolidada|date:'Y-m-d' }}">
+                        <tr class="conta-row">
                             <td>
                                 <div class="text-main">{{ conta.descricao|default:conta.get_model_name }}</div>
                                 <div class="text-sub">{{ conta.get_model_name }}</div>
@@ -418,34 +416,17 @@
                             </td>
                         </tr>
                         {% empty %}
-                        <tr class="no-data"><td colspan="6" class="empty-msg">Nenhuma conta a pagar registrada.</td></tr>
+                        <tr class="no-data"><td colspan="6" class="empty-msg">Nenhuma conta encontrada com os filtros atuais.</td></tr>
                         {% endfor %}
                     </tbody>
                 </table>
             </div>
-            
-            {% if list_contas.has_other_pages %}
-            <div class="pagination-container">
-                <span class="page-info">
-                    Página {{ list_contas.number }} de {{ list_contas.paginator.num_pages }}
-                </span>
-                <div class="page-nav">
-                    {% if list_contas.has_previous %}
-                        <a href="?p_contas={{ list_contas.previous_page_number }}&mes={{ mes_atual }}&ano={{ ano_atual }}" class="page-btn">← Anterior</a>
-                    {% endif %}
-                    
-                    {% if list_contas.has_next %}
-                        <a href="?p_contas={{ list_contas.next_page_number }}&mes={{ mes_atual }}&ano={{ ano_atual }}" class="page-btn">Próxima →</a>
-                    {% endif %}
-                </div>
-            </div>
-            {% endif %}
         </div>
     </div>
 
     <div id="dash-operacional" class="dashboard-section hidden">
         <div class="section-header">
-            <h2 class="section-title">Gastos Operacionais <span class="badge-count">{{ list_operacional.paginator.count }}</span></h2>
+            <h2 class="section-title">Gastos Operacionais <span class="badge-count">{{ list_operacional|length }}</span></h2>
         </div>
         <div class="standard-card">
             <div class="table-responsive">
@@ -460,13 +441,9 @@
                             <th width="10%"></th>
                         </tr>
                     </thead>
-                    <tbody class="data-table-body">
+                    <tbody>
                         {% for conta in list_operacional %}
-                        <tr class="conta-row"
-                            data-search="{{ conta.descricao|default:conta.get_model_name|lower }} {{ conta.get_model_name|lower }}"
-                            data-status="Pago"
-                            data-tipo="{{ conta.get_tipo_classe }}"
-                            data-vencimento="{{ conta.get_data_consolidada|date:'Y-m-d' }}"> 
+                        <tr class="conta-row"> 
                             <td>
                                 <div class="text-main">{{ conta.descricao|default:conta.get_model_name }}</div>
                                 <div class="text-sub">{{ conta.get_model_name }}</div>
@@ -496,34 +473,17 @@
                             </td>
                         </tr>
                         {% empty %}
-                        <tr class="no-data"><td colspan="6" class="empty-msg">Nenhum gasto operacional registrado.</td></tr>
+                        <tr class="no-data"><td colspan="6" class="empty-msg">Nenhum gasto operacional encontrado.</td></tr>
                         {% endfor %}
                     </tbody>
                 </table>
             </div>
-
-            {% if list_operacional.has_other_pages %}
-            <div class="pagination-container">
-                <span class="page-info">
-                    Página {{ list_operacional.number }} de {{ list_operacional.paginator.num_pages }}
-                </span>
-                <div class="page-nav">
-                    {% if list_operacional.has_previous %}
-                        <a href="?p_ops={{ list_operacional.previous_page_number }}&mes={{ mes_atual }}&ano={{ ano_atual }}" class="page-btn">← Anterior</a>
-                    {% endif %}
-                    
-                    {% if list_operacional.has_next %}
-                        <a href="?p_ops={{ list_operacional.next_page_number }}&mes={{ mes_atual }}&ano={{ ano_atual }}" class="page-btn">Próxima →</a>
-                    {% endif %}
-                </div>
-            </div>
-            {% endif %}
         </div>
     </div>
 
     <div id="dash-folha" class="dashboard-section hidden">
         <div class="section-header">
-            <h2 class="section-title">Folha de Pagamento <span class="badge-count">{{ list_folha.paginator.count }}</span></h2>
+            <h2 class="section-title">Folha de Pagamento <span class="badge-count">{{ list_folha|length }}</span></h2>
         </div>
         <div class="standard-card">
             <div class="table-responsive">
@@ -538,13 +498,9 @@
                             <th width="10%"></th>
                         </tr>
                     </thead>
-                    <tbody class="data-table-body">
+                    <tbody>
                         {% for conta in list_folha %}
-                        <tr class="conta-row"
-                            data-search="{{ conta.funcionario.nome|lower }} folha pagamento"
-                            data-status="{% if conta.status == 'PG' or conta.status == 'Pago' %}Pago{% elif conta.status == 'Atrasado' %}Atrasado{% else %}Pendente{% endif %}"
-                            data-tipo="FolhaPagamento"
-                            data-vencimento="{{ conta.get_data_consolidada|date:'Y-m-d' }}"> 
+                        <tr class="conta-row"> 
                             <td>
                                 <div class="text-main">{{ conta.funcionario.nome }}</div>
                                 <div class="text-sub">Folha Mensal</div>
@@ -580,34 +536,17 @@
                             </td>
                         </tr>
                         {% empty %}
-                        <tr class="no-data"><td colspan="6" class="empty-msg">Nenhum registro de folha.</td></tr>
+                        <tr class="no-data"><td colspan="6" class="empty-msg">Nenhum registro de folha encontrado.</td></tr>
                         {% endfor %}
                     </tbody>
                 </table>
             </div>
-
-            {% if list_folha.has_other_pages %}
-            <div class="pagination-container">
-                <span class="page-info">
-                    Página {{ list_folha.number }} de {{ list_folha.paginator.num_pages }}
-                </span>
-                <div class="page-nav">
-                    {% if list_folha.has_previous %}
-                        <a href="?p_folha={{ list_folha.previous_page_number }}&mes={{ mes_atual }}&ano={{ ano_atual }}" class="page-btn">← Anterior</a>
-                    {% endif %}
-                    
-                    {% if list_folha.has_next %}
-                        <a href="?p_folha={{ list_folha.next_page_number }}&mes={{ mes_atual }}&ano={{ ano_atual }}" class="page-btn">Próxima →</a>
-                    {% endif %}
-                </div>
-            </div>
-            {% endif %}
         </div>
     </div>
 
     <div id="dash-comissao" class="dashboard-section hidden">
         <div class="section-header">
-            <h2 class="section-title">Comissões <span class="badge-count">{{ list_comissao.paginator.count }}</span></h2>
+            <h2 class="section-title">Comissões <span class="badge-count">{{ list_comissao|length }}</span></h2>
         </div>
         <div class="standard-card">
             <div class="table-responsive">
@@ -622,13 +561,9 @@
                             <th width="10%"></th>
                         </tr>
                     </thead>
-                    <tbody class="data-table-body">
+                    <tbody>
                         {% for conta in list_comissao %}
-                        <tr class="conta-row"
-                            data-search="{{ conta.arquiteto.nome|lower }} comissão"
-                            data-status="{% if conta.status == 'PG' or conta.status == 'Pago' %}Pago{% elif conta.status == 'Atrasado' %}Atrasado{% else %}Pendente{% endif %}"
-                            data-tipo="ComissaoArquiteto"
-                            data-vencimento="{{ conta.get_data_consolidada|date:'Y-m-d' }}"> 
+                        <tr class="conta-row"> 
                             <td>
                                 <div class="text-main">{{ conta.arquiteto.nome }}</div>
                                 <div class="text-sub">Comissão</div>
@@ -664,28 +599,11 @@
                             </td>
                         </tr>
                         {% empty %}
-                        <tr class="no-data"><td colspan="6" class="empty-msg">Nenhuma comissão registrada.</td></tr>
+                        <tr class="no-data"><td colspan="6" class="empty-msg">Nenhuma comissão encontrada.</td></tr>
                         {% endfor %}
                     </tbody>
                 </table>
             </div>
-
-            {% if list_comissao.has_other_pages %}
-            <div class="pagination-container">
-                <span class="page-info">
-                    Página {{ list_comissao.number }} de {{ list_comissao.paginator.num_pages }}
-                </span>
-                <div class="page-nav">
-                    {% if list_comissao.has_previous %}
-                        <a href="?p_com={{ list_comissao.previous_page_number }}&mes={{ mes_atual }}&ano={{ ano_atual }}" class="page-btn">← Anterior</a>
-                    {% endif %}
-                    
-                    {% if list_comissao.has_next %}
-                        <a href="?p_com={{ list_comissao.next_page_number }}&mes={{ mes_atual }}&ano={{ ano_atual }}" class="page-btn">Próxima →</a>
-                    {% endif %}
-                </div>
-            </div>
-            {% endif %}
         </div>
     </div>
 
@@ -728,69 +646,8 @@
 
 <script>
     // --- LÓGICA DE FILTROS GLOBAL ---
-    // Nota: A busca cliente-side (javascript) funcionará apenas nos registros da página atual.
-    function applyFilters() {
-        const query = document.getElementById('searchInput').value.toLowerCase();
-        const status = document.getElementById('filterStatus').value;
-        const tipo = document.getElementById('filterTipo').value;
-        const sortOrder = document.getElementById('sortOrder').value; 
-        
-        const rows = document.querySelectorAll('.conta-row');
-        
-        rows.forEach(row => {
-            const rowSearch = row.getAttribute('data-search') || '';
-            const rowStatus = row.getAttribute('data-status');
-            const rowTipo = row.getAttribute('data-tipo'); 
-
-            const matchText = rowSearch.includes(query);
-            const matchStatus = status === "" || rowStatus === status;
-            const matchTipo = tipo === "" || rowTipo === tipo;
-
-            if (matchText && matchStatus && matchTipo) {
-                row.style.display = '';
-                row.classList.add('visible-row');
-            } else {
-                row.style.display = 'none';
-                row.classList.remove('visible-row');
-            }
-        });
-
-        // Ordenação
-        const tables = document.querySelectorAll('.data-table-body');
-        tables.forEach(tbody => {
-            const visibleRows = Array.from(tbody.querySelectorAll('.conta-row'));
-            visibleRows.sort((a, b) => {
-                const dateA = a.getAttribute('data-vencimento') || '0000-00-00';
-                const dateB = b.getAttribute('data-vencimento') || '0000-00-00';
-                return sortOrder === 'asc' ? dateA.localeCompare(dateB) : dateB.localeCompare(dateA);
-            });
-            visibleRows.forEach(row => tbody.appendChild(row));
-        });
-
-        // Atualiza visibilidade das seções
-        const sections = ['dash-contas', 'dash-operacional', 'dash-folha', 'dash-comissao'];
-        sections.forEach(id => {
-            const section = document.getElementById(id);
-            const visibleRows = section.querySelectorAll('.conta-row.visible-row').length;
-            const noDataMsg = section.querySelector('.no-data');
-            
-            if (visibleRows === 0) {
-                if(!noDataMsg) {
-                    const tbody = section.querySelector('.data-table-body');
-                    const tr = document.createElement('tr');
-                    tr.className = 'no-data';
-                    tr.innerHTML = '<td colspan="6" class="empty-msg">Nenhum registro encontrado nesta página.</td>';
-                    tbody.appendChild(tr);
-                } else {
-                    noDataMsg.style.display = '';
-                }
-            } else {
-                if(noDataMsg) noDataMsg.style.display = 'none';
-                if (query !== "" || tipo !== "") section.classList.remove('hidden');
-            }
-        });
-    }
-
+    // A função applyFilters() em JS foi removida pois agora o filtro é via Backend (GET form).
+    
     function toggleDashboard(id, checkbox) {
         const el = document.getElementById(id);
         checkbox.checked ? el.classList.remove('hidden') : el.classList.add('hidden');

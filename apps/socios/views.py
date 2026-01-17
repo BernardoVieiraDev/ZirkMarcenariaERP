@@ -1,5 +1,6 @@
 from datetime import datetime
 
+from django.contrib.auth.decorators import login_required
 from django.db.models import Sum
 from django.http import HttpResponse  # Adicionar nos imports
 from django.shortcuts import get_object_or_404, redirect, render
@@ -8,7 +9,7 @@ from .forms import LancamentoSocioForm, SocioForm  # <--- Importe o novo form
 from .models import CategoriaSocio, LancamentoSocio, Socio
 from .services import SocioExcelService
 
-
+@login_required
 def registrar_despesa(request):
     if request.method == 'POST':
         form = LancamentoSocioForm(request.POST)
@@ -28,6 +29,8 @@ def registrar_despesa(request):
     
     return render(request, 'core/socios/registrar_despesa.html', {'form': form})
 
+
+@login_required
 def relatorio_anual(request):
     # 1. Filtros
     ano_selecionado = request.GET.get('ano', datetime.now().year)
@@ -92,6 +95,8 @@ def relatorio_anual(request):
     }
     return render(request, 'core/socios/relatorio_anual.html', context)
 
+
+@login_required
 def exportar_relatorio(request):
     """
     Gera o download da planilha Excel considerando Ano e Sócio.
@@ -129,6 +134,7 @@ def exportar_relatorio(request):
     
     return response
 
+@login_required
 def cadastrar_socio(request):
     if request.method == 'POST':
         form = SocioForm(request.POST)
@@ -141,6 +147,8 @@ def cadastrar_socio(request):
     
     return render(request, 'core/socios/cadastrar_socio.html', {'form': form})
 
+
+@login_required
 def listar_lancamentos(request):
     """
     Lista detalhada de todas as despesas/receitas lançadas, ordenadas pela mais recente.
@@ -151,6 +159,8 @@ def listar_lancamentos(request):
     }
     return render(request, 'core/socios/lista_lancamentos.html', context)
 
+
+@login_required
 def editar_lancamento(request, pk):
     lancamento = get_object_or_404(LancamentoSocio, pk=pk)
     
@@ -175,6 +185,8 @@ def editar_lancamento(request, pk):
         'titulo': 'Editar Lançamento'
     })
 
+
+@login_required
 def excluir_lancamento(request, pk):
     lancamento = get_object_or_404(LancamentoSocio, pk=pk)
     
@@ -193,6 +205,8 @@ def excluir_lancamento(request, pk):
 
 # zirk_rh_financeiro/apps/socios/views.py
 
+
+@login_required
 def listar_socios(request):
     """
     Lista todos os sócios cadastrados com opções de edição e exclusão.
@@ -203,6 +217,8 @@ def listar_socios(request):
     }
     return render(request, 'core/socios/lista_socios.html', context)
 
+
+@login_required
 def editar_socio(request, pk):
     socio = get_object_or_404(Socio, pk=pk)
     
@@ -227,6 +243,7 @@ def editar_socio(request, pk):
         'socio': socio
     })
 
+@login_required
 def excluir_socio(request, pk):
     socio = get_object_or_404(Socio, pk=pk)
     

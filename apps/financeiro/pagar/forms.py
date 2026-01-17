@@ -182,8 +182,8 @@ class GastoImovelForm(GastoBaseForm):
         model = GastoImovel
         fields = GastoBaseForm.Meta.fields + ['numero_inscricao', 'tipo_gasto','local_lote']
         widgets = GastoBaseForm.Meta.widgets
-        widgets['numero_inscricao'] = forms.TextInput(attrs={'class': 'form-select'})
-        widgets['local_lote'] = forms.TextInput(attrs={'class': 'form-select'})
+        widgets['numero_inscricao'] = forms.TextInput(attrs={'class': 'form-control'})
+        widgets['local_lote'] = forms.TextInput(attrs={'class': 'form-control'})
         widgets['tipo_gasto'] = forms.Select(attrs={'class': 'form-select'})
 
 
@@ -295,6 +295,7 @@ class GastoGasolinaForm(GastoGeralForm):
             'valor_total',
             'carro',
             'status',
+            'forma_pagamento',
             'banco_origem', # Necessário pois é usado na lógica de clean() do GastoGeralForm
         ]
 
@@ -386,4 +387,41 @@ class FolhaPagamentoForm(forms.ModelForm):
             'observacoes': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
         }
 
-        
+    
+
+class ConfirmarPagamentoForm(forms.Form):
+    data_pagamento = forms.DateField(
+        label="Data do Pagamento",
+        widget=forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
+        required=True
+    )
+    valor_pago = forms.DecimalField(
+        label="Valor Pago (R$)",
+        max_digits=12,
+        decimal_places=2,
+        widget=forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
+        required=True
+    )
+    banco_origem = forms.ModelChoiceField(
+        queryset=None, # Será populado no __init__
+        label="Conta de Saída / Banco",
+        required=False,
+        widget=forms.Select(attrs={'class': 'form-select'}),
+        help_text="Deixe em branco se foi pago em Dinheiro/Caixa"
+    )
+    observacoes = forms.CharField(
+        label="Observações do Pagamento",
+        widget=forms.Textarea(attrs={'class': 'form-control', 'rows': 2}),
+        required=False
+    )
+    forma_pagamento = forms.ChoiceField(
+        choices=FormaPagamento.choices,
+        label="Forma de Pagamento",
+        widget=forms.Select(attrs={'class': 'form-select'})
+    )
+
+    def __init__(self, *args, **kwargs):
+        # Precisamos importar o Banco aqui para evitar import circular se houver
+        from apps.financeiro.receber.models import Banco
+        super().__init__(*args, **kwargs)
+        self.fields['banco_origem'].queryset = Banco.objects.all()

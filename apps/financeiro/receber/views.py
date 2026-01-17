@@ -3,18 +3,11 @@ from datetime import date, datetime, timedelta
 from decimal import Decimal
 from itertools import chain
 from apps.financeiro.utils import gerar_parcelas
-from django.db.models import Q, Sum, Value
+from django.db.models import Sum
 from django.db.models.functions import Coalesce
 from django.shortcuts import get_object_or_404, redirect, render
+from django.contrib.auth.decorators import login_required
 
-# Importando todos os modelos de Pagamentos (Compras)
-from apps.financeiro.pagar.models import (Boleto, Cheque, ComissaoArquiteto,
-                                          FaturaCartao, FolhaPagamento,
-                                          GastoContabilidade, GastoGasolina,
-                                          GastoGeral, GastoImovel,
-                                          GastoUtilidade,
-                                          GastoVeiculoConsorcio,
-                                          PrestacaoEmprestimo)
 
 from .forms import (BancoForm, CaixaDiarioForm,
                     MovimentoBancoForm, ReceberForm)
@@ -22,10 +15,8 @@ from .models import (Banco, CaixaDiario,
                      MovimentoBanco, Receber)
 
 
-# --- VIEWS DE CRUD PADRÃO (Lista, Criar, Editar, Excluir) ---
 
-# apps/financeiro/receber/views.py
-
+@login_required
 def receber_list(request):
     # CORREÇÃO N+1: Trazendo cliente, banco e contrato em uma única query
     receber = Receber.objects.select_related(
@@ -43,6 +34,7 @@ def receber_list(request):
         'total': total
     })
 
+@login_required
 def receber_create(request):
     initial_data = {}
     if request.GET.get('contrato_id'):
@@ -54,7 +46,25 @@ def receber_create(request):
     form = ReceberForm(request.POST or None, initial=initial_data)
     
     if request.method == 'POST':
-        form = ReceberForm(request.POST)
+        if form.is_valid():
+            # Não salva ainda (commit=False)
+            recebimento = form.save(commit=False)
+            
+            # Pega a qtd de parcelas do form (limpo)
+            qtd_parcelas = form.cleaned_data.get('parcelas', 1)
+            
+            if qtd_parcelas > 1:
+                # Chama o gerador
+                gerar_parcelas(recebimento, qtd_parcelas, form.cleaned_data)
+            else:
+                # Salva normal
+                recebimento.save()
+    
+            return redirect('receber:receber')
+
+        return render(request, 'core/financeiro/receber/form.html', {'form': form})
+    
+    if request.method == 'POST':
         if form.is_valid():
             # Não salva ainda (commit=False)
             recebimento = form.save(commit=False)
@@ -72,7 +82,7 @@ def receber_create(request):
                 
             return redirect('receber:receber')
 
-
+@login_required
 def receber_edit(request, pk):
     receber = get_object_or_404(Receber, pk=pk)
     if request.method == 'POST':
@@ -84,6 +94,7 @@ def receber_edit(request, pk):
         form = ReceberForm(instance=receber)
     return render(request, 'core/financeiro/receber/form.html', {'form': form})
 
+@login_required
 def receber_delete(request, pk):
     receber = get_object_or_404(Receber, pk=pk)
     if request.method == 'POST':
@@ -91,7 +102,7 @@ def receber_delete(request, pk):
         return redirect('receber:receber')
     return render(request, 'core/financeiro/receber/delete.html', {'receber': receber})
 
-
+@login_required
 def caixa_diario_view(request):
     # 1. Definição do Período (Mês/Ano)
     hoje = date.today()
@@ -165,6 +176,7 @@ def caixa_diario_view(request):
 
     return render(request, 'core/financeiro/receber/caixa_diario.html', context)
 
+@login_required
 def caixa_diario_delete(request, pk):
     item = get_object_or_404(CaixaDiario, pk=pk)
     # Redireciona de volta para o mês do item deletado
@@ -177,7 +189,7 @@ def caixa_diario_delete(request, pk):
     
     return render(request, 'core/financeiro/receber/delete.html', {'receber': item}) 
 
-
+@login_required
 def movimento_banco_view(request):
     # 1. Identificar qual Banco estamos visualizando
     todos_bancos = Banco.objects.all()
@@ -273,6 +285,7 @@ def movimento_banco_view(request):
 
     return render(request, 'core/financeiro/receber/movimento_banco.html', context)
 
+@login_required
 def movimento_banco_delete(request, pk):
     item = get_object_or_404(MovimentoBanco, pk=pk)
     ano = item.data.year
@@ -285,7 +298,7 @@ def movimento_banco_delete(request, pk):
     
     return render(request, 'core/financeiro/receber/delete.html', {'receber': item})
 
-
+@login_required
 def bancos_list(request):
     bancos = Banco.objects.all()
     if request.method == 'POST':
@@ -298,6 +311,7 @@ def bancos_list(request):
     
     return render(request, 'core/financeiro/receber/banco_list.html', {'bancos': bancos, 'form': form})
 
+@login_required
 def banco_edit(request, pk):
     banco = get_object_or_404(Banco, pk=pk)
     if request.method == 'POST':
@@ -310,6 +324,7 @@ def banco_edit(request, pk):
     
     return render(request, 'core/financeiro/receber/banco_form.html', {'form': form, 'banco': banco})
 
+@login_required
 def banco_delete(request, pk):
     banco = get_object_or_404(Banco, pk=pk)
     if request.method == 'POST':
@@ -320,6 +335,7 @@ def banco_delete(request, pk):
 
 # --- MOVIMENTAÇÃO BANCÁRIA ---
 
+@login_required
 def movimento_banco_edit(request, pk):
     movimento = get_object_or_404(MovimentoBanco, pk=pk)
     banco_id = movimento.banco.id

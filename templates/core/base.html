@@ -136,6 +136,9 @@
           <div class="my-1 border-top border-secondary opacity-25"></div>
           
           <a class="nav-link text-white-50 small {% if route == 'pagar:pagar_list' %}active{% endif %}" href="{% url 'pagar:pagar_list' %}">Contas a Pagar</a>
+          <a class="nav-link text-white-50 small {% if route == 'pagar:parcelamento_list' %}active{% endif %}" href="{% url 'pagar:parcelamento_list' %}">
+         Gestão de Parcelamentos
+          </a>
           
           <div class="my-1 border-top border-secondary opacity-25"></div>
           
@@ -284,16 +287,51 @@
         </span>
       </a>
 
+      <li class="nav-item">
+    <a class="nav-link" href="{% url 'docs:index' %}">
+        <i class="fas fa-question-circle"></i> <span>Ajuda / Manual</span>
+    </a>
+</li>
+
+      
+
       {% endwith %} 
     </nav>
   </aside>
 
   <main class="content">
     <div class="container">
+      
+      {% if messages %}
+        <div class="row mb-3">
+          <div class="col-12">
+            {% for message in messages %}
+              <div class="alert alert-{{ message.tags|cut:' ' }} alert-dismissible fade show" role="alert">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+              </div>
+            {% endfor %}
+          </div>
+        </div>
+      {% endif %}
       {% block content %}{% endblock %}
     </div>
   </main>
 
 </div>
+
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+      setTimeout(function() {
+          // Alterado de '.alert' para '.alert-dismissible'
+          var alerts = document.querySelectorAll('.alert-dismissible'); 
+          alerts.forEach(function(alert) {
+              var bsAlert = new bootstrap.Alert(alert);
+              bsAlert.close();
+          });
+      }, 3000);
+  });
+</script>
+
 </body>
 </html>

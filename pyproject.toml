@@ -15,7 +15,8 @@ dependencies = [
     "djfernet (>=0.8.1,<1.0.0)",
     "psycopg2-binary (>=2.9.11,<3.0.0)",
     "python-dotenv (>=1.2.1,<2.0.0)",
-    "python-dateutil (>=2.9.0.post0,<3.0.0)"
+    "python-dateutil (>=2.9.0.post0,<3.0.0)",
+    "django-widget-tweaks (>=1.5.1,<2.0.0)"
 ]
 
 [tool.poetry]
