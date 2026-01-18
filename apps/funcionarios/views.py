@@ -1,5 +1,9 @@
+import logging
 import os
 
+from django.contrib import messages
+
+logger = logging.getLogger(__name__)
 import requests
 from django.conf import settings
 from django.contrib.auth.decorators import login_required
@@ -52,6 +56,37 @@ def criar_funcionario(request):
         dados_trabalhistas.save()
 
         return redirect('funcionarios:funcionarios')
+    
+    else:
+        def adicionar_erros(form, nome_aba):
+            for field, errors in form.errors.items():
+                for error in errors:
+                    # Exibe: "Dados Trabalhistas (insalubridade): Certifique-se de que..."
+                    messages.error(request, f"Erro em {nome_aba} ({field}): {error}")
+
+        # Verifica cada form e adiciona os erros específicos
+        if not funcionario_form.is_valid():
+            adicionar_erros(funcionario_form, "Dados Pessoais")
+            
+        if not endereco_form.is_valid():
+            adicionar_erros(endereco_form, "Endereço")
+            
+        if not documentos_form.is_valid():
+            adicionar_erros(documentos_form, "Documentos")
+            
+        if not dados_trabalhistas_form.is_valid():
+            adicionar_erros(dados_trabalhistas_form, "Dados Trabalhistas")        
+        
+        print("\n\n❌ ERRO DE VALIDAÇÃO AO CRIAR FUNCIONÁRIO:")
+        if not funcionario_form.is_valid():
+            print(f"Erro Dados Pessoais: {funcionario_form.errors.as_json()}")
+        if not endereco_form.is_valid():
+            print(f"Erro Endereço: {endereco_form.errors.as_json()}")
+        if not documentos_form.is_valid():
+            print(f"Erro Documentos: {documentos_form.errors.as_json()}")
+        if not dados_trabalhistas_form.is_valid():
+            print(f"Erro Trabalhistas: {dados_trabalhistas_form.errors.as_json()}")
+        print("=================================================================\n")
 
     # ERRO: Renderiza a lista novamente, mas com os forms preenchidos e flag para abrir modal
     context = _get_dashboard_context()

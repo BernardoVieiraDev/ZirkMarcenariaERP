@@ -61,8 +61,8 @@ class PagamentoFerias(SoftDeleteMixin):
     valor_a_pagar = models.DecimalField(max_digits=10, decimal_places=2, blank=True, null=True)
     data_pagamento = models.DateField(blank=True, null=True, verbose_name="Data do Pagamento")
     
-    STATUS_CHOICES = (('pendente', 'Pendente'), ('pago', 'Pago'))
-    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pendente', blank=True)
+    STATUS_CHOICES = (('Pendente', 'Pendente'), ('Pago', 'Pago'))
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='Pendente', blank=True)
     observacoes = models.TextField(blank=True, null=True)
 
     criado_em = models.DateTimeField(auto_now_add=True)

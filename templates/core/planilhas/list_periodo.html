@@ -54,13 +54,12 @@
         display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 16px; margin-bottom: 20px;
     }
 
-    /* Card vira um botão de submit "falso" que aciona o JS */
     .report-card-btn {
         background: var(--card); border: 1px solid var(--border); border-radius: var(--radius);
         padding: 20px; text-align: left; cursor: pointer; transition: all 0.2s;
         position: relative; overflow: hidden; display: flex; flex-direction: column; height: 100%;
         border-bottom: 4px solid transparent;
-        align-items: flex-start; /* Alinha ícone e texto à esquerda */
+        align-items: flex-start;
     }
     .report-card-btn:hover { transform: translateY(-3px); box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1); border-bottom-color: var(--primary); }
     
@@ -74,11 +73,12 @@
     .card-title { font-size: 14px; font-weight: 600; color: #1e293b; margin-bottom: 4px; }
     .card-desc { font-size: 12px; color: var(--text-muted); line-height: 1.4; }
 
-    /* ESTILO ESPECIAL PARA O CARD GERENCIAL */
-    .gerencial-card:hover { border-bottom-color: #7e22ce; }
-    .gerencial-card .card-icon { background: var(--purple-bg); color: var(--purple-text); }
-    .gerencial-card:hover .card-icon { background: var(--purple-text); color: white; }
-
+    /* ERROR TOAST */
+    #dateError {
+        display: none; position: fixed; top: 20px; right: 20px; background: #fee2e2; color: #991b1b; 
+        padding: 16px; border-radius: 8px; border: 1px solid #fecaca; box-shadow: 0 4px 6px rgba(0,0,0,0.1); z-index: 1000;
+    }
+    
     /* === CONSOLIDADO === */
     .consolidado-panel {
         background: white; border: 1px solid var(--border); border-radius: 16px; overflow: hidden; margin-top: 40px;
@@ -105,12 +105,6 @@
     }
     .btn-consolidado:hover { filter: brightness(1.1); transform: translateY(-1px); }
 
-    /* ERROR TOAST */
-    #dateError {
-        display: none; position: fixed; top: 20px; right: 20px; background: #fee2e2; color: #991b1b; 
-        padding: 16px; border-radius: 8px; border: 1px solid #fecaca; box-shadow: 0 4px 6px rgba(0,0,0,0.1); z-index: 1000;
-    }
-
 </style>
 
 <div class="rh-container">
@@ -136,11 +130,11 @@
         <div class="date-inputs">
             <div class="input-group">
                 <label>Data Início</label>
-                <input type="date" id="globalDtInicio" onchange="syncDates()">
+                <input type="date" id="filtroDataInicio" onchange="syncDates()">
             </div>
             <div class="input-group">
                 <label>Data Fim</label>
-                <input type="date" id="globalDtFim" onchange="syncDates()">
+                <input type="date" id="filtroDataFim" onchange="syncDates()">
             </div>
         </div>
     </div>
@@ -272,21 +266,17 @@
 
     </div>
     
-
-
     <div class="section-label">Relatórios Gerenciais e Desempenho</div>
     <div class="reports-grid">
 
         <div class="report-card-btn" onclick="baixarIndividual('fluxo_caixa')">
-    <div class="card-icon" style="color: #0891b2; background: #cffafe;">
-        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+            <div class="card-icon" style="color: #0891b2; background: #cffafe;">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+            </div>
+            <div class="card-title">Fluxo de Caixa</div>
+            <div class="card-desc">Detalhado (Período Selecionado)</div>
+        </div>
     </div>
-    <div class="card-title">Fluxo de Caixa</div>
-    <div class="card-desc">Detalhado (Período Selecionado)</div>
-</div>
-    </div>
-
-    
 
     <div class="section-label">Fechamento Mensal (Contabilidade)</div>
     <div class="reports-grid">
@@ -326,87 +316,80 @@
         </div>
     </div>
 
-<div class="consolidado-panel" style="margin-bottom: 32px; margin-top: 20px;">
-    <div class="panel-header">
-        <h3>Movimento Bancário (Extrato)</h3>
-        <p style="font-size: 13px; color: #64748b; margin-top: 4px;">
-            Selecione o Banco e o mês de referência para gerar o relatório.
-        </p>
-    </div>
+    <div class="consolidado-panel" style="margin-bottom: 32px; margin-top: 20px;">
+        <div class="panel-header">
+            <h3>Movimento Bancário (Extrato)</h3>
+            <p style="font-size: 13px; color: #64748b; margin-top: 4px;">
+                Selecione o Banco e o mês de referência para gerar o relatório.
+            </p>
+        </div>
 
-    
-
-    
-    
-    <div class="panel-body">
-        <form action="{% url 'relatorios:exportar_movimentacao_bancaria' %}" method="GET">
-            <input type="hidden" name="tipo" value="movimento_banco">
-            
-            <div style="display: flex; gap: 16px; align-items: flex-end; flex-wrap: wrap;">
+        <div class="panel-body">
+            <form action="{% url 'relatorios:exportar_movimentacao_bancaria' %}" method="GET">
+                <input type="hidden" name="tipo" value="movimento_banco">
                 
-                <div class="input-group" style="flex: 2; min-width: 250px;">
-                    <label>Banco</label>
-                    <select name="banco_id" required 
-                        style="padding: 10px 12px; border: 1px solid var(--border); border-radius: 8px; font-size: 14px; background: #f8fafc; color: var(--text-main); width: 100%; outline: none; height: 42px;">
-                        <option value="" disabled selected>Selecione um Banco...</option>
-                        {% for b in bancos %}
-                            <option value="{{ b.id }}">{{ b.nome }}</option>
-                        {% empty %}
-                            <option value="" disabled>Nenhum banco cadastrado</option>
-                        {% endfor %}
-                    </select>
-                </div>
+                <div style="display: flex; gap: 16px; align-items: flex-end; flex-wrap: wrap;">
+                    
+                    <div class="input-group" style="flex: 2; min-width: 250px;">
+                        <label>Banco</label>
+                        <select name="banco_id" required 
+                            style="padding: 10px 12px; border: 1px solid var(--border); border-radius: 8px; font-size: 14px; background: #f8fafc; color: var(--text-main); width: 100%; outline: none; height: 42px;">
+                            <option value="" disabled selected>Selecione um Banco...</option>
+                            {% for b in bancos %}
+                                <option value="{{ b.id }}">{{ b.nome }}</option>
+                            {% empty %}
+                                <option value="" disabled>Nenhum banco cadastrado</option>
+                            {% endfor %}
+                        </select>
+                    </div>
 
-                <div class="input-group" style="flex: 1; min-width: 150px;">
-                    <label>Mês</label>
-                    <select name="mes" 
-                        style="padding: 10px 12px; border: 1px solid var(--border); border-radius: 8px; font-size: 14px; background: #f8fafc; color: var(--text-main); width: 100%; outline: none; height: 42px;">
-                        {% for num, nome in meses %}
-                            <option value="{{ num }}" {% if num == request.now|date:"n"|add:"0" %}selected{% endif %}>
-                                {{ nome }}
-                            </option>
-                        {% endfor %}
-                        
-                        {# Fallback caso a variável meses não venha do contexto #}
-                        {% if not meses %}
-                             <option value="{% now 'n' %}" selected>Mês Atual ({% now 'F' %})</option>
-                             <option value="1">Janeiro</option>
-                             <option value="2">Fevereiro</option>
-                             <option value="3">Março</option>
-                             <option value="4">Abril</option>
-                             <option value="5">Maio</option>
-                             <option value="6">Junho</option>
-                             <option value="7">Julho</option>
-                             <option value="8">Agosto</option>
-                             <option value="9">Setembro</option>
-                             <option value="10">Outubro</option>
-                             <option value="11">Novembro</option>
-                             <option value="12">Dezembro</option>
-                        {% endif %}
-                    </select>
-                </div>
+                    <div class="input-group" style="flex: 1; min-width: 150px;">
+                        <label>Mês</label>
+                        <select name="mes" 
+                            style="padding: 10px 12px; border: 1px solid var(--border); border-radius: 8px; font-size: 14px; background: #f8fafc; color: var(--text-main); width: 100%; outline: none; height: 42px;">
+                            {% for num, nome in meses %}
+                                <option value="{{ num }}" {% if num == request.now|date:"n"|add:"0" %}selected{% endif %}>
+                                    {{ nome }}
+                                </option>
+                            {% endfor %}
+                            
+                            {% if not meses %}
+                                <option value="{% now 'n' %}" selected>Mês Atual ({% now 'F' %})</option>
+                                <option value="1">Janeiro</option>
+                                <option value="2">Fevereiro</option>
+                                <option value="3">Março</option>
+                                <option value="4">Abril</option>
+                                <option value="5">Maio</option>
+                                <option value="6">Junho</option>
+                                <option value="7">Julho</option>
+                                <option value="8">Agosto</option>
+                                <option value="9">Setembro</option>
+                                <option value="10">Outubro</option>
+                                <option value="11">Novembro</option>
+                                <option value="12">Dezembro</option>
+                            {% endif %}
+                        </select>
+                    </div>
 
-                <div class="input-group" style="flex: 1; min-width: 100px;">
-                    <label>Ano</label>
-                    <input type="number" name="ano" value="{% now 'Y' %}" 
-                        style="padding: 10px 12px; border: 1px solid var(--border); border-radius: 8px; font-size: 14px; background: #f8fafc; width: 100%; height: 42px;">
-                </div>
+                    <div class="input-group" style="flex: 1; min-width: 100px;">
+                        <label>Ano</label>
+                        <input type="number" name="ano" value="{% now 'Y' %}" 
+                            style="padding: 10px 12px; border: 1px solid var(--border); border-radius: 8px; font-size: 14px; background: #f8fafc; width: 100%; height: 42px;">
+                    </div>
 
-                <div style="flex: 0 0 auto;">
-                    <button type="submit" 
-                        style="height: 42px; padding: 0 24px; background: var(--primary); color: white; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 8px; transition: background 0.2s;"
-                        onmouseover="this.style.background='var(--primary-hover)'" 
-                        onmouseout="this.style.background='var(--primary)'">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-                        Gerar Extrato
-                    </button>
+                    <div style="flex: 0 0 auto;">
+                        <button type="submit" 
+                            style="height: 42px; padding: 0 24px; background: var(--primary); color: white; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 8px; transition: background 0.2s;"
+                            onmouseover="this.style.background='var(--primary-hover)'" 
+                            onmouseout="this.style.background='var(--primary)'">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                            Gerar Extrato
+                        </button>
+                    </div>
                 </div>
-            </div>
-        </form>
+            </form>
+        </div>
     </div>
-</div>
-
-
 
     <div class="section-label">Exportação em Lote</div>
     <div class="consolidado-panel">
@@ -476,29 +459,69 @@
 </div>
 
 <script>
+    // === FUNÇÃO PARA SINCRONIZAR OS FORMS OCULTOS ===
     function syncDates() {
-        const i = document.getElementById('globalDtInicio').value;
-        const f = document.getElementById('globalDtFim').value;
+        const iEl = document.getElementById('filtroDataInicio');
+        const fEl = document.getElementById('filtroDataFim');
+
+        // Se por algum motivo o elemento não existir, para aqui
+        if(!iEl || !fEl) {
+            console.error("Erro Crítico: Inputs 'filtroDataInicio' ou 'filtroDataFim' não encontrados no DOM.");
+            return;
+        }
+
+        const i = iEl.value;
+        const f = fEl.value;
+        
+        // Atualiza os forms ocultos para envio
         document.getElementById('singleDtInicio').value = i;
         document.getElementById('singleDtFim').value = f;
         document.getElementById('consDtInicio').value = i;
         document.getElementById('consDtFim').value = f;
     }
 
-    function validarAntesSubmit() {
-        const i = document.getElementById('globalDtInicio').value;
-        const f = document.getElementById('globalDtFim').value;
-        
-        // Se os campos hidden estiverem vazios, tenta preencher de novo
-        if (!document.getElementById('consDtInicio').value) syncDates();
+    // === VALIDAÇÃO COM DEBUG NA TELA ===
+function validarAntesSubmit() {
+        syncDates(); // Atualiza os inputs ocultos
 
-        if (!i || !f) {
-            const err = document.getElementById('dateError');
+        const iEl = document.getElementById('filtroDataInicio');
+        const fEl = document.getElementById('filtroDataFim');
+        const err = document.getElementById('dateError');
+
+        // 1. Verifica se o navegador detetou uma data inválida (ex: 31/02)
+        // A propriedade 'badInput' fica true se o utilizador digitou algo que não é uma data real
+        if (iEl.validity.badInput || fEl.validity.badInput) {
             err.style.display = 'block';
-            setTimeout(() => err.style.display = 'none', 4000);
+            err.innerHTML = `
+                ⚠️ <strong>Data Inválida!</strong><br>
+                <span style="font-size:13px; font-weight:400;">
+                    Você digitou uma data que não existe no calendário (como 30 de Fevereiro ou 31 de Abril).<br>
+                    Por favor, corrija o dia ou o mês.
+                </span>
+            `;
+            setTimeout(() => err.style.display = 'none', 8000); // 8 segundos para ler
             return false;
         }
-        syncDates();
+
+        const i = iEl.value;
+        const f = fEl.value;
+
+        // 2. Verifica se os campos estão vazios
+        if (!i || !f) {
+            err.style.display = 'block';
+            err.innerHTML = "⚠️ Por favor, selecione as datas de <strong>Início</strong> e <strong>Fim</strong> antes de continuar.";
+            setTimeout(() => err.style.display = 'none', 5000);
+            return false;
+        }
+        
+        // 3. Verifica se a Data Final é menor que a Inicial (Opcional, mas recomendado)
+        if (i > f) {
+            err.style.display = 'block';
+            err.innerHTML = "⚠️ A <strong>Data Fim</strong> não pode ser anterior à <strong>Data Início</strong>.";
+            setTimeout(() => err.style.display = 'none', 5000);
+            return false;
+        }
+
         return true;
     }
 
@@ -509,63 +532,53 @@
         }
     }
 
+    function baixarMensal(tipo) {
+        if (!validarAntesSubmit()) return;
 
-    
-    // Inicializa datas com o mês atual para facilitar
-    window.onload = function() {
-        const today = new Date();
-        const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
-        const lastDay = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+        const i = document.getElementById('filtroDataInicio').value;
+        const f = document.getElementById('filtroDataFim').value;
         
-        const fmt = d => d.toISOString().split('T')[0];
-        
-        if(!document.getElementById('globalDtInicio').value) {
-            document.getElementById('globalDtInicio').value = fmt(firstDay);
-            document.getElementById('globalDtFim').value = fmt(lastDay);
-            syncDates();
-        }
-    };
-
-function baixarMensal(tipo) {
-        const i = document.getElementById('globalDtInicio').value;
-        const f = document.getElementById('globalDtFim').value;
-        
-        if (!i || !f) {
-            const err = document.getElementById('dateError');
-            err.innerHTML = "⚠️ Selecione as datas de <strong>Início</strong> e <strong>Fim</strong>.";
-            err.style.display = 'block';
-            setTimeout(() => err.style.display = 'none', 4000);
-            return;
-        }
-        
-        // Agora enviamos as datas completas, não apenas mes/ano
         let url = "";
         if(tipo === 'pagar') {
             url = "{% url 'relatorios:exportar_pagar_mensal' %}?data_inicio=" + i + "&data_fim=" + f;
         } else {
             url = "{% url 'relatorios:exportar_receber_mensal' %}?data_inicio=" + i + "&data_fim=" + f;
         }
-        
         window.location.href = url;
     }
-    function baixarPacote(tipo) {
-        const i = document.getElementById('globalDtInicio').value;
-        const f = document.getElementById('globalDtFim').value;
-        
-        if (!i || !f) {
-            const err = document.getElementById('dateError');
-            err.innerHTML = "⚠️ Selecione as datas de <strong>Início</strong> e <strong>Fim</strong>.";
-            err.style.display = 'block';
-            setTimeout(() => err.style.display = 'none', 4000);
-            return;
-        }
 
-        // Monta a URL para a rota de pacote, passando as datas customizadas
-        // O back-end foi ajustado para ler data_inicio e data_fim se presentes
+    function baixarPacote(tipo) {
+        if (!validarAntesSubmit()) return;
+
+        const i = document.getElementById('filtroDataInicio').value;
+        const f = document.getElementById('filtroDataFim').value;
+
         let url = "{% url 'relatorios:exportar_pacote' 'PLACEHOLDER' %}".replace('PLACEHOLDER', tipo);
         url += "?data_inicio=" + i + "&data_fim=" + f;
         
         window.location.href = url;
     }
+    
+    // Inicializa datas com o mês atual e verifica duplicidade
+    window.onload = function() {
+        const today = new Date();
+        const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
+        const lastDay = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+        const fmt = d => d.toISOString().split('T')[0];
+        
+        const elInicio = document.getElementById('filtroDataInicio');
+        const elFim = document.getElementById('filtroDataFim');
+        
+        // Verifica se existem IDs antigos na página causando conflito
+        if(document.getElementById('globalDtInicio')) {
+            console.warn("ALERTA: Um elemento com ID antigo 'globalDtInicio' ainda existe na página. Isso pode causar confusão.");
+        }
+
+        if(elInicio && !elInicio.value) {
+            elInicio.value = fmt(firstDay);
+            if(elFim) elFim.value = fmt(lastDay);
+            syncDates();
+        }
+    };
 </script>
 {% endblock %}

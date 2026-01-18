@@ -10,7 +10,6 @@ class PrestacaoEmprestimoExcelService:
 
     @classmethod
     def _define_formats(cls, workbook: xlsxwriter.Workbook):
-        """Formatos padrão com TÍTULO."""
         return {
             'title': workbook.add_format({
                 'bold': True, 'font_size': 14, 'align': 'center', 'valign': 'vcenter',
@@ -54,14 +53,11 @@ class PrestacaoEmprestimoExcelService:
 
     @staticmethod
     def gerar_relatorio_prestacoes(gastos, workbook=None):
-        # Controle para saber se devemos fechar o arquivo ao final (Modo Individual)
         output = None
         should_close = False
 
         if workbook is None:
-            # 1. Cria o buffer em memória se não receber um workbook existente
             output = io.BytesIO()
-            # 2. Inicializa o Workbook
             workbook = xlsxwriter.Workbook(output, {'in_memory': True})
             should_close = True
         
@@ -69,34 +65,32 @@ class PrestacaoEmprestimoExcelService:
             ws = workbook.add_worksheet("Prestações")
             fmt = PrestacaoEmprestimoExcelService._define_formats(workbook)
 
-            # Cabeçalhos
+            # Cabeçalhos (Removido 'Valor Pago')
             headers = [
                 "Descrição", 
                 "Nº Parc.", 
                 "Vencimento", 
                 "Data Pagamento", 
                 "Valor (R$)", 
-                "Valor Pago (R$)", 
                 "Juros (R$)",
                 "Observações"
             ]
 
             # Configurar largura das colunas
-            ws.set_column('A:A', 30) # Descrição#type: ignore
-            ws.set_column('B:B', 10) # Nº Parcela#type: ignore
-            ws.set_column('C:C', 15) # Vencimento#type: ignore
-            ws.set_column('D:D', 15) # Pagamento#type: ignore
-            ws.set_column('E:E', 15) # Valor#type: ignore
-            ws.set_column('F:F', 15) # Pago#type: ignore
-            ws.set_column('G:G', 12) # Juros#type: ignore
-            ws.set_column('H:H', 35) # Obs#type: ignore
+            ws.set_column('A:A', 30) # Descrição
+            ws.set_column('B:B', 10) # Nº Parcela
+            ws.set_column('C:C', 15) # Vencimento
+            ws.set_column('D:D', 15) # Pagamento
+            ws.set_column('E:E', 15) # Valor
+            ws.set_column('F:F', 12) # Juros
+            ws.set_column('G:G', 35) # Obs
 
             row = 0
 
             # --- TÍTULO NO TOPO ---
             ws.set_row(row, 25)
-            # Mescla de A (0) até H (7)
-            ws.merge_range(row, 0, row, 7, "RELATÓRIO DE PRESTAÇÕES DE EMPRÉSTIMOS", fmt['title'])
+            # Mescla de A (0) até G (6)
+            ws.merge_range(row, 0, row, 6, "RELATÓRIO DE PRESTAÇÕES DE EMPRÉSTIMOS", fmt['title'])
             row += 2 
 
             # Escrever Cabeçalho da Tabela
@@ -105,29 +99,23 @@ class PrestacaoEmprestimoExcelService:
 
             row += 1 
             total_valor = Decimal('0.00')
-            total_pago = Decimal('0.00')
 
             # Iterar sobre os gastos
             for item in gastos:
-                # 1. Dados Básicos
                 desc = getattr(item, 'descricao', '') or ''
-                parcela = getattr(item, 'prestacao', '') or '' # Campo específico
+                parcela = getattr(item, 'prestacao', '') or ''
                 obs = getattr(item, 'observacoes', '') or ''
                 
-                # 2. Datas
                 dt_venc = getattr(item, 'data_vencimento', None)
                 dt_pag = getattr(item, 'data_pagamento', None)
 
-                # 3. Valores
                 valor = getattr(item, 'valor', Decimal('0.00')) or Decimal('0.00')
-                val_pago = getattr(item, 'valor_pago', None)
                 juros = getattr(item, 'juros', Decimal('0.00')) or Decimal('0.00')
 
                 # Escrever na planilha
                 ws.write(row, 0, desc, fmt['data_text'])
-                ws.write(row, 1, parcela, fmt['data_center']) # Parcela centralizada
+                ws.write(row, 1, parcela, fmt['data_center'])
                 
-                # Datas
                 if dt_venc:
                     ws.write(row, 2, dt_venc, fmt['data_date'])
                 else:
@@ -138,27 +126,17 @@ class PrestacaoEmprestimoExcelService:
                 else:
                     ws.write(row, 3, '-', fmt['data_text'])
 
-                # Valores
                 ws.write(row, 4, valor, fmt['data_money'])
-                
-                if val_pago is not None:
-                    ws.write(row, 5, val_pago, fmt['data_money'])
-                    total_pago += val_pago
-                else:
-                    ws.write(row, 5, '-', fmt['data_text'])
+                ws.write(row, 5, juros, fmt['data_money'])
+                ws.write(row, 6, obs, fmt['data_text'])
 
-                ws.write(row, 6, juros, fmt['data_money'])
-                ws.write(row, 7, obs, fmt['data_text'])
-
-                # Soma totais
                 total_valor += valor
                 row += 1
 
             # --- LINHA DE TOTAL ---
             row += 1
-            ws.merge_range(row, 0, row, 3, "TOTAIS:", fmt['total_label'])
+            ws.merge_range(row, 0, row, 3, "TOTAL:", fmt['total_label'])
             ws.write(row, 4, total_valor, fmt['total_money'])
-            ws.write(row, 5, total_pago, fmt['total_money'])
             
             print(f"✅ Relatório de Prestações gerado em memória.")
 
@@ -166,7 +144,6 @@ class PrestacaoEmprestimoExcelService:
             print(f"❌ Erro ao gerar relatório de prestações: {e}")
             raise e
         finally:
-            # Só fecha e retorna se foi criado dentro deste método (Modo Individual)
             if should_close and workbook:
                 workbook.close()
                 if output:

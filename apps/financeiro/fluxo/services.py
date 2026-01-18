@@ -1,9 +1,9 @@
 from decimal import Decimal
 from datetime import date, timedelta
 from django.db.models import Sum, Q
-from django.core.cache import cache # Importação adicionada
+from django.core.cache import cache
 
-# Imports dos Models (mantidos)
+# Imports dos Models
 from apps.financeiro.receber.models import Receber, CaixaDiario, Banco, MovimentoBanco
 from apps.financeiro.pagar.models import (
     Boleto, Cheque, ComissaoArquiteto, FaturaCartao, FolhaPagamento,
@@ -19,28 +19,17 @@ class FluxoCaixaService:
 
     @staticmethod
     def clear_fluxo_cache():
-        """
-        Método CRÍTICO: Deve ser chamado por signals sempre que houver movimentação financeira.
-        Apaga o saldo atual e todas as projeções de fluxo cacheadas.
-        """
         cache.delete(FluxoCaixaService.KEY_SALDO_ATUAL)
-        # Para limpar as timelines, o ideal é usar delete_pattern se seu backend (Redis) suportar,
-        # ou versionamento. Como fallback seguro, limpamos apenas o saldo, 
-        # mas forçamos as timelines a terem TTL curto (ex: 5 min).
-        # Se usar Redis, pode fazer: cache.delete_pattern("fluxo_timeline_*")
         try:
             cache.delete_pattern(f"{FluxoCaixaService.KEY_TIMELINE_PREFIX}*")
         except AttributeError:
-            # Backend LocMemCache ou DatabaseCache pode não ter delete_pattern
-            pass
+            cache.clear()
 
     @staticmethod
     def get_saldo_atual():
-        """Calcula o Saldo Real HOJE (Bancos + Caixa) - COM CACHE"""
         saldo = cache.get(FluxoCaixaService.KEY_SALDO_ATUAL)
         
         if saldo is None:
-            # Cálculo Original Pesado
             total_bancos_inicial = Banco.objects.aggregate(s=Sum('saldo_inicial'))['s'] or Decimal(0)
             mov_entrada = MovimentoBanco.objects.filter(tipo='E').aggregate(s=Sum('valor'))['s'] or Decimal(0)
             mov_saida = MovimentoBanco.objects.filter(tipo='S').aggregate(s=Sum('valor'))['s'] or Decimal(0)
@@ -51,14 +40,12 @@ class FluxoCaixaService:
             saldo_caixa = caixa_entrada - caixa_saida
 
             saldo = saldo_bancos + saldo_caixa
-            # Cache por tempo indeterminado até que um Signal invalide
             cache.set(FluxoCaixaService.KEY_SALDO_ATUAL, saldo, timeout=None)
 
         return saldo
 
     @classmethod
     def gerar_fluxo_detalhado(cls, data_inicio, num_dias):
-        # Chave baseada nos parâmetros
         cache_key = f"{cls.KEY_TIMELINE_PREFIX}{data_inicio.isoformat()}_{num_dias}"
         cached_result = cache.get(cache_key)
 
@@ -66,7 +53,6 @@ class FluxoCaixaService:
             return cached_result
 
         dias = []
-        # Importante: get_saldo_atual() já usa seu próprio cache interno
         saldo_anterior = cls.get_saldo_atual()
         
         timeline = {
@@ -82,7 +68,8 @@ class FluxoCaixaService:
             }
         }
 
-        # Configuração de Saídas (Mantida)
+        # === CONFIGURAÇÃO DE SAÍDAS ===
+        # Formato: (ClasseModelo, campo_data_previsao, chave_categoria_timeline)
         config_saidas = [
             (GastoGeral, 'data_gasto', 'compras_vista'),
             (GastoGasolina, 'data_gasto', 'compras_vista'),
@@ -92,8 +79,15 @@ class FluxoCaixaService:
             (GastoContabilidade, 'data_vencimento', 'pagamentos_contas'),
             (FaturaCartao, 'data_vencimento', 'pagamentos_contas'),
             (Cheque, 'data_emissao', 'pagamentos_contas'), 
+            
+            # --- CORREÇÕES AQUI ---
+            # Folha: Mantém data_referencia (ou altere para uma data de vencimento se criar o campo)
             (FolhaPagamento, 'data_referencia', 'outros_pagamentos'), 
-            (ComissaoArquiteto, 'data_pagamento', 'outros_pagamentos'),
+            
+            # Comissão: Alterado de 'data_pagamento' para 'data_vencimento' (Previsão)
+            (ComissaoArquiteto, 'data_vencimento', 'outros_pagamentos'),
+            # -----------------------
+
             (PrestacaoEmprestimo, 'data_vencimento', 'outras_saidas'),
             (GastoVeiculoConsorcio, 'data_vencimento', 'outras_saidas'),
         ]
@@ -133,6 +127,7 @@ class FluxoCaixaService:
                         if Model.__name__ == 'Cheque':
                              qs = qs.exclude(status__in=['DEV', 'CAN', 'Devolvido', 'Cancelado'])
                         else:
+                            # Exclui tudo que já foi pago, pois é previsão
                             qs = qs.exclude(status__in=['Pago', 'PAGO', 'Baixado', 'Recebido', 'DEV', 'CAN'])
 
                 for item in qs:
@@ -173,8 +168,6 @@ class FluxoCaixaService:
             saldo_anterior = saldo_final
         
         result = (dias, timeline)
-        # Cache curto (15 min) para o relatório detalhado, pois ele é complexo
-        # A invalidação forçada ocorre via clear_fluxo_cache()
         cache.set(cache_key, result, 60 * 15)
         
         return result

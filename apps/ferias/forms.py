@@ -128,21 +128,32 @@ class PeriodoAquisitivoForm(forms.ModelForm):
 class PagamentoFeriasForm(forms.ModelForm):
     class Meta:
         model = PagamentoFerias
-        fields = ['funcionario', 'vencimento', 'valor_a_pagar', 'data_pagamento', 'observacoes']
+        fields = [
+            'funcionario',
+            'vencimento',
+            'valor_a_pagar',
+            'data_pagamento',
+            'status',
+            'observacoes',
+        ]
         widgets = {
             'funcionario': forms.Select(attrs={'class': 'form-select'}),
-            'vencimento': forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}, format='%Y-%m-%d'),
-            'data_pagamento': forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}, format='%Y-%m-%d'),
+            'vencimento': forms.DateInput(attrs={'type': 'date', 'class': 'form-control'},
+                format='%Y-%m-%d'),
+            'data_pagamento': forms.DateInput(attrs={'type': 'date', 'class': 'form-control'},
+                format='%Y-%m-%d'),
             'valor_a_pagar': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
+            'status': forms.Select(attrs={'class': 'form-select'}),
             'observacoes': forms.Textarea(attrs={'class': 'form-control', 'rows': 2}),
         }
         help_texts = {
             'valor_a_pagar': 'Deixe em branco para calcular automaticamente 1/3 do salário atual.'
         }
-    
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.fields['valor_a_pagar'].required = False
+
 
 
 class RecibosContabilidadeForm(forms.ModelForm):

@@ -45,7 +45,6 @@ class RescisaoDeleteView(LoginRequiredMixin, DeleteView):
         messages.success(self.request, "Rescisão excluída com sucesso.")
         return super().form_valid(form)
 
-
 @login_required
 def gerar_excel_rescisao(request, pk):
     rescisao = Rescisao.objects.get(pk=pk)

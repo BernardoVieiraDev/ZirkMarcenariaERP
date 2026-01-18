@@ -1,4 +1,5 @@
-# Em apps/comissionamento/views.py
+# apps/comissionamento/views.py
+
 import uuid
 from decimal import Decimal
 
@@ -10,27 +11,22 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import timezone
 
-from apps.financeiro.pagar.models import ComissaoArquiteto, StatusPagamento
-from apps.financeiro.receber.models import Banco  # <--- Importe o Banco aqui
+# --- MUDANÇA 1: Adicionada a importação de ParcelamentoPagar ---
+from apps.financeiro.pagar.models import ComissaoArquiteto, StatusPagamento, ParcelamentoPagar
+from apps.financeiro.receber.models import Banco
 from apps.financeiro.receber.models import Receber
 
 from .forms import ArquitetaForm, ContratoRTForm
 from .models import Arquiteta, ContratoRT
 
-# --- VIEWS DE CONTRATOS (Agora Unificadas) ---
-
-
-# ... (Mantenha as views de Arquiteta iguais) ...
-
 # === VIEWS DE CONTRATO E FINANCEIRO ===
+
 @login_required
 def rt_contratos_list(request):
     contratos = ContratoRT.objects.filter(is_deleted=False).select_related('arquiteta', 'cliente').order_by('-data_contrato')
     
-    # NOVOS DADOS PARA O MODAL
-    # Pegamos apenas bancos ativos
+    # DADOS PARA O MODAL
     bancos = Banco.objects.all()
-    # Pegamos as opções de categoria definidas no Model Receber dinamicamente
     categorias = Receber._meta.get_field('categoria').choices
     
     total_rt = contratos.aggregate(
@@ -55,7 +51,6 @@ def rt_contratos_list(request):
     return render(request, 'core/comissionamento/contratos_list.html', context)
 
 
-# Em zirk_rh_financeiro/apps/comissionamento/views.py
 @login_required
 def rt_contrato_create(request):
     if request.method == 'POST':
@@ -80,8 +75,17 @@ def rt_contrato_create(request):
                     
                     valor_total = valor_rt
                     valor_parcela = (valor_total / qtd_parcelas).quantize(Decimal('0.01'))
-                    grupo_uuid = uuid.uuid4()
                     
+                    # --- MUDANÇA 2: Criação do ParcelamentoPagar (Pai) se houver parcelas ---
+                    grupo_parcelamento = None
+                    if qtd_parcelas > 1:
+                        grupo_parcelamento = ParcelamentoPagar.objects.create(
+                            descricao=f"Comissão {contrato.cliente} (Ref: Contrato RT)",
+                            valor_total_original=valor_total,
+                            qtd_parcelas=qtd_parcelas
+                        )
+                    # ------------------------------------------------------------------------
+
                     for i in range(qtd_parcelas):
                         if i == qtd_parcelas - 1:
                             valor_atual = valor_total - (valor_parcela * (qtd_parcelas - 1))
@@ -96,19 +100,20 @@ def rt_contrato_create(request):
                             contrato_rt=contrato,
                             valor_comissao=valor_atual,
                             
-                            # === CORREÇÃO AQUI ===
-                            # Antes estava data_pagamento=data_venc. 
-                            # Agora o campo obrigatório é data_vencimento.
+                            # Data de Vencimento (Previsão)
                             data_vencimento=data_venc, 
                             
-                            # data_pagamento (real) fica vazio pois nasce Pendente
-                            data_pagamento=None, 
-                            # =====================
+                            # Data Pagamento Real (vazio pois nasce pendente)
+                            data_pagamento=None,
 
                             banco_origem=banco,
                             forma_pagamento=forma_pagto,
                             status=StatusPagamento.PENDENTE,
-                            parcelamento_uuid=grupo_uuid,
+                            
+                            # --- MUDANÇA 3: Passa o objeto pai (ou None) ao invés de UUID ---
+                            parcelamento=grupo_parcelamento,
+                            # ----------------------------------------------------------------
+                            
                             observacoes=desc_parcela
                         )
                         nova_comissao.save() 
@@ -127,6 +132,8 @@ def rt_contrato_create(request):
         form.fields['primeiro_vencimento'].initial = timezone.now().date()
 
     return render(request, 'core/comissionamento/contrato_form.html', {'form': form, 'title': 'Novo Contrato'})
+
+
 @login_required
 def rt_contrato_edit(request, pk):
     contrato = get_object_or_404(ContratoRT, pk=pk)
@@ -155,7 +162,7 @@ def gerar_financeiro_contrato(request, pk):
             # NOVOS CAMPOS CAPTURADOS
             banco_id = request.POST.get('banco_id')
             categoria_selecionada = request.POST.get('categoria')
-            descricao_personalizada = request.POST.get('descricao_personalizada') # Opcional: para mudar o nome "Ref. Contrato..."
+            descricao_personalizada = request.POST.get('descricao_personalizada') 
 
             # Validações
             if not banco_id:
@@ -181,7 +188,7 @@ def gerar_financeiro_contrato(request, pk):
                 else:
                     valor_atual = valor_parcela
 
-                # Define a descrição (Nome do projeto ou padrão)
+                # Define a descrição
                 if descricao_personalizada:
                     desc_final = f"{descricao_personalizada} - {i+1}/{qtd_parcelas}"
                 else:
@@ -189,9 +196,8 @@ def gerar_financeiro_contrato(request, pk):
 
                 nova_conta = Receber(
                     descricao=desc_final,
-                    cliente=contrato.cliente, # <--- Passe o objeto direto (remova o .nome_completo)
+                    cliente=contrato.cliente, 
                     
-                    # AQUI USAMOS OS DADOS SELECIONADOS PELO USUÁRIO
                     categoria=categoria_selecionada, 
                     banco_destino=banco_obj,
                     
@@ -211,12 +217,13 @@ def gerar_financeiro_contrato(request, pk):
             messages.error(request, f"Erro ao gerar: {str(e)}")
             
     return redirect('comissionamento:contratos_list')
+
+
 @login_required
 def painel_controle_rt(request):
     """
     Dashboard para Arquiteto ver o status de seus clientes.
     """
-    # Busca contratos com os relacionamentos necessários
     contratos = ContratoRT.objects.filter(is_deleted=False)\
         .select_related('arquiteta', 'cliente')\
         .prefetch_related('parcelas_receber')\
@@ -244,6 +251,8 @@ def painel_controle_rt(request):
         })
 
     return render(request, 'core/comissionamento/painel_rt.html', {'dados': dados_dashboard})
+
+
 @login_required
 def rt_contrato_delete(request, pk):
     contrato = get_object_or_404(ContratoRT, pk=pk)
@@ -260,6 +269,7 @@ def rt_contrato_delete(request, pk):
     }
     return render(request, 'core/comissionamento/contrato_delete.html', context)
 
+
 @login_required
 def arquiteta_list(request):
     arquitetas = Arquiteta.objects.all().order_by('nome')
@@ -271,6 +281,7 @@ def arquiteta_list(request):
         'title': 'Cadastro de Arquitetas'
     }
     return render(request, 'core/comissionamento/arquiteta_list.html', context)
+
 
 @login_required
 def arquiteta_create(request):
@@ -284,6 +295,7 @@ def arquiteta_create(request):
         form = ArquitetaForm()
     context = {'form': form, 'title': 'Nova Arquiteta'}
     return render(request, 'core/comissionamento/arquiteta_form.html', context)
+
 
 @login_required
 def arquiteta_edit(request, pk):
@@ -299,10 +311,10 @@ def arquiteta_edit(request, pk):
     context = {'form': form, 'title': f'Editar: {arquiteta.nome}', 'edit_mode': True}
     return render(request, 'core/comissionamento/arquiteta_form.html', context)
 
+
 @login_required
 def arquiteta_delete(request, pk):
     arquiteta = get_object_or_404(Arquiteta, pk=pk)
-    # Verifica dependência com o novo modelo ContratoRT
     if arquiteta.contratort_set.exists():
         messages.error(request, "Não é possível excluir: existem registros vinculados a esta arquiteta.")
         return redirect('comissionamento:arquiteta_list')
@@ -314,15 +326,14 @@ def arquiteta_delete(request, pk):
     context = {'arquiteta': arquiteta, 'title': f'Excluir Arquiteta: {arquiteta.nome}'}
     return render(request, 'core/comissionamento/arquiteta_delete.html', context)
 
+
 @login_required
 def rt_contrato_detail(request, pk):
     contrato = get_object_or_404(ContratoRT, pk=pk)
     
-    # Busca todas as parcelas vinculadas a este contrato no Financeiro
-    # O 'related_name' definido no model Receber é 'parcelas_receber'
+    # Busca parcelas vinculadas a este contrato no Financeiro
     parcelas = contrato.parcelas_receber.all().order_by('data_vencimento')
 
-    # Cálculos para o Dashboard rápido
     total_gerado = contrato.total_previsto_financeiro
     total_recebido = contrato.total_recebido
     saldo_restante = total_gerado - total_recebido
@@ -336,4 +347,3 @@ def rt_contrato_detail(request, pk):
         'title': f'Detalhes: {contrato.cliente}'
     }
     return render(request, 'core/comissionamento/contrato_detail.html', context)
-

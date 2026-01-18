@@ -58,6 +58,8 @@ def gerenciar_recebimento(sender, instance, created, **kwargs):
         # Se voltou a ser Pendente
         if instance.movimento_banco: instance.movimento_banco.delete()
         if instance.movimento_caixa: instance.movimento_caixa.delete()
+    from apps.financeiro.fluxo.services import FluxoCaixaService
+    FluxoCaixaService.clear_fluxo_cache()
 
 @receiver(post_delete, sender=Receber)
 def remover_recebimento(sender, instance, **kwargs):

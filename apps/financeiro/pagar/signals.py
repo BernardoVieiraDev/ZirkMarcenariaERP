@@ -157,6 +157,8 @@ def atualizar_extrato(sender, instance, **kwargs):
             instance.movimento_caixa.delete()
             sender.objects.filter(pk=instance.pk).update(movimento_caixa=None)
             instance.movimento_caixa = None
+    from apps.financeiro.fluxo.services import FluxoCaixaService
+    FluxoCaixaService.clear_fluxo_cache()
 
 def remover_do_extrato(sender, instance, **kwargs):
     """
@@ -173,6 +175,8 @@ def remover_do_extrato(sender, instance, **kwargs):
             instance.movimento_caixa.delete()
     except Exception:
         pass
+    from apps.financeiro.fluxo.services import FluxoCaixaService
+    FluxoCaixaService.clear_fluxo_cache()
 
 # --- REGISTRO DOS SIGNALS ---
 for model in MODELOS_FINANCEIROS:

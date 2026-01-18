@@ -88,14 +88,23 @@ class GastoBaseForm(forms.ModelForm):
         origem = cleaned_data.get('origem_pagamento')
         banco = cleaned_data.get('banco_origem')
 
-        # REGRA DE CORREÇÃO:
-        # Se escolheu CAIXA, forçamos o banco a ser None, mesmo que o usuário tenha selecionado um.
-        if origem == 'CAIXA':
-            cleaned_data['banco_origem'] = None
+        # --- LÓGICA CORRIGIDA ---
         
-        # Se escolheu BANCO, o banco é obrigatório
-        elif origem == 'BANCO' and not banco:
-            self.add_error('banco_origem', 'Selecione uma conta bancária para esta operação.')
+        if origem == 'CAIXA':
+            # 1. Se é Caixa, FORÇA o banco a ser vazio
+            cleaned_data['banco_origem'] = None
+            
+            # 2. FORÇA a forma de pagamento para "DINHEIRO" automaticamente
+            cleaned_data['forma_pagamento'] = 'DINHEIRO'
+            
+            # 3. Se houver erro de "Campo obrigatório" no banco, removemos o erro
+            if 'banco_origem' in self._errors:
+                del self._errors['banco_origem']
+        
+        elif origem == 'BANCO':
+            # Se é Banco, aí sim exigimos que o usuário tenha selecionado um banco
+            if not banco:
+                self.add_error('banco_origem', 'Selecione uma conta bancária para esta operação.')
 
         return cleaned_data
     
@@ -276,11 +285,15 @@ class GastoGeralForm(forms.ModelForm):
         banco = cleaned_data.get('banco_origem')
         status = cleaned_data.get('status')
 
-        # Se escolheu CAIXA, limpa o banco
+        # --- LÓGICA CORRIGIDA ---
+
         if origem == 'CAIXA':
             cleaned_data['banco_origem'] = None
+            cleaned_data['forma_pagamento'] = 'DINHEIRO' # <--- Adicionado
+            
+            if 'banco_origem' in self._errors:
+                del self._errors['banco_origem']
         
-        # Se escolheu BANCO e está Pago, exige o banco
         elif origem == 'BANCO' and status == 'Pago' and not banco:
             self.add_error('banco_origem', 'Selecione a conta bancária para confirmar o pagamento.')
 
@@ -325,21 +338,35 @@ class ComissaoArquitetoForm(forms.ModelForm):
 
     class Meta:
         model = ComissaoArquiteto
-        fields = '__all__'
+        fields = [
+            'arquiteto',
+            'data_vencimento',
+            'data_pagamento',
+            'valor_pago',
+            'valor_comissao',
+            'observacoes',
+            'forma_pagamento',
+            'status',
+            'banco_origem',
+        ]
         widgets = {
             'arquiteto': forms.Select(attrs={'class': 'form-select'}),
-            'data_vencimento': forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}, format='%Y-%m-%d'),
-            
-            # Novos widgets
-            'data_pagamento': forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}, format='%Y-%m-%d'),
+            'data_vencimento': forms.DateInput(
+                attrs={'type': 'date', 'class': 'form-control'},
+                format='%Y-%m-%d'
+            ),
+            'data_pagamento': forms.DateInput(
+                attrs={'type': 'date', 'class': 'form-control'},
+                format='%Y-%m-%d'
+            ),
             'valor_pago': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
-            
             'valor_comissao': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
             'observacoes': forms.Textarea(attrs={'rows': 3, 'class': 'form-control'}),
             'forma_pagamento': forms.Select(attrs={'class': 'form-select'}),
             'status': forms.Select(attrs={'class': 'form-select'}),
             'banco_origem': forms.Select(attrs={'class': 'form-select'}),
         }
+
     
     # Adicionando validação básica de banco (igual ao GastoBaseForm)
     def __init__(self, *args, **kwargs):

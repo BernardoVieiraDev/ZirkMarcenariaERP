@@ -105,7 +105,7 @@ class ComissaoExcelService:
                 
                 # Acesso direto aos campos do pagamento
                 dt_pag = item.data_pagamento
-                valor = item.valor_comissao if item.valor_comissao else Decimal('0.00')
+                valor = item.valor_pago if item.valor_pago else Decimal('0.00')
                 obs = item.observacoes if item.observacoes else ''
 
                 ws.write(row, 0, arquiteta_nome, fmt['data_text'])

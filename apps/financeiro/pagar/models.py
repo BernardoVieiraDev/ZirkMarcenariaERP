@@ -670,6 +670,11 @@ class FolhaPagamento(SoftDeleteMixin):
     horas_extras_valor = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal('0.00'), verbose_name="Horas Extras (R$)")
     observacoes = models.TextField(blank=True, null=True, verbose_name="Observações")
 
+    val_ferias = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal('0.00'), verbose_name="Valor Férias")
+    
+    ferias_terco = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal('0.00'), verbose_name="1/3 Férias")
+
+
     parcelamento = models.ForeignKey(
         ParcelamentoPagar, 
         on_delete=models.CASCADE, # Se apagar o pai, apaga as parcelas (ou use PROTECT/SET_NULL conforme regra)

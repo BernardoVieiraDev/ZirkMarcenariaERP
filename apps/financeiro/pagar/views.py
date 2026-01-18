@@ -405,11 +405,13 @@ def folha_mensal_view(request):
 
     FolhaFormSet = modelformset_factory(
         FolhaPagamento,
-        fields=('salario_real', 'adiantamento', 'empreitada', 'vale', 'horas_extras_valor', 'decimo_terceiro','referencia_holerite', 'observacoes', 'status'),
+        fields=('salario_real', 'adiantamento','val_ferias', 'ferias_terco', 'empreitada', 'vale', 'horas_extras_valor', 'decimo_terceiro','referencia_holerite', 'observacoes', 'status'),
         extra=0,
         widgets={
             'salario_real': forms.NumberInput(attrs={'class': 'form-control form-control-sm', 'step': '0.01'}),
             'adiantamento': forms.NumberInput(attrs={'class': 'form-control form-control-sm', 'step': '0.01'}),
+            'val_ferias': forms.NumberInput(attrs={'class': 'form-control form-control-sm', 'step': '0.01', 'placeholder': 'Férias'}),
+            'ferias_terco': forms.NumberInput(attrs={'class': 'form-control form-control-sm', 'step': '0.01', 'placeholder': '1/3'}),
             'empreitada': forms.NumberInput(attrs={'class': 'form-control form-control-sm', 'step': '0.01'}),
             'vale': forms.NumberInput(attrs={'class': 'form-control form-control-sm', 'step': '0.01'}),
             'horas_extras_valor': forms.NumberInput(attrs={'class': 'form-control form-control-sm', 'step': '0.01', 'readonly': 'readonly'}),
@@ -520,15 +522,43 @@ def _preparar_dados_holerite(folha, tipo_holerite):
     ano = folha.data_referencia.year
     ultimo_dia = calendar.monthrange(ano, mes)[1]
     
+    # 1. INICIALIZAÇÃO CORRETA DA LISTA (ANTES DOS IFS)
+    eventos = [] 
+    
     if tipo_holerite == 'adiantamento':
         titulo = "RECIBO DE ADIANTAMENTO SALARIAL"
         data_pagamento = date(ano, mes, 15) 
+
     elif tipo_holerite == '13':
         titulo = "RECIBO DE 13º SALÁRIO"
         data_pagamento = date(ano, mes, 20) 
+
     elif tipo_holerite == 'ferias':
         titulo = "RECIBO DE FÉRIAS"
         data_pagamento = date.today() 
+        
+        # Lógica de Férias (Unificada aqui)
+        if folha.ferias_terco <= 0 and folha.val_ferias <= 0: 
+            return None
+        
+        if folha.val_ferias > 0:
+            eventos.append({
+                'codigo': '006', 
+                'descricao': 'FÉRIAS GOZADAS', 
+                'ref': '', 
+                'vencimento': float(folha.val_ferias), 
+                'desconto': 0.0
+            })
+            
+        if folha.ferias_terco > 0:
+            eventos.append({
+                'codigo': '003', 
+                'descricao': '1/3 FÉRIAS CONSTITUCIONAL', 
+                'ref': '', 
+                'vencimento': float(folha.ferias_terco), 
+                'desconto': 0.0
+            })
+            
     else: 
         titulo = "RECIBO DE PAGAMENTO DE SALÁRIO"
         data_pagamento = date(ano, mes, ultimo_dia)
@@ -544,7 +574,8 @@ def _preparar_dados_holerite(folha, tipo_holerite):
         funcao = "Não Informado"
         admissao = ""
 
-    eventos = []
+    # 2. ADIÇÃO DE EVENTOS PARA OUTROS TIPOS (ADIANTAMENTO, 13º, MENSAL)
+    # Note que removemos a reinicialização 'eventos = []' que existia aqui e o bloco 'ferias' redundante
     
     if tipo_holerite == 'adiantamento':
         if folha.adiantamento <= 0: return None
@@ -555,10 +586,11 @@ def _preparar_dados_holerite(folha, tipo_holerite):
         eventos.append({'codigo': '004', 'descricao': '13º SALÁRIO', 'ref': '', 'vencimento': float(folha.decimo_terceiro), 'desconto': 0.0})
 
     elif tipo_holerite == 'ferias':
-        if folha.ferias_terco <= 0: return None
-        eventos.append({'codigo': '003', 'descricao': '1/3 FÉRIAS CONSTITUCIONAL', 'ref': '', 'vencimento': float(folha.ferias_terco), 'desconto': 0.0})
+        # Já processado no bloco inicial, passamos direto para não duplicar
+        pass
 
     else: 
+        # Holerite Mensal (Padrão)
         if folha.salario_real > 0:
             eventos.append({'codigo': '001', 'descricao': 'SALÁRIO BASE', 'ref': folha.referencia_holerite or '30d', 'vencimento': float(folha.salario_real), 'desconto': 0.0})
         if folha.empreitada > 0:
@@ -717,7 +749,7 @@ def pagar_confirmar_pagamento(request, pk):
             # --- Atualização Genérica ---
             # Atualiza os campos comuns a todos os models
             obj.status = 'Pago'
-            obj.observacoes = f"{obj.observacoes or ''} \n[Pagamento]: {data['observacoes']}"
+            obj.observacoes = f"{obj.observacoes or ''} {data['observacoes']}"
             obj.banco_origem = data['banco_origem']
             obj.forma_pagamento = data['forma_pagamento']
 

@@ -9,7 +9,7 @@ from django.shortcuts import render
 # ... (imports de modelos mantidos) ...
 from apps.comissionamento.models import ContratoRT
 from apps.ferias.models import PeriodoAquisitivo
-from apps.financeiro.pagar.models import (Boleto, FaturaCartao,
+from apps.financeiro.pagar.models import (Boleto, ComissaoArquiteto, FaturaCartao, FolhaPagamento,
                                           GastoContabilidade, GastoGeral,
                                           GastoImovel, GastoUtilidade,
                                           GastoVeiculoConsorcio,
@@ -48,7 +48,20 @@ def dashboard(request):
         
         # Adiciona GastoGeral
         total_geral = GastoGeral.objects.exclude(status='Pago').aggregate(total=Sum('valor_total'))['total'] or Decimal('0.00')
+        
         total_pagar_pendente += total_geral
+
+        total_comissoes = ComissaoArquiteto.objects.exclude(status='Pago').aggregate(
+        total=Sum('valor_comissao')
+        )['total'] or Decimal('0.00')
+        total_pagar_pendente += total_comissoes
+
+
+        total_folha = FolhaPagamento.objects.exclude(status='Pago').aggregate(
+            total=Sum('salario_real')
+        )['total'] or Decimal('0.00')
+        
+        total_pagar_pendente += total_folha
 
         # Total Receber
         receber_total = Receber.objects.exclude(status='Recebido').aggregate(total=Sum('valor'))['total'] or Decimal('0.00')
