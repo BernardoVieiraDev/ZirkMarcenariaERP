@@ -1,4 +1,5 @@
 from django.urls import path
+
 from . import views
 
 app_name = "receber"
@@ -9,7 +10,7 @@ urlpatterns = [
     path('add/', views.receber_create, name='receber_add'),
     path('<int:pk>/edit/', views.receber_edit, name='receber_edit'),
     path('<int:pk>/delete/', views.receber_delete, name='receber_delete'),
-    
+    path('<int:pk>/confirmar/', views.receber_confirmar_recebimento, name='receber_confirmar'),
     
     path('caixa-diario/', views.caixa_diario_view, name='caixa_diario'),
     path('caixa-diario/<int:pk>/delete/', views.caixa_diario_delete, name='caixa_diario_delete'),

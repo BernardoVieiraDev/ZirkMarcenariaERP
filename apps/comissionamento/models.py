@@ -28,10 +28,19 @@ class ContratoRT(SoftDeleteMixin):
     
     # Valores
     percentual = models.DecimalField(max_digits=5, decimal_places=2, verbose_name="Porcentagem RT (%)", default=Decimal('0.00'))
-    valor_servico = models.DecimalField(max_digits=12, decimal_places=2, verbose_name="Valor Total do Projeto (Venda)")
+    valor_servico = models.DecimalField(max_digits=12, decimal_places=2, verbose_name="Valor Total do Projeto")
     valor_rt = models.DecimalField(max_digits=12, decimal_places=2, verbose_name="Comissão (Valor da RT)")
     
     observacoes = models.TextField(verbose_name="Observações", null=True, blank=True)
+
+    @property
+    def banco_saida_previsto(self):
+        """Retorna o banco da primeira parcela de comissão encontrada"""
+        # A relação 'comissoes_pagar' vem do related_name em ComissaoArquiteto
+        primeira_comissao = self.comissoes_pagar.filter(is_deleted=False).first()
+        if primeira_comissao and primeira_comissao.banco_origem:
+            return primeira_comissao.banco_origem
+        return None
 
     # Campos calculados (somente leitura, baseados no Financeiro)
 # ... (mantenha o código anterior)

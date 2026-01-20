@@ -341,6 +341,7 @@
                         <th width="10%">Data</th>
                         <th width="20%">Arquiteta</th>
                         <th width="20%">Cliente / Projeto</th>
+                        <th width="15%">Banco Saída</th>
                         <th width="12%">Valor Venda</th>
                         <th width="12%">Valor RT</th>
                         <th width="10%">Status Fin.</th>
@@ -353,7 +354,14 @@
                         <td class="text-sub">{{ c.data_contrato|date:"d/m/Y" }}</td>
                         <td class="text-main" style="color: var(--blue-600);">{{ c.arquiteta.nome }}</td>
                         <td class="text-main">{{ c.cliente.nome_completo }}</td>
-                        
+                        <td>
+                            {% if c.banco_saida_previsto %}
+                                <div class="text-main" style="font-size: 13px;">{{ c.banco_saida_previsto.nome }}</div>
+                                <div class="text-sub" style="font-size: 11px;">Ag: {{ c.banco_saida_previsto.agencia }}</div>
+                            {% else %}
+                                <span class="text-sub">-</span>
+                            {% endif %}
+                        </td>
                         <td>
                             <div class="text-val">R$ {{ c.valor_servico|floatformat:"2g" }}</div>
                         </td>

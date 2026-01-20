@@ -113,18 +113,29 @@ class ExportRTService:
         ws.write('A4', 'AGÊNCIA:', fmt_lbl); ws.merge_range('B4:C4', arquiteta.agencia or '-', fmt_val)
         ws.write('D4', 'CONTA:', fmt_lbl); ws.merge_range(f'E4:{last_col_char}4', arquiteta.conta or '-', fmt_val)
 
+    def _get_dados_financeiros(self, contrato):
+        """Helper para recuperar dados financeiros do contrato"""
+        # Valor Pago (Propriedade do Model)
+        val_pago = contrato.total_recebido
+        
+        # Data do último pagamento (Busca na relação de parcelas)
+        last_parcela = contrato.parcelas_receber.filter(status='Recebido').order_by('-data_recebimento').first()
+        dt_pag = last_parcela.data_recebimento if last_parcela else None
+        
+        return val_pago, dt_pag
+
     def _generate_aba_extrato(self, arquiteta):
         """Aba 1: RT (Sem porcentagem, Detalhado)"""
         ws = self.workbook.add_worksheet("RT")
         ws.hide_gridlines(2)
 
-        ws.set_column('A:A', 30) # type: ignore # Cliente
-        ws.set_column('B:B', 15) # Data Contrato# type: ignore
-        ws.set_column('C:C', 18) # Valor Serviço# type: ignore
-        ws.set_column('D:D', 18) # Valor RT# type: ignore
-        ws.set_column('E:E', 15) # Data Pag# type: ignore
-        ws.set_column('F:F', 18) # Valor Pago# type: ignore
-        ws.set_column('G:G', 50) # Obs# type: ignore
+        ws.set_column('A:A', 30) # Cliente
+        ws.set_column('B:B', 15) # Data Contrato
+        ws.set_column('C:C', 18) # Valor Serviço
+        ws.set_column('D:D', 18) # Valor RT
+        ws.set_column('E:E', 15) # Data Pag (Último)
+        ws.set_column('F:F', 18) # Valor Pago (Total)
+        ws.set_column('G:G', 50) # Obs
 
         self._write_arquiteta_header(ws, arquiteta, f"RELATÓRIO DE RT: {arquiteta.nome.upper()}", width_cols=7)
 
@@ -140,16 +151,20 @@ class ExportRTService:
         total_pago = Decimal('0.00')
 
         for c in contratos:
-            ws.write(row, 0, c.cliente, self.formats['cell_text'])
+            # Correção: Obtendo dados financeiros calculados
+            val_pago_atual, dt_pag_atual = self._get_dados_financeiros(c)
+            
+            # Usar .nome_completo no cliente
+            ws.write(row, 0, c.cliente.nome_completo, self.formats['cell_text'])
             ws.write(row, 1, c.data_contrato or "-", self.formats['cell_date'])
             ws.write(row, 2, c.valor_servico or 0, self.formats['cell_money'])
             ws.write(row, 3, c.valor_rt or 0, self.formats['cell_money'])
-            ws.write(row, 4, c.data_pagamento or "-", self.formats['cell_date'])
-            ws.write(row, 5, c.valor_pago or 0, self.formats['cell_money'])
+            ws.write(row, 4, dt_pag_atual or "-", self.formats['cell_date'])
+            ws.write(row, 5, val_pago_atual, self.formats['cell_money'])
             ws.write(row, 6, c.observacoes or "", self.formats['cell_text_wrap'])
             
             total_rt += (c.valor_rt or 0)
-            total_pago += (c.valor_pago or 0)
+            total_pago += val_pago_atual
             row += 1
 
         # --- TOTAIS ---
@@ -179,14 +194,14 @@ class ExportRTService:
         ws.hide_gridlines(2)
 
         # Configura colunas
-        ws.set_column('A:A', 30) # Cliente# type: ignore
-        ws.set_column('B:B', 8)  # %# type: ignore
-        ws.set_column('C:C', 18) # Valor Serviço# type: ignore
-        ws.set_column('D:D', 18) # Valor RT# type: ignore
-        ws.set_column('E:E', 15) # Data Pag# type: ignore
-        ws.set_column('F:F', 18) # Valor Pago# type: ignore
-        ws.set_column('G:G', 40) # Obs# type: ignore
-        ws.set_column('H:H', 20) # SALDO# type: ignore
+        ws.set_column('A:A', 30) # Cliente
+        ws.set_column('B:B', 8)  # %
+        ws.set_column('C:C', 18) # Valor Serviço
+        ws.set_column('D:D', 18) # Valor RT
+        ws.set_column('E:E', 15) # Data Pag
+        ws.set_column('F:F', 18) # Valor Pago
+        ws.set_column('G:G', 40) # Obs
+        ws.set_column('H:H', 20) # SALDO
 
         self._write_arquiteta_header(ws, arquiteta, f"RT POR CLIENTE: {arquiteta.nome.upper()}", width_cols=8)
 
@@ -206,23 +221,26 @@ class ExportRTService:
 
         row += 1
         
-        for cliente_nome, contratos in clientes_dict.items():
+        for cliente_obj, contratos in clientes_dict.items():
             
             subtotal_rt = Decimal('0.00')
             subtotal_pago = Decimal('0.00')
 
             for c in contratos:
-                ws.write(row, 0, c.cliente, self.formats['cell_text'])
+                # Correção: Obtendo dados financeiros calculados
+                val_pago_atual, dt_pag_atual = self._get_dados_financeiros(c)
+
+                ws.write(row, 0, c.cliente.nome_completo, self.formats['cell_text'])
                 ws.write(row, 1, f"{c.percentual or 0}%", self.formats['cell_center'])
                 ws.write(row, 2, c.valor_servico or 0, self.formats['cell_money'])
                 ws.write(row, 3, c.valor_rt or 0, self.formats['cell_money'])
-                ws.write(row, 4, c.data_pagamento or "-", self.formats['cell_date'])
-                ws.write(row, 5, c.valor_pago or 0, self.formats['cell_money'])
+                ws.write(row, 4, dt_pag_atual or "-", self.formats['cell_date'])
+                ws.write(row, 5, val_pago_atual, self.formats['cell_money'])
                 ws.write(row, 6, c.observacoes or "", self.formats['cell_text_wrap'])
                 ws.write(row, 7, "-", self.formats['cell_center'])
                 
                 subtotal_rt += (c.valor_rt or 0)
-                subtotal_pago += (c.valor_pago or 0)
+                subtotal_pago += val_pago_atual
                 row += 1
             
             # --- LINHA DE TOTAL DO CLIENTE ---
@@ -232,7 +250,7 @@ class ExportRTService:
             # Label
             ws.write(row, 0, "TOTAL CLIENTE:", self.formats['summary_label'])
             
-            # === CORREÇÃO: Preencher os subtotais para não ficar vazio ===
+            # Preencher os subtotais
             ws.write(row, 3, subtotal_rt, self.formats['summary_value'])   # Total RT na coluna D
             ws.write(row, 5, subtotal_pago, self.formats['summary_value']) # Total Pago na coluna F
             

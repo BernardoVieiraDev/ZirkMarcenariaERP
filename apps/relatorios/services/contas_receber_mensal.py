@@ -145,7 +145,7 @@ class RelatorioReceberMensalService:
             suffix = '_odd' if idx % 2 else '_even'
             ws.set_row(row, 22)
             
-            cliente = item.cliente if item.cliente else '-'
+            cliente = str(item.cliente) if item.cliente else '-'
             descricao = item.descricao if item.descricao else ''
             val_prev = item.valor if item.valor else Decimal(0)
             val_real = item.valor_recebido if item.valor_recebido else Decimal(0)

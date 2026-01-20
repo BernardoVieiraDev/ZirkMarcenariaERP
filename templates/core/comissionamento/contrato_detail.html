@@ -79,10 +79,58 @@
     .btn-close { background: transparent; border: none; cursor: pointer; font-size: 24px; color: #94a3b8; padding: 4px; line-height: 1; }
     .modal-body { padding: 24px; }
     .modal-loader { text-align: center; padding: 40px; color: var(--text-muted); }
+
+    /* --- CSS NOVO PARA MENSAGENS FLUTUANTES (TOASTS) --- */
+    .toast-container {
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        z-index: 11000; /* Acima do modal */
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        min-width: 300px;
+        max-width: 450px;
+    }
+
+    .toast-notification {
+        padding: 16px;
+        border-radius: 8px;
+        background: white;
+        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        animation: slideIn 0.4s ease-out forwards;
+        border-left: 4px solid #ccc;
+        font-size: 14px;
+        font-weight: 500;
+    }
+
+    .toast-success { border-left-color: #22c55e; background-color: #f0fdf4; color: #15803d; }
+    .toast-error, .toast-danger { border-left-color: #ef4444; background-color: #fef2f2; color: #b91c1c; }
+    .toast-warning { border-left-color: #f59e0b; background-color: #fffbeb; color: #b45309; }
+    .toast-info { border-left-color: #3b82f6; background-color: #eff6ff; color: #1d4ed8; }
+
+    @keyframes slideIn {
+        from { transform: translateX(100%); opacity: 0; }
+        to { transform: translateX(0); opacity: 1; }
+    }
 </style>
 
 <div class="rh-container">
     
+    {% if messages %}
+    <div class="toast-container" id="message-container">
+        {% for message in messages %}
+            <div class="toast-notification alert alert-{{ message.tags }} {% if message.tags == 'success' %}toast-success{% elif message.tags == 'error' %}toast-error{% elif message.tags == 'warning' %}toast-warning{% else %}toast-info{% endif %}">
+                <span>{{ message }}</span>
+                <button onclick="this.parentElement.style.display='none'" style="background:none;border:none;cursor:pointer;opacity:0.6;margin-left:10px;">✕</button>
+            </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
     <header class="page-header">
         <div class="header-title">
             <div style="display: flex; align-items: center; gap: 10px;">
@@ -101,11 +149,9 @@
             <button onclick="openRemoteModal('{% url 'comissionamento:contrato_delete' pk=contrato.pk %}')" class="btn-danger-ghost">
                 Excluir
             </button>
-
         </div>
     </header>
 
-    {% if messages %}
     <div class="content-panel" style="margin-bottom: 24px;">
         <div class="panel-header-simple">
             <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
@@ -154,29 +200,6 @@
     </div>
 
     <div class="summary-grid">
-        
-
-
-<div class="summary-card" style="border-left: 4px solid #6366f1;">
-    <h3>Parcelas Restantes</h3>
-    <div class="value">
-        {% if contrato.parcelas_receber.exists %}
-            {{ contrato.qtd_parcelas_pendentes }} <span style="...">de {{ contrato.parcelas_receber.count }}</span>
-        {% else %}
-            -
-        {% endif %}
-    </div>
-    </div>
-    <div style="margin-bottom: 20px;" id="message-container">
-        {% for message in messages %}
-            <div class="alert alert-{{ message.tags }}" style="padding: 10px; border-radius: 8px; background: {% if message.tags == 'success' %}#dcfce7; color: #166534;{% else %}#fee2e2; color: #991b1b;{% endif %}">
-                {{ message }}
-            </div>
-        {% endfor %}
-    </div>
-    {% endif %}
-
- <div class="summary-grid">
         <div class="summary-card" style="border-left: 4px solid #6366f1;">
             <h3>Parcelas Restantes</h3>
             <div class="value">
@@ -227,52 +250,62 @@
                         <th width="15%">Valor Previsto</th>
                         <th width="15%">Valor Recebido</th>
                         <th width="15%">Status</th>
+                        <th width="15%">Ações</th>
                     </tr>
                 </thead>
                 <tbody>
-                    {% for parcela in parcelas %}
-                    <tr>
-                        <td>
-                            {{ parcela.data_vencimento|date:"d/m/Y" }}
-                            {% if parcela.status == 'Pendente' and parcela.data_vencimento < today %}
-                                <span style="color: red; font-size: 10px;">(Atrasado)</span>
-                            {% endif %}
-                        </td>
-                        <td>{{ parcela.descricao }}</td>
-                        <td>R$ {{ parcela.valor|floatformat:"2g" }}</td>
-                        <td>
-                            {% if parcela.valor_recebido > 0 %}
-                                <span style="color: green;">R$ {{ parcela.valor_recebido|floatformat:"2g" }}</span>
-                            {% else %}
-                                -
-                            {% endif %}
-                        </td>
-                        <td>
-                            {% if parcela.status == 'Recebido' %}
-                                <span style="background: #dcfce7; color: #166534; padding: 4px 8px; border-radius: 4px; font-size: 12px; font-weight: 600;">Recebido</span>
-                            {% else %}
-                                <span style="background: #ffedd5; color: #9a3412; padding: 4px 8px; border-radius: 4px; font-size: 12px; font-weight: 600;">Pendente</span>
-                            {% endif %}
-                        </td>
-
-                    </tr>
-                    {% empty %}
-                    <tr>
-                        <td colspan="6" class="empty-msg">
-                            Nenhuma conta a receber gerada para este contrato ainda. 
-                            Use o formulário acima para gerar.
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
+    {% for parcela in parcelas %}
+    <tr>
+        <td>
+            {{ parcela.data_vencimento|date:"d/m/Y" }}
+            {% if parcela.status == 'Pendente' and parcela.data_vencimento < today %}
+                <span style="color: red; font-size: 10px;">(Atrasado)</span>
+            {% endif %}
+        </td>
+        <td>{{ parcela.descricao }}</td>
+        <td>R$ {{ parcela.valor|floatformat:"2g" }}</td>
+        <td>
+            {% if parcela.valor_recebido > 0 %}
+                <span style="color: green;">R$ {{ parcela.valor_recebido|floatformat:"2g" }}</span>
+            {% else %}
+                -
+            {% endif %}
+        </td>
+        <td>
+            {% if parcela.status == 'Recebido' %}
+                <span style="background: #dcfce7; color: #166534; padding: 4px 8px; border-radius: 4px; font-size: 12px; font-weight: 600;">Recebido</span>
+            {% else %}
+                <span style="background: #ffedd5; color: #9a3412; padding: 4px 8px; border-radius: 4px; font-size: 12px; font-weight: 600;">Pendente</span>
+            {% endif %}
+        </td>
+        <td>
+            {% if parcela.status == 'Pendente' %}
+                <button onclick="openRemoteModal('{% url 'receber:receber_confirmar' pk=parcela.pk %}')" 
+                        class="btn-ghost" 
+                        style="padding: 4px 10px; font-size: 12px; color: #166534; border-color: #bbf7d0; background: #f0fdf4;">
+                    <i class="fas fa-dollar-sign"></i> Receber
+                </button>
+            {% else %}
+                <button disabled class="btn-ghost" style="opacity: 0.5; cursor: not-allowed; font-size: 12px; padding: 4px 10px;">
+                    <i class="fas fa-check"></i> Baixado
+                </button>
+            {% endif %}
+            
+            <a href="{% url 'receber:receber_edit' pk=parcela.pk %}" class="btn-icon" title="Editar">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+            </a>
+        </td>
+    </tr>
+    {% empty %}
+    <tr>
+        <td colspan="6" class="empty-msg">Nenhuma parcela encontrada.</td>
+    </tr>
+    {% endfor %}
+</tbody>
             </table>
         </div>
     </div>
-        </div>
-    </div>
 </div>
-
-
 
 <div id="modalGeneric" class="modal-overlay">
     <div class="modal-window" id="modalGenericContent">
@@ -300,22 +333,27 @@
                 const parser = new DOMParser();
                 const doc = parser.parseFromString(html, 'text/html');
                 
-                // Tenta extrair apenas o conteúdo útil (form ou painel)
+                // Tenta encontrar o conteúdo principal
                 let mainContent = doc.querySelector('.panel-body') || doc.querySelector('form') || doc.body;
                 
                 if (mainContent) {
+                    // CORREÇÃO: Se for um formulário, usamos outerHTML para incluir a tag <form>
+                    let htmlContent;
+                    if (mainContent.tagName === 'FORM') {
+                        htmlContent = mainContent.outerHTML; 
+                    } else {
+                        htmlContent = mainContent.innerHTML;
+                    }
+
                     content.innerHTML = `
                         <div class="modal-header">
                             <h3 class="modal-title">Ação</h3>
                             <button type="button" class="btn-close" onclick="closeModal('modalGeneric')">✕</button>
                         </div>
                         <div class="modal-body">
-                            ${mainContent.innerHTML}
+                            ${htmlContent}
                         </div>
                     `;
-                    // Remove headers internos duplicados
-                    const internalHeaders = content.querySelectorAll('.panel-header, h3:not(.modal-title)');
-                    internalHeaders.forEach(h => h.style.display = 'none');
                 } else {
                     content.innerHTML = '<div class="modal-body">Erro ao carregar conteúdo.</div>';
                 }
@@ -332,26 +370,19 @@
         });
     });
 
-    // --- NOVA FUNCIONALIDADE: REMOVER MENSAGENS APÓS 5 SEGUNDOS ---
+    // --- REMOVER MENSAGENS APÓS 5 SEGUNDOS ---
     document.addEventListener("DOMContentLoaded", function() {
-        // Aguarda 5 segundos (5000ms)
         setTimeout(function() {
-            // Seleciona todas as mensagens de alerta dentro do container
-            const alerts = document.querySelectorAll('.alert');
+            // Seleciona todas as mensagens dentro do container (agora com a classe toast-notification ou alert)
+            const alerts = document.querySelectorAll('.toast-notification');
             
             alerts.forEach(function(alert) {
-                // Aplica transição suave
-                alert.style.transition = "opacity 0.5s ease";
+                alert.style.transition = "opacity 0.5s ease, transform 0.5s ease";
                 alert.style.opacity = "0";
+                alert.style.transform = "translateX(100%)"; // Sai para a direita
                 
-                // Remove o elemento do DOM após a transição terminar (0.5s)
                 setTimeout(function() {
                     alert.style.display = "none";
-                    // Opcional: remover o elemento pai se ficar vazio
-                    const container = document.getElementById('message-container');
-                    if (container && container.children.length === 0) {
-                        container.style.display = 'none';
-                    }
                 }, 500);
             });
         }, 5000);

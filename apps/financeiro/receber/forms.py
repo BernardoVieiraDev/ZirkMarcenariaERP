@@ -133,3 +133,65 @@ class MovimentoBancoForm(forms.ModelForm):
             'tipo': forms.Select(attrs={'class': 'form-control'}),
             'valor': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
         }
+
+
+class ConfirmarRecebimentoForm(forms.Form):
+    data_recebimento = forms.DateField(
+        label="Data do Recebimento",
+        widget=forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
+        required=True
+    )
+    valor_recebido = forms.DecimalField(
+        label="Valor Recebido (R$)",
+        max_digits=12,
+        decimal_places=2,
+        widget=forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
+        required=True
+    )
+    # Lógica de Destino (Banco ou Caixa)
+    DESTINO_CHOICES = [
+        ('BANCO', 'Conta Bancária'),
+        ('CAIXA', 'Caixa Interno (Dinheiro)'),
+    ]
+    destino_recebimento = forms.ChoiceField(
+        choices=DESTINO_CHOICES,
+        widget=forms.RadioSelect(attrs={
+            'class': 'form-check-input',
+            'onclick': 'toggleBancoField()' # Vamos garantir que esse script exista no template
+        }),
+        initial='BANCO',
+        label="Destino do Recurso"
+    )
+    banco_destino = forms.ModelChoiceField(
+        queryset=None, # Populado no __init__
+        label="Conta Bancária de Destino",
+        required=False,
+        widget=forms.Select(attrs={'class': 'form-select', 'id': 'id_banco_destino'}),
+        help_text="Selecione o banco onde o dinheiro entrou."
+    )
+    forma_recebimento = forms.ChoiceField(
+        choices=Receber.FormaRecebimento.choices,
+        label="Forma de Recebimento",
+        widget=forms.Select(attrs={'class': 'form-select'})
+    )
+    observacoes = forms.CharField(
+        label="Observações",
+        widget=forms.Textarea(attrs={'class': 'form-control', 'rows': 2}),
+        required=False
+    )
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['banco_destino'].queryset = Banco.objects.all()
+
+    def clean(self):
+        cleaned_data = super().clean()
+        destino = cleaned_data.get('destino_recebimento')
+        banco = cleaned_data.get('banco_destino')
+
+        if destino == 'CAIXA':
+            cleaned_data['banco_destino'] = None
+        elif destino == 'BANCO' and not banco:
+            self.add_error('banco_destino', 'Selecione a conta bancária para confirmar o recebimento.')
+        
+        return cleaned_data

@@ -1,0 +1,97 @@
+<div style="padding: 16px 24px; border-bottom: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center; background: #f0fdf4; border-radius: 16px 16px 0 0;">
+    <h3 style="font-size: 18px; font-weight: 700; margin: 0; color: #166534;">
+        <i class="fas fa-hand-holding-usd" style="color: #166534; margin-right: 8px;"></i> Confirmar Entrada
+    </h3>
+    <button type="button" onclick="closeModal('modalGeneric')" style="background: none; border: none; font-size: 24px; color: #94a3b8; cursor: pointer;">&times;</button>
+</div>
+
+<div style="padding: 24px;">
+    <div class="alert alert-light border mb-4" style="background: #f8fafc; border: 1px solid #e2e8f0; padding: 12px; border-radius: 8px; font-size: 14px; margin-bottom: 20px;">
+        <strong>Referência:</strong> {{ object.descricao }} <br>
+        <small class="text-muted">Vencimento Original: {{ object.data_vencimento|date:"d/m/Y" }}</small>
+    </div>
+
+    <form method="post" action="{{ request.get_full_path }}">
+        {% csrf_token %}
+        
+        <div class="row">
+            <div class="col-md-6 mb-3">
+                <label class="form-label fw-bold small text-muted">Data do Recebimento</label>
+                {{ form.data_recebimento }}
+                {% if form.data_recebimento.errors %}
+                    <div class="text-danger small">{{ form.data_recebimento.errors.0 }}</div>
+                {% endif %}
+            </div>
+
+            <div class="col-md-6 mb-3">
+                <label class="form-label fw-bold small text-muted">Valor Recebido (R$)</label>
+                {{ form.valor_recebido }}
+                {% if form.valor_recebido.errors %}
+                    <div class="text-danger small">{{ form.valor_recebido.errors.0 }}</div>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="mb-3 p-3 bg-light rounded border">
+            <label class="form-label fw-bold small text-muted mb-2">Onde o dinheiro entrou?</label>
+            <div style="display: flex; gap: 20px; margin-bottom: 10px;">
+                {% for radio in form.destino_recebimento %}
+                <div class="form-check">
+                    {{ radio.tag }}
+                    <label class="form-check-label" for="{{ radio.id_for_label }}">
+                        {{ radio.choice_label }}
+                    </label>
+                </div>
+                {% endfor %}
+            </div>
+
+            <div id="div_banco_destino">
+                {{ form.banco_destino }}
+                {% if form.banco_destino.errors %}
+                    <div class="text-danger small">{{ form.banco_destino.errors.0 }}</div>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label fw-bold small text-muted">Forma de Recebimento</label>
+            {{ form.forma_recebimento }}
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label fw-bold small text-muted">Observações</label>
+            {{ form.observacoes }}
+        </div>
+
+        <div style="display: flex; justify-content: flex-end; gap: 12px; margin-top: 24px; padding-top: 16px; border-top: 1px solid #e2e8f0;">
+            <button type="button" class="btn btn-secondary" onclick="closeModal('modalGeneric')">Cancelar</button>
+            <button type="submit" class="btn btn-success" style="background-color: #166534; border-color: #166534;">
+                <i class="fas fa-check"></i> Confirmar Entrada
+            </button>
+        </div>
+    </form>
+</div>
+
+<script>
+    function toggleBancoField() {
+        // Pega todos os radios com name 'destino_recebimento'
+        const radios = document.getElementsByName('destino_recebimento');
+        const divBanco = document.getElementById('div_banco_destino');
+        let selected = 'BANCO'; // default
+
+        for (const radio of radios) {
+            if (radio.checked) {
+                selected = radio.value;
+                break;
+            }
+        }
+
+        if (selected === 'CAIXA') {
+            divBanco.style.display = 'none';
+        } else {
+            divBanco.style.display = 'block';
+        }
+    }
+    // Roda ao carregar para definir estado inicial
+    toggleBancoField();
+</script>

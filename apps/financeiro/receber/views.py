@@ -2,18 +2,18 @@ import calendar
 from datetime import date, datetime, timedelta
 from decimal import Decimal
 from itertools import chain
-from apps.financeiro.utils import gerar_parcelas
+
+from django.contrib import messages
+from django.contrib.auth.decorators import login_required
 from django.db.models import Sum
 from django.db.models.functions import Coalesce
 from django.shortcuts import get_object_or_404, redirect, render
-from django.contrib.auth.decorators import login_required
 
+from apps.financeiro.utils import gerar_parcelas
 
-from .forms import (BancoForm, CaixaDiarioForm,
+from .forms import (BancoForm, CaixaDiarioForm, ConfirmarRecebimentoForm,
                     MovimentoBancoForm, ReceberForm)
-from .models import (Banco, CaixaDiario,
-                     MovimentoBanco, Receber)
-
+from .models import Banco, CaixaDiario, MovimentoBanco, Receber
 
 
 @login_required
@@ -43,6 +43,7 @@ def receber_create(request):
         initial_data['valor'] = request.GET.get('valor')
         initial_data['descricao'] = request.GET.get('descricao')
     
+    # Instancia o formulário com POST (se existir) ou None (para GET)
     form = ReceberForm(request.POST or None, initial=initial_data)
     
     if request.method == 'POST':
@@ -54,33 +55,16 @@ def receber_create(request):
             qtd_parcelas = form.cleaned_data.get('parcelas', 1)
             
             if qtd_parcelas > 1:
-                # Chama o gerador
+                # Chama o gerador de parcelas
                 gerar_parcelas(recebimento, qtd_parcelas, form.cleaned_data)
             else:
-                # Salva normal
+                # Salva normalmente
                 recebimento.save()
     
             return redirect('receber:receber')
 
-        return render(request, 'core/financeiro/receber/form.html', {'form': form})
-    
-    if request.method == 'POST':
-        if form.is_valid():
-            # Não salva ainda (commit=False)
-            recebimento = form.save(commit=False)
-            
-            # Pega a qtd de parcelas do form (limpo)
-            qtd_parcelas = form.cleaned_data.get('parcelas', 1)
-            
-            if qtd_parcelas > 1:
-                # Chama o gerador
-                gerar_parcelas(recebimento, qtd_parcelas, form.cleaned_data)
-            else:
-                # Salva normal
-                recebimento.save()
-    
-                
-            return redirect('receber:receber')
+    # Esta linha agora é alcançada se for GET ou se o form for inválido no POST
+    return render(request, 'core/financeiro/receber/form.html', {'form': form})
 
 @login_required
 def receber_edit(request, pk):
@@ -357,3 +341,58 @@ def movimento_banco_edit(request, pk):
     })
 
 
+@login_required
+def receber_confirmar_recebimento(request, pk):
+    receber = get_object_or_404(Receber, pk=pk)
+    
+    # Se já estiver pago, avisa e volta
+    if receber.status == 'Recebido':
+        messages.warning(request, f"Esta parcela já consta como recebida.")
+        if receber.contrato_rt:
+            return redirect('comissionamento:contrato_detail', pk=receber.contrato_rt.pk)
+        return redirect('receber:receber')
+
+    if request.method == 'POST':
+        form = ConfirmarRecebimentoForm(request.POST)
+        if form.is_valid():
+            data = form.cleaned_data
+            
+            # Atualiza o objeto Receber
+            receber.status = 'Recebido'
+            receber.data_recebimento = data['data_recebimento']
+            receber.valor_recebido = data['valor_recebido']
+            receber.forma_recebimento = data['forma_recebimento']
+            receber.banco_destino = data['banco_destino'] # Será None se for CAIXA
+            
+            # Adiciona observação se houver
+            if data['observacoes']:
+                obs_atual = receber.observacoes or ""
+                receber.observacoes = f"{obs_atual} | Baixa: {data['observacoes']}".strip(' | ')
+
+            # O signal (se existir) ou a lógica de save deve criar o movimento financeiro
+            # Se você não tiver signals automáticos, precisaria criar o MovimentoBanco/CaixaDiario aqui manualmente.
+            # Assumindo que seu sistema já tem signals para 'Receber' igual tem para 'Pagar':
+            receber.save()
+            
+            messages.success(request, f"Recebimento de {receber.descricao} confirmado!")
+            
+            # Redirecionamento Inteligente
+            if receber.contrato_rt:
+                return redirect('comissionamento:contrato_detail', pk=receber.contrato_rt.pk)
+            return redirect('receber:receber')
+    else:
+        # Preenche com valores padrão
+        initial_data = {
+            'data_recebimento': date.today(),
+            'valor_recebido': receber.valor, # Sugere o valor total
+            'destino_recebimento': 'BANCO' if receber.banco_destino else 'CAIXA',
+            'banco_destino': receber.banco_destino,
+            'forma_recebimento': receber.forma_recebimento
+        }
+        form = ConfirmarRecebimentoForm(initial=initial_data)
+
+    return render(request, 'core/financeiro/receber/form_modal_recebimento.html', {
+        'form': form,
+        'object': receber,
+        'title': f'Confirmar Recebimento'
+    })

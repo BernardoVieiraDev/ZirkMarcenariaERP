@@ -21,12 +21,19 @@ from .models import Arquiteta, ContratoRT
 
 # === VIEWS DE CONTRATO E FINANCEIRO ===
 
+# zirk_rh_financeiro/apps/comissionamento/views.py
+
 @login_required
 def rt_contratos_list(request):
-    contratos = ContratoRT.objects.filter(is_deleted=False).select_related('arquiteta', 'cliente').order_by('-data_contrato')
-    
+    contratos = ContratoRT.objects.filter(is_deleted=False)\
+        .select_related('arquiteta', 'cliente')\
+        .prefetch_related('comissoes_pagar__banco_origem')\
+        .order_by('-data_contrato')    
     # DADOS PARA O MODAL
     bancos = Banco.objects.all()
+    # --- CORREÇÃO AQUI: Buscando as arquitetas para o dropdown ---
+    arquitetas = Arquiteta.objects.all().order_by('nome') 
+    # -----------------------------------------------------------
     categorias = Receber._meta.get_field('categoria').choices
     
     total_rt = contratos.aggregate(
@@ -42,7 +49,8 @@ def rt_contratos_list(request):
     
     context = {
         'contratos': contratos,
-        'bancos': bancos,        
+        'bancos': bancos,
+        'arquitetas': arquitetas,  # <--- ADICIONE ESTA LINHA
         'categorias': categorias,
         'total_pago': total_pago,  
         'total_rt': total_rt, 
@@ -61,12 +69,25 @@ def rt_contrato_create(request):
             
             # 2. Verifica se o usuário quer gerar o financeiro
             valor_rt = contrato.valor_rt or Decimal('0.00')
-            
-            if form.cleaned_data.get('gerar_financeiro') and valor_rt > 0:
+            gerar_fin = form.cleaned_data.get('gerar_financeiro')
+
+            if gerar_fin and valor_rt > 0:
                 try:
                     banco = form.cleaned_data.get('banco_pagamento')
-                    qtd_parcelas = form.cleaned_data.get('qtd_parcelas') or 1
                     
+                    # CORREÇÃO/DEBUG: Tenta pegar do cleaned_data, se falhar tenta direto do POST
+                    qtd_input = form.cleaned_data.get('qtd_parcelas')
+                    if not qtd_input:
+                        try:
+                            qtd_input = int(request.POST.get('qtd_parcelas', 1))
+                        except ValueError:
+                            qtd_input = 1
+                    
+                    qtd_parcelas = qtd_input if qtd_input and qtd_input > 0 else 1
+                    
+                    # Log para verificar no terminal do servidor
+                    print(f"DEBUG: Gerando financeiro. Parcelas: {qtd_parcelas} | Valor RT: {valor_rt}")
+
                     data_base = form.cleaned_data.get('primeiro_vencimento') 
                     if not data_base:
                         data_base = contrato.data_contrato or timezone.now().date()
@@ -76,7 +97,7 @@ def rt_contrato_create(request):
                     valor_total = valor_rt
                     valor_parcela = (valor_total / qtd_parcelas).quantize(Decimal('0.01'))
                     
-                    # --- MUDANÇA 2: Criação do ParcelamentoPagar (Pai) se houver parcelas ---
+                    # Criação do ParcelamentoPagar (Pai)
                     grupo_parcelamento = None
                     if qtd_parcelas > 1:
                         grupo_parcelamento = ParcelamentoPagar.objects.create(
@@ -84,9 +105,9 @@ def rt_contrato_create(request):
                             valor_total_original=valor_total,
                             qtd_parcelas=qtd_parcelas
                         )
-                    # ------------------------------------------------------------------------
 
                     for i in range(qtd_parcelas):
+                        # Ajuste de centavos na última parcela
                         if i == qtd_parcelas - 1:
                             valor_atual = valor_total - (valor_parcela * (qtd_parcelas - 1))
                         else:
@@ -99,21 +120,12 @@ def rt_contrato_create(request):
                             arquiteto=contrato.arquiteta,
                             contrato_rt=contrato,
                             valor_comissao=valor_atual,
-                            
-                            # Data de Vencimento (Previsão)
                             data_vencimento=data_venc, 
-                            
-                            # Data Pagamento Real (vazio pois nasce pendente)
                             data_pagamento=None,
-
                             banco_origem=banco,
                             forma_pagamento=forma_pagto,
                             status=StatusPagamento.PENDENTE,
-                            
-                            # --- MUDANÇA 3: Passa o objeto pai (ou None) ao invés de UUID ---
                             parcelamento=grupo_parcelamento,
-                            # ----------------------------------------------------------------
-                            
                             observacoes=desc_parcela
                         )
                         nova_comissao.save() 
@@ -132,7 +144,6 @@ def rt_contrato_create(request):
         form.fields['primeiro_vencimento'].initial = timezone.now().date()
 
     return render(request, 'core/comissionamento/contrato_form.html', {'form': form, 'title': 'Novo Contrato'})
-
 
 @login_required
 def rt_contrato_edit(request, pk):
