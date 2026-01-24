@@ -101,7 +101,7 @@ def rt_contrato_create(request):
                     grupo_parcelamento = None
                     if qtd_parcelas > 1:
                         grupo_parcelamento = ParcelamentoPagar.objects.create(
-                            descricao=f"Comissão {contrato.cliente} (Ref: Contrato RT)",
+                            descricao=f"",
                             valor_total_original=valor_total,
                             qtd_parcelas=qtd_parcelas
                         )
@@ -338,16 +338,36 @@ def arquiteta_delete(request, pk):
     return render(request, 'core/comissionamento/arquiteta_delete.html', context)
 
 
+
+# zirk_rh_financeiro/apps/comissionamento/views.py
+
+# ... imports existentes ...
+from django.db.models import Sum # Certifique-se que Sum está importado
+
 @login_required
 def rt_contrato_detail(request, pk):
     contrato = get_object_or_404(ContratoRT, pk=pk)
     
-    # Busca parcelas vinculadas a este contrato no Financeiro
+    # --- 1. Financeiro: Contas a Receber (Cliente) ---
     parcelas = contrato.parcelas_receber.all().order_by('data_vencimento')
 
     total_gerado = contrato.total_previsto_financeiro
     total_recebido = contrato.total_recebido
     saldo_restante = total_gerado - total_recebido
+
+    # --- 2. Financeiro: Comissões a Pagar (Arquiteto) ---
+    # Busca as comissões vinculadas (related_name='comissoes_pagar' no model ComissaoArquiteto)
+    comissoes = contrato.comissoes_pagar.filter(is_deleted=False).order_by('data_vencimento')
+    
+    # Cálculos de Totais das Comissões
+    total_comissao_previsto = comissoes.aggregate(total=Sum('valor_comissao'))['total'] or Decimal('0.00')
+    
+    # Soma o que já foi pago (status Pago, Recebido, etc)
+    total_comissao_pago = comissoes.filter(
+        status__in=['Pago', 'PG', 'Recebido', 'COM']
+    ).aggregate(total=Sum('valor_pago'))['total'] or Decimal('0.00')
+    
+    saldo_comissao = total_comissao_previsto - total_comissao_pago
 
     context = {
         'contrato': contrato,
@@ -355,6 +375,13 @@ def rt_contrato_detail(request, pk):
         'total_gerado': total_gerado,
         'total_recebido': total_recebido,
         'saldo_restante': saldo_restante,
+        
+        # Novos dados para o template
+        'comissoes': comissoes,
+        'total_comissao_previsto': total_comissao_previsto,
+        'total_comissao_pago': total_comissao_pago,
+        'saldo_comissao': saldo_comissao,
+        
         'title': f'Detalhes: {contrato.cliente}'
     }
     return render(request, 'core/comissionamento/contrato_detail.html', context)

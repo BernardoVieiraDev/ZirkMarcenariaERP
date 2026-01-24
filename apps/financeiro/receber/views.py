@@ -5,7 +5,7 @@ from itertools import chain
 
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
-from django.db.models import Sum
+from django.db.models import Case, DecimalField, F, Q, Sum, Value, When
 from django.db.models.functions import Coalesce
 from django.shortcuts import get_object_or_404, redirect, render
 
@@ -18,20 +18,151 @@ from .models import Banco, CaixaDiario, MovimentoBanco, Receber
 
 @login_required
 def receber_list(request):
-    # CORREÇÃO N+1: Trazendo cliente, banco e contrato em uma única query
-    receber = Receber.objects.select_related(
-        'cliente', 
-        'banco_destino', 
-        'contrato_rt'
-    ).all().order_by('data_vencimento')
+    # 1. Parâmetros de Filtro
+    mes = request.GET.get('mes')
+    ano = request.GET.get('ano')
+    data_inicio_get = request.GET.get('data_inicio')
+    data_fim_get = request.GET.get('data_fim')
     
-    total = receber.aggregate(s=Coalesce(Sum('valor'), Decimal(0)))['s']
-    form = ReceberForm() 
+    search_query = request.GET.get('q', '').strip()
+    status_filter = request.GET.get('status', '')
+    sort_order = request.GET.get('order', 'asc') # Default asc para ver vencimentos próximos
+
+    start_date = None
+    end_date = None
+    usar_filtro_personalizado = False
+
+    # 2. Lógica de Data (Prioridade: Intervalo > Mês/Ano)
+    if data_inicio_get:
+        try:
+            start_date = datetime.strptime(data_inicio_get, '%Y-%m-%d').date()
+            usar_filtro_personalizado = True
+        except ValueError:
+            pass
+            
+    if data_fim_get:
+        try:
+            end_date = datetime.strptime(data_fim_get, '%Y-%m-%d').date()
+            usar_filtro_personalizado = True
+        except ValueError:
+            pass
+
+    if usar_filtro_personalizado:
+        mes = None
+        ano = None
+    elif mes and ano:
+        try:
+            mes = int(mes)
+            ano = int(ano)
+            start_date = date(ano, mes, 1)
+            ultimo_dia = calendar.monthrange(ano, mes)[1]
+            end_date = date(ano, mes, ultimo_dia)
+        except ValueError:
+            pass
+
+    # 3. Querysets Iniciais
+    # Filtrar Receber
+    receber_qs = Receber.objects.select_related('cliente', 'banco_destino', 'contrato_rt').filter(is_deleted=False)
     
+    # Filtrar Caixa Diário (Apenas Entradas e que NÃO sejam origem de um Receber para não duplicar)
+    caixa_qs = CaixaDiario.objects.filter(is_deleted=False, tipo='E', recebimento_origem__isnull=True)
+
+    # 4. Aplicação de Filtros Textuais e Status (Antes de tudo para reduzir o conjunto)
+    if search_query:
+        receber_qs = receber_qs.filter(
+            Q(descricao__icontains=search_query) | 
+            Q(cliente__nome__icontains=search_query) |
+            Q(categoria__icontains=search_query)
+        )
+        caixa_qs = caixa_qs.filter(historico__icontains=search_query)
+
+    if status_filter:
+        if status_filter == 'Recebido':
+            receber_qs = receber_qs.filter(status='Recebido')
+            # Caixa é sempre recebido, mantém
+        elif status_filter == 'Pendente':
+            receber_qs = receber_qs.exclude(status='Recebido')
+            caixa_qs = caixa_qs.none() # Caixa não tem pendente
+        elif status_filter == 'Atrasado':
+            # Considera atrasado se não recebido e vencimento < hoje
+            receber_qs = receber_qs.filter(status='Pendente', data_vencimento__lt=date.today())
+            caixa_qs = caixa_qs.none()
+
+    # 5. Aplicação dos Filtros de Data e Flag de Limite
+    aplicar_limite_seguranca = False
+
+    if start_date and end_date:
+        receber_qs = receber_qs.filter(data_vencimento__range=(start_date, end_date))
+        caixa_qs = caixa_qs.filter(data__range=(start_date, end_date))
+    elif start_date:
+        receber_qs = receber_qs.filter(data_vencimento__gte=start_date)
+        caixa_qs = caixa_qs.filter(data__gte=start_date)
+    elif end_date:
+        receber_qs = receber_qs.filter(data_vencimento__lte=end_date)
+        caixa_qs = caixa_qs.filter(data__lte=end_date)
+    else:
+        # Se não tem filtro de data, marcamos para aplicar o limite APÓS a ordenação
+        aplicar_limite_seguranca = True
+
+    # 6. Ordenação (OBRIGATÓRIO vir ANTES do slice/limite)
+    if sort_order == 'desc':
+        receber_qs = receber_qs.order_by('-data_vencimento')
+        caixa_qs = caixa_qs.order_by('-data')
+    else:
+        receber_qs = receber_qs.order_by('data_vencimento')
+        caixa_qs = caixa_qs.order_by('data')
+
+    # 7. Aplicação do Limite de Segurança (Slice)
+    if aplicar_limite_seguranca:
+        receber_qs = receber_qs[:2000]
+        caixa_qs = caixa_qs[:2000]
+
+    # 8. Cálculo de Totais (Iterando sobre a lista resultante para performance e precisão do que é exibido)
+    total_pendente = Decimal('0.00')
+    total_recebido = Decimal('0.00')
+    
+    # Converter para lista para iterar e passar ao template
+    list_receber = list(receber_qs)
+    list_caixa = list(caixa_qs)
+
+    # Iterar Receber
+    for r in list_receber:
+        if r.status == 'Recebido':
+            total_recebido += (r.valor_recebido or r.valor)
+        else:
+            total_pendente += r.valor
+            
+    # Iterar Caixa (Tudo é recebido)
+    for c in list_caixa:
+        total_recebido += c.valor
+
+    total_geral = total_pendente + total_recebido
+    total_registros = len(list_receber) + len(list_caixa)
+
+    form = ReceberForm()
+
     return render(request, 'core/financeiro/receber/list.html', {
-        'receber': receber,
+        'list_receber': list_receber,
+        'list_caixa': list_caixa,
+        'total_pendente': total_pendente,
+        'total_recebido': total_recebido,
+        'total_geral': total_geral,
+        'total_registros': total_registros,
         'form': form,
-        'total': total
+        'today': date.today(),
+        
+        # Filtros para o template
+        'filtros_ativos': {
+            'mes': mes, 
+            'ano': ano, 
+            'q': search_query, 
+            'status': status_filter, 
+            'order': sort_order,
+            'data_inicio': data_inicio_get,
+            'data_fim': data_fim_get
+        },
+        'mes_atual': mes if mes else '',
+        'ano_atual': ano if ano else '',
     })
 
 @login_required

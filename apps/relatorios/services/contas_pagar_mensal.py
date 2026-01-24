@@ -142,8 +142,8 @@ class RelatorioPagarMensalService:
         fmt = RelatorioPagarMensalService._define_formats(workbook)
 
         # Configurações de coluna
-        ws.set_column('A:A', 14); ws.set_column('B:B', 20); ws.set_column('C:C', 28) # type: ignore
-        ws.set_column('D:D', 40); ws.set_column('E:E', 20); ws.set_column('F:F', 16)  # type: ignore
+        ws.set_column('A:A', 14); ws.set_column('B:B', 20); ws.set_column('C:C', 20) # type: ignore
+        ws.set_column('D:D', 40); ws.set_column('E:E', 17); ws.set_column('F:F', 16)  # type: ignore
 
         # Cabeçalho Dinâmico
         ws.set_row(0, 45)
@@ -160,7 +160,7 @@ class RelatorioPagarMensalService:
 
         # Cabeçalhos
         ws.set_row(2, 30)
-        headers = ["Data Venc.", "Categoria", "Credor", "Descrição / Histórico", "Valor Previsto", "Data Pagto"]
+        headers = ["Data Venc.", "Categoria", "Credor", "Descrição", "Valor Previsto", "Data Pagto"]
         for col, h in enumerate(headers):
             ws.write(2, col, h, fmt['header'])
 

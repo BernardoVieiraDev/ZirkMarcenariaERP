@@ -20,7 +20,61 @@
         #id_tipo_pis_pasep input {
             margin-right: 5px;
         }
-    </style>
+
+    /* Container do modal */
+    .modal {
+        display: flex;
+        flex-direction: column;
+        max-height: 90vh; /* altura máxima do modal */
+    }
+
+    /* Header fixo */
+    .modal-header {
+        flex-shrink: 0;
+        border-bottom: 1px solid #e5e5e5;
+        padding: 16px;
+        background: #fff;
+        position: sticky;
+        top: 0;
+        z-index: 2;
+    }
+
+    /* BODY COM SCROLL */
+    .modal-body {
+        flex: 1;
+        overflow-y: auto;
+        padding: 16px;
+    }
+
+    /* Footer fixo */
+    .modal-footer {
+        flex-shrink: 0;
+        border-top: 1px solid #e5e5e5;
+        padding: 16px;
+        background: #fff;
+        position: sticky;
+        bottom: 0;
+        z-index: 2;
+    }
+
+    /* Remove as bolinhas da lista e deixa na horizontal */
+    #id_tipo_pis_pasep {
+        list-style-type: none !important;
+        padding-left: 0 !important;
+        margin: 0 !important;
+        display: flex;
+        gap: 20px;
+    }
+
+    #id_tipo_pis_pasep li {
+        display: flex;
+        align-items: center;
+    }
+
+    #id_tipo_pis_pasep input {
+        margin-right: 5px;
+    }
+</style>
 
     <div class="modal-header">
         <h3 class="modal-title">{{ title }}</h3>

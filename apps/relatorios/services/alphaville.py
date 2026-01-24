@@ -76,12 +76,12 @@ class GastoImovelExcelService:
             # Configurar largura das colunas
             ws.set_column('A:A', 25) # Local
             ws.set_column('B:B', 20) # Tipo
-            ws.set_column('C:C', 30) # Descrição
+            ws.set_column('C:C', 20) # Descrição
             ws.set_column('D:D', 15) # Vencimento
             ws.set_column('E:E', 15) # Pagamento
             ws.set_column('F:F', 15) # Valor
             ws.set_column('G:G', 12) # Juros
-            ws.set_column('H:H', 35) # Obs
+            ws.set_column('H:H', 20) # Obs
 
             row = 0
 

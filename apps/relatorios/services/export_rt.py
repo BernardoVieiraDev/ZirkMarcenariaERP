@@ -116,7 +116,7 @@ class ExportRTService:
     def _get_dados_financeiros(self, contrato):
         """Helper para recuperar dados financeiros do contrato"""
         # Valor Pago (Propriedade do Model)
-        val_pago = contrato.total_recebido
+        val_pago = contrato.total_pago_arquiteto
         
         # Data do último pagamento (Busca na relação de parcelas)
         last_parcela = contrato.parcelas_receber.filter(status='Recebido').order_by('-data_recebimento').first()
@@ -129,7 +129,7 @@ class ExportRTService:
         ws = self.workbook.add_worksheet("RT")
         ws.hide_gridlines(2)
 
-        ws.set_column('A:A', 30) # Cliente
+        ws.set_column('A:A', 25) # Cliente
         ws.set_column('B:B', 15) # Data Contrato
         ws.set_column('C:C', 18) # Valor Serviço
         ws.set_column('D:D', 18) # Valor RT

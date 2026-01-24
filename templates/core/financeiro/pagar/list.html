@@ -91,7 +91,7 @@
         background: white; border: 1px solid var(--slate-300); color: var(--slate-600); 
         padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 14px;
         transition: all 0.2s;
-        text-decoration: none; /* Correção para link comportar-se como botão */
+        text-decoration: none;
         display: inline-flex;
         align-items: center;
     }
@@ -149,24 +149,96 @@
         accent-color: var(--blue-500); width: 16px; height: 16px; cursor: pointer; 
     }
 
-    /* Toolbar de Filtros */
-    .toolbar-global { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; }
+    /* === TOOLBAR DE FILTROS APRIMORADA === */
+    .toolbar-global { 
+        display: flex; 
+        gap: 10px; 
+        flex-wrap: wrap; 
+        align-items: center; 
+        background-color: var(--slate-50); /* Fundo sutil para agrupar */
+        padding: 12px;
+        border-radius: 12px;
+        border: 1px solid var(--slate-200);
+    }
     
-    .rh-search { position: relative; flex: 1; min-width: 250px; }
+    /* Grupo de Datas (Estilo Componente Único) */
+    .filter-group-date {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        background-color: var(--white);
+        border: 1px solid var(--slate-300);
+        border-radius: 8px;
+        padding: 0 12px;
+        height: 42px; /* Altura fixa igual aos inputs */
+        transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    .filter-group-date:focus-within {
+        border-color: var(--blue-500);
+        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+    }
+
+    .filter-date-input {
+        border: none;
+        background: transparent;
+        font-family: var(--font-sans);
+        font-size: 13px;
+        color: var(--slate-600);
+        outline: none;
+        padding: 0;
+        width: 110px; /* Largura suficiente para data */
+        cursor: pointer;
+    }
+    .filter-date-input:focus { color: var(--blue-600); font-weight: 600; }
+    .filter-date-input::-webkit-calendar-picker-indicator { cursor: pointer; opacity: 0.5; }
+    
+    .filter-separator { color: var(--slate-400); font-size: 12px; font-weight: 500; }
+
+    /* Botões dentro do grupo de data (ícones pequenos) */
+    .btn-icon-sm {
+        display: flex; align-items: center; justify-content: center;
+        width: 24px; height: 24px;
+        border-radius: 4px;
+        border: none; background: transparent;
+        color: var(--slate-400); cursor: pointer; transition: all 0.2s;
+    }
+    .btn-icon-sm:hover { background-color: var(--slate-100); color: var(--blue-600); }
+    .btn-icon-sm.danger:hover { background-color: var(--red-50); color: var(--red-500); }
+
+    /* Barra de Busca */
+    .rh-search { 
+        position: relative; 
+        flex: 1 1 200px; /* Flexível: base 200px, cresce para ocupar espaço */
+        min-width: 200px;
+    }
     .rh-search input { 
-        width: 100%; padding: 10px 16px 10px 40px; border-radius: 10px; 
+        width: 100%; height: 42px; 
+        padding: 0 16px 0 40px; border-radius: 8px; 
         border: 1px solid var(--slate-300); font-size: 14px; color: var(--slate-900);
-        background-color: var(--slate-50); transition: all 0.2s;
+        background-color: var(--white); transition: all 0.2s;
     }
     .rh-search svg { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--slate-400); pointer-events: none; }
-    .rh-search input:focus { outline: none; border-color: var(--blue-500); background-color: #fff; box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1); }
+    .rh-search input:focus { outline: none; border-color: var(--blue-500); box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1); }
 
+    /* Selects */
     .filter-select {
-        padding: 10px 16px; border-radius: 10px; border: 1px solid var(--slate-300); 
-        font-size: 14px; color: var(--slate-600); background-color: var(--white); 
-        cursor: pointer; min-width: 180px; transition: border-color 0.2s;
+        height: 42px; 
+        padding: 0 16px; border-radius: 8px; border: 1px solid var(--slate-300); 
+        font-size: 13px; color: var(--slate-600); background-color: var(--white); 
+        cursor: pointer; min-width: 150px; flex: 0 1 auto; /* Não cresce muito */
+        transition: border-color 0.2s;
     }
-    .filter-select:focus { outline: none; border-color: var(--blue-500); }
+    .filter-select:focus { outline: none; border-color: var(--blue-500); box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1); }
+
+    /* Botão Limpar (Geral) */
+    .btn-reset {
+        height: 42px; padding: 0 16px; border-radius: 8px;
+        background-color: var(--white); border: 1px solid var(--slate-300);
+        color: var(--slate-600); font-weight: 600; font-size: 13px;
+        text-decoration: none; display: inline-flex; align-items: center; gap: 6px;
+        transition: all 0.2s;
+    }
+    .btn-reset:hover { border-color: var(--red-200); background-color: var(--red-50); color: var(--red-600); }
 
     /* === SEÇÕES DO DASHBOARD (Tabelas) === */
     .dashboard-section { margin-bottom: 40px; animation: fadeIn 0.3s ease-out; }
@@ -317,28 +389,48 @@
                 <input type="checkbox" checked onclick="toggleDashboard('dash-contas', this)"> Contas a Pagar
             </label>
             <label class="toggle-item">
-                <input type="checkbox" onclick="toggleDashboard('dash-operacional', this)"> Gastos Operacionais
+                <input type="checkbox" checked onclick="toggleDashboard('dash-operacional', this)"> Gastos Operacionais
             </label>
             <label class="toggle-item">
-                <input type="checkbox" onclick="toggleDashboard('dash-folha', this)"> Folha de Pagamento
+                <input type="checkbox" checked onclick="toggleDashboard('dash-folha', this)"> Folha de Pagamento
             </label>
             <label class="toggle-item">
-                <input type="checkbox" onclick="toggleDashboard('dash-comissao', this)"> Comissões
+                <input type="checkbox" checked onclick="toggleDashboard('dash-comissao', this)"> Comissões
             </label>
         </div>
-
+        
         <form method="GET" class="toolbar-global" id="filterForm">
             {% if mes_atual %}<input type="hidden" name="mes" value="{{ mes_atual }}">{% endif %}
             {% if ano_atual %}<input type="hidden" name="ano" value="{{ ano_atual }}">{% endif %}
 
+            <div class="filter-group-date">
+                <input type="date" name="data_inicio" value="{{ filtros_ativos.data_inicio|default:'' }}" 
+                       class="filter-date-input" title="Data Início">
+                
+                <span class="filter-separator">até</span>
+                
+                <input type="date" name="data_fim" value="{{ filtros_ativos.data_fim|default:'' }}" 
+                       class="filter-date-input" title="Data Fim">
+                
+                <div style="width: 1px; height: 20px; background: var(--slate-200); margin: 0 4px;"></div>
+
+                <button type="submit" class="btn-icon-sm" title="Aplicar Filtro de Data">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                </button>
+
+                <button type="button" class="btn-icon-sm danger" title="Limpar Datas" onclick="limparDatas()">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                </button>
+            </div>
+
             <div class="rh-search">
                 <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-                <input type="search" name="q" value="{{ filtros_ativos.q|default:'' }}" placeholder="Buscar por descrição ou fornecedor..." onchange="this.form.submit()">
+                <input type="search" name="q" value="{{ filtros_ativos.q|default:'' }}" placeholder="Buscar por descrição, fornecedor..." onchange="this.form.submit()">
             </div>
 
             <select name="order" class="filter-select" onchange="this.form.submit()">
-                <option value="desc" {% if filtros_ativos.order == 'desc' %}selected{% endif %}>Data (Mais Recentes)</option>
-                <option value="asc" {% if filtros_ativos.order == 'asc' %}selected{% endif %}>Próximas de Vencer (Antigas)</option>
+                <option value="desc" {% if filtros_ativos.order == 'desc' %}selected{% endif %}>▼ Data (Recentes)</option>
+                <option value="asc" {% if filtros_ativos.order == 'asc' %}selected{% endif %}>▲ Data (Antigas)</option>
             </select>
             
             <select name="status" class="filter-select" onchange="this.form.submit()">
@@ -355,8 +447,10 @@
                 {% endfor %}
             </select>
 
-            {% if filtros_ativos.q or filtros_ativos.status or filtros_ativos.tipo %}
-                <a href="?mes={{ mes_atual }}&ano={{ ano_atual }}" class="btn-ghost" style="padding: 10px 12px; height: 42px;">Limpar</a>
+            {% if filtros_ativos.q or filtros_ativos.status or filtros_ativos.tipo or filtros_ativos.data_inicio or filtros_ativos.data_fim %}
+                <a href="?mes={{ mes_atual }}&ano={{ ano_atual }}" class="btn-reset" title="Remover todos os filtros">
+                    Limpar Filtros
+                </a>
             {% endif %}
         </form>
     </div>
@@ -424,7 +518,7 @@
         </div>
     </div>
 
-    <div id="dash-operacional" class="dashboard-section hidden">
+    <div id="dash-operacional" class="dashboard-section">
         <div class="section-header">
             <h2 class="section-title">Gastos Operacionais <span class="badge-count">{{ list_operacional|length }}</span></h2>
         </div>
@@ -454,9 +548,15 @@
                             <td>
                                 <div class="text-val">R$ {{ conta.get_valor_consolidado|floatformat:"2g" }}</div>
                             </td>
-                            <td>
-                                <span class="badge st-pago">Pago</span>
-                            </td>
+                                <td>
+                                    {% if conta.status == 'PG' or conta.status == 'Pago' %}
+                                        <span class="badge st-pago">Pago</span>
+                                    {% elif conta.status == 'Atrasado' %}
+                                        <span class="badge st-atrasado">Atrasado</span>
+                                    {% else %}
+                                        <span class="badge st-pendente">Pendente</span>
+                                    {% endif %}
+                                </td>
                             <td>
                                 <span class="badge bg-cat">{{ conta.get_model_name }}</span>
                             </td>
@@ -481,7 +581,7 @@
         </div>
     </div>
 
-    <div id="dash-folha" class="dashboard-section hidden">
+    <div id="dash-folha" class="dashboard-section">
         <div class="section-header">
             <h2 class="section-title">Folha de Pagamento <span class="badge-count">{{ list_folha|length }}</span></h2>
         </div>
@@ -544,7 +644,7 @@
         </div>
     </div>
 
-    <div id="dash-comissao" class="dashboard-section hidden">
+    <div id="dash-comissao" class="dashboard-section">
         <div class="section-header">
             <h2 class="section-title">Comissões <span class="badge-count">{{ list_comissao|length }}</span></h2>
         </div>
@@ -773,6 +873,16 @@
                 setupModalForm('modalGenericContent');
             })
             .catch(err => { content.innerHTML = '<div class="empty-msg">Erro de conexão.</div>'; });
+    }
+
+    // --- LIMPAR DATAS ---
+    function limparDatas() {
+        const form = document.getElementById('filterForm');
+        // Zera os valores dos inputs
+        form.querySelector('input[name="data_inicio"]').value = '';
+        form.querySelector('input[name="data_fim"]').value = '';
+        // Submete o form para recarregar sem as datas
+        form.submit();
     }
 </script>
 {% endblock %}

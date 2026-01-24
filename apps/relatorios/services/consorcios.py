@@ -81,13 +81,13 @@ class GastoVeiculoConsorcioExcelService:
             # Configurar largura das colunas
             ws.set_column('A:A', 25) # Veículo#type: ignore
             ws.set_column('B:B', 15) # Tipo#type: ignore
-            ws.set_column('C:C', 30) # Descrição#type: ignore
-            ws.set_column('D:D', 15) # Vencimento#type: ignore
-            ws.set_column('E:E', 15) # Pagamento#type: ignore
-            ws.set_column('F:F', 15) # Valor#type: ignore
-            ws.set_column('G:G', 15) # Valor Pago#type: ignore
+            ws.set_column('C:C', 25) # Descrição#type: ignore
+            ws.set_column('D:D', 13) # Vencimento#type: ignore
+            ws.set_column('E:E', 13) # Pagamento#type: ignore
+            ws.set_column('F:F', 13) # Valor#type: ignore
+            ws.set_column('G:G', 13) # Valor Pago#type: ignore
             ws.set_column('H:H', 12) # Juros#type: ignore
-            ws.set_column('I:I', 35) # Obs#type: ignore
+            ws.set_column('I:I', 25) # Obs#type: ignore
 
             row = 0
 

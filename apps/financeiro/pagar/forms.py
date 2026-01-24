@@ -2,13 +2,12 @@
 
 from decimal import Decimal
 from django import forms
-
 # Importa todos os modelos necessários
 from .models import (Boleto, Cheque, ComissaoArquiteto, Emprestimo,
                      FaturaCartao, FolhaPagamento, GastoContabilidade,
                      GastoGasolina, GastoGeral, GastoImovel, GastoUtilidade,
                      GastoVeiculoConsorcio, PagamentoFuncionario, Pessoa,
-                     PrestacaoEmprestimo, StatusPagamento, FormaPagamento)
+                     PrestacaoEmprestimo, StatusPagamento, FormaPagamento, GastoAlmoco)
 
 # ----------------------------------------------------
 # 1. ESCOLHA INICIAL DO TIPO DE GASTO
@@ -24,6 +23,7 @@ GASTO_MODEL_CHOICES = [
     ('GastoVeiculoConsorcio', 'Consórcios e Carros (IPVA/Seguro)'),
     ('GastoImovel', 'IPTU e Condomínio (Alphaville)'),
     ('GastoGasolina', 'Gastos com Gasolina'),
+    ('GastoAlmoco', 'Almoço Funcionário'),
     ('FolhaPagamento', 'Folha de pagamento'),
     ('ComissaoArquiteto', 'Comissão Arquiteto'),
 ]
@@ -452,3 +452,32 @@ class ConfirmarPagamentoForm(forms.Form):
         from apps.financeiro.receber.models import Banco
         super().__init__(*args, **kwargs)
         self.fields['banco_origem'].queryset = Banco.objects.all()
+
+
+class GastoAlmocoForm(GastoGeralForm):
+    class Meta(GastoGeralForm.Meta):
+        model = GastoAlmoco
+        fields = [
+            'origem_pagamento',
+            'funcionario',
+            'descricao',
+            'data_gasto',
+            'valor_total',
+            'observacoes',  # <--- Campo Novo
+            'status',
+            'forma_pagamento',
+            'banco_origem',
+        ]
+        widgets = {
+            'funcionario': forms.Select(attrs={'class': 'form-select select2'}),
+            'data_gasto': forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}, format='%Y-%m-%d'),
+            'valor_total': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
+            'descricao': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}), 
+            # --- Configuração Visual do Campo Maior ---
+            'observacoes': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}), 
+            # ------------------------------------------
+            
+            'status': forms.Select(attrs={'class': 'form-select'}),
+            'forma_pagamento': forms.Select(attrs={'class': 'form-select'}),
+            'banco_origem': forms.Select(attrs={'class': 'form-select'}),
+        }

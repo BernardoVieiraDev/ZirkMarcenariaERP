@@ -24,11 +24,11 @@ from .forms import (BoletoForm, ChequeForm, ComissaoArquitetoForm, ConfirmarPaga
                     GastoContabilidadeForm, GastoGasolinaForm, GastoGeralForm,
                     GastoImovelForm, GastoUtilidadeForm,
                     GastoVeiculoConsorcioForm, PrestacaoEmprestimoForm,
-                    TipoGastoForm)
+                    TipoGastoForm, GastoAlmocoForm)
 from .models import (Boleto, Cheque, ComissaoArquiteto, FaturaCartao,
                      FolhaPagamento, GastoBase, GastoContabilidade,
                      GastoGasolina, GastoGeral, GastoImovel, GastoUtilidade,
-                     GastoVeiculoConsorcio, PrestacaoEmprestimo)
+                     GastoVeiculoConsorcio, PrestacaoEmprestimo, GastoAlmoco)
 
 # ----------------------------------------------------
 # MAPA DE MODELOS
@@ -46,9 +46,10 @@ MODEL_FORM_MAP = {
     'GastoGasolina': {'model': GastoGasolina, 'form': GastoGasolinaForm, 'title': 'Novo Gasto com Gasolina'},
     'Cheque': {'model': Cheque, 'form': ChequeForm, 'title': 'Novo Gasto com Cheque'},
     'FolhaPagamento': {'model': FolhaPagamento, 'form': FolhaPagamentoForm, 'title': 'Folha pagamento'},
-    'ComissaoArquiteto': {'model': ComissaoArquiteto, 'form': ComissaoArquitetoForm, 'title': 'Comissão Arquitetos'}
+    'ComissaoArquiteto': {'model': ComissaoArquiteto, 'form': ComissaoArquitetoForm, 'title': 'Comissão Arquitetos'},
+'GastoGasolina': {'model': GastoGasolina, 'form': GastoGasolinaForm, 'title': 'Novo Gasto com Gasolina'},
+    'GastoAlmoco': {'model': GastoAlmoco, 'form': GastoAlmocoForm, 'title': 'Novo Almoço'}, 
 }
-
 # ----------------------------------------------------
 # AUXILIARES
 # ----------------------------------------------------
@@ -97,9 +98,13 @@ def sort_key(obj):
 
 @login_required
 def pagar_list(request):
-    # Parâmetros de Filtro (Backend)
+    # 1. Parâmetros de Filtro (Backend)
     mes = request.GET.get('mes')
     ano = request.GET.get('ano')
+    
+    data_inicio_get = request.GET.get('data_inicio')
+    data_fim_get = request.GET.get('data_fim')
+    
     search_query = request.GET.get('q', '').strip() # Busca textual
     status_filter = request.GET.get('status', '')   # Filtro de Status
     tipo_filter = request.GET.get('tipo', '')       # Filtro de Categoria
@@ -107,9 +112,33 @@ def pagar_list(request):
 
     start_date = None
     end_date = None
+    usar_filtro_personalizado = False
 
-    # 1. Filtro de Data (Opcional - Se não informado, busca tudo)
-    if mes and ano:
+    # 2. Lógica de Data: Prioridade para o Intervalo Personalizado
+    # Se o usuário preencheu QUALQUER data (Início ou Fim), ativamos o modo personalizado
+    if data_inicio_get:
+        try:
+            start_date = datetime.strptime(data_inicio_get, '%Y-%m-%d').date()
+            usar_filtro_personalizado = True
+        except ValueError:
+            pass
+            
+    if data_fim_get:
+        try:
+            end_date = datetime.strptime(data_fim_get, '%Y-%m-%d').date()
+            usar_filtro_personalizado = True
+        except ValueError:
+            pass
+
+    # 3. Definição do Intervalo Final
+    if usar_filtro_personalizado:
+        # Se estamos usando filtro personalizado, zeramos mês/ano para não confundir a interface
+        mes = None
+        ano = None
+        # start_date e end_date já foram definidos acima (podendo ser None se for intervalo aberto)
+        
+    elif mes and ano:
+        # Se NÃO tem data personalizada, tentamos o filtro padrão de Mês/Ano
         try:
             mes = int(mes)
             ano = int(ano)
@@ -120,9 +149,11 @@ def pagar_list(request):
                 end_date = date(ano, mes + 1, 1) - timedelta(days=1)
         except ValueError:
             pass 
+            
+    # NOTA: Se chegar aqui com start_date e end_date como None, a busca será TOTAL (sem filtro de data).
 
-    # Listas de Agrupamento
-    cat_operacional = ['GastoGeral', 'GastoGasolina']
+    # 4. Inicialização de Listas e Totais
+    cat_operacional = ['GastoGeral', 'GastoGasolina', 'GastoAlmoco']
     cat_folha = ['FolhaPagamento']
     cat_comissao = ['ComissaoArquiteto']
     
@@ -138,7 +169,7 @@ def pagar_list(request):
     STATUS_PAGO_LIST = ['Pago', 'PG', 'Recebido', 'COM']
     select_opts = ['banco_origem', 'movimento_banco'] 
 
-    # Loop nos Modelos
+    # 5. Loop nos Modelos (Query Unificada)
     for key, data in MODEL_FORM_MAP.items():
         # --- FILTRO DE TIPO ---
         if tipo_filter and tipo_filter != key:
@@ -146,9 +177,9 @@ def pagar_list(request):
 
         ModelClass = data['model']
         
-        # Definição do campo de data
+        # Definição do campo de data por modelo
         campo_data = 'data_vencimento'
-        if key in ['GastoGeral', 'GastoGasolina']: campo_data = 'data_gasto'
+        if key in ['GastoGeral', 'GastoGasolina','GastoAlmoco']: campo_data = 'data_gasto'
         elif key == 'Cheque': campo_data = 'data_emissao'
         elif key == 'FolhaPagamento': campo_data = 'data_referencia'
         elif key == 'ComissaoArquiteto': campo_data = 'data_vencimento'
@@ -156,9 +187,17 @@ def pagar_list(request):
         # Filtros Base
         filtros = Q(is_deleted=False)
         
-        # Filtro de Data (apenas se usuário selecionou)
+        # --- APLICAÇÃO DO FILTRO DE DATA ---
         if start_date and end_date:
+            # Intervalo Fechado (De X até Y)
             filtros &= Q(**{f"{campo_data}__range": (start_date, end_date)})
+        elif start_date:
+            # Apenas Data Início (A partir de X...)
+            filtros &= Q(**{f"{campo_data}__gte": start_date})
+        elif end_date:
+            # Apenas Data Fim (...Até Y)
+            filtros &= Q(**{f"{campo_data}__lte": end_date})
+        # Se ambos forem None, não aplica filtro (busca tudo)
 
         # --- FILTRO DE STATUS ---
         if status_filter:
@@ -186,7 +225,7 @@ def pagar_list(request):
 
         qs = ModelClass.objects.filter(filtros)
 
-        # Otimização (select_related) - CRUCIAL PARA PERFORMANCE
+        # Otimização (select_related)
         related_fields = []
         if key == 'FolhaPagamento':
             related_fields.append('funcionario')
@@ -199,7 +238,7 @@ def pagar_list(request):
         if related_fields:
             qs = qs.select_related(*related_fields)
 
-        # --- LÓGICA DE VALOR (Anotações) ---
+        # --- ANOTAÇÕES DE VALOR ---
         val_expr = None
         if key == 'FolhaPagamento':
             val_expr = (F('salario_real') + F('ferias_terco') + F('empreitada') + F('decimo_terceiro') + F('horas_extras_valor'))
@@ -215,25 +254,23 @@ def pagar_list(request):
             )
         elif key in ['GastoGeral', 'GastoGasolina']:
             val_expr = F('valor_total')
+
+        elif key == 'GastoAlmoco': 
+            val_expr = F('valor_total')
+            
         else:
             val_expr = F('valor')
 
         qs = qs.annotate(val_cons=val_expr, data_sort=F(campo_data))
         
-        # --- TRAVA DE SEGURANÇA CONTRA CRASH ---
-        # Limitamos a busca a 2000 itens por modelo. 
-        # Como sua garantia é de 1500 totais, isso nunca vai cortar dados reais,
-        # mas protege o servidor se ocorrer um loop infinito ou erro de importação.
+        # Trava de Segurança (limite técnico para não travar o servidor se buscar TUDO)
         qs = qs[:2000]
 
-        # Executa a query e converte para lista
+        # Execução e Agregação Python
         resultados = list(qs)
         
-        # --- CÁLCULO DE TOTAIS EM PYTHON (Mais rápido que nova query) ---
-        # Iteramos a lista em memória para somar, evitando 12 idas ao banco (aggregate)
         for item in resultados:
             valor = item.val_cons or Decimal('0.00')
-            # Verifica status na instância carregada
             is_pago = item.status in STATUS_PAGO_LIST
             
             if is_pago:
@@ -243,16 +280,16 @@ def pagar_list(request):
 
         total_registros += len(resultados)
 
+        # Distribuição nas listas
         if key in cat_operacional: list_operacional.extend(resultados)
         elif key in cat_folha: list_folha.extend(resultados)
         elif key in cat_comissao: list_comissao.extend(resultados)
         else: list_contas.extend(resultados)
 
-    # 4. Ordenação Global em Memória
+    # 6. Ordenação Global em Memória
     reverse_sort = True if sort_order == 'desc' else False
     
     def apply_sort(lista):
-        # Ordenação segura em Python
         lista.sort(key=sort_key, reverse=reverse_sort)
         return lista
 
@@ -271,9 +308,16 @@ def pagar_list(request):
         'tipos_disponiveis': MODEL_FORM_MAP.keys(),
         'form_selecao': form_selecao,
         
+        # Contexto atualizado com os novos filtros
         'filtros_ativos': {
-            'mes': mes, 'ano': ano, 'q': search_query, 
-            'status': status_filter, 'tipo': tipo_filter, 'order': sort_order
+            'mes': mes, 
+            'ano': ano, 
+            'q': search_query, 
+            'status': status_filter, 
+            'tipo': tipo_filter, 
+            'order': sort_order,
+            'data_inicio': data_inicio_get,
+            'data_fim': data_fim_get
         },
         'mes_atual': mes if mes else '',
         'ano_atual': ano if ano else '',

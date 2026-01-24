@@ -68,6 +68,15 @@ class PagamentoFerias(SoftDeleteMixin):
     criado_em = models.DateTimeField(auto_now_add=True)
     atualizado_em = models.DateTimeField(auto_now=True)
 
+    conta_pagar = models.ForeignKey(
+        'pagar.FolhaPagamento', 
+        on_delete=models.SET_NULL, 
+        null=True, 
+        blank=True, 
+        related_name='pagamento_ferias_origem',
+        verbose_name="Conta a Pagar Vinculada"
+    )
+
     def save(self, *args, **kwargs):
         # Verifica se o valor está vazio ou é zero
         if not self.valor_a_pagar:

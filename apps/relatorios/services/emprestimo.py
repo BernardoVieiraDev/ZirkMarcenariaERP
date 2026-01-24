@@ -78,7 +78,7 @@ class PrestacaoEmprestimoExcelService:
 
             # Configurar largura das colunas
             ws.set_column('A:A', 30) # Descrição
-            ws.set_column('B:B', 10) # Nº Parcela
+            ws.set_column('B:B', 8) # Nº Parcela
             ws.set_column('C:C', 15) # Vencimento
             ws.set_column('D:D', 15) # Pagamento
             ws.set_column('E:E', 15) # Valor

@@ -13,7 +13,7 @@ from apps.financeiro.pagar.models import (Boleto, ComissaoArquiteto, FaturaCarta
                                           GastoContabilidade, GastoGeral,
                                           GastoImovel, GastoUtilidade,
                                           GastoVeiculoConsorcio,
-                                          PrestacaoEmprestimo)
+                                          PrestacaoEmprestimo, GastoAlmoco)
 from apps.financeiro.receber.models import Receber
 from apps.funcionarios.models import Funcionario
 
@@ -49,6 +49,8 @@ def dashboard(request):
         # Adiciona GastoGeral
         total_geral = GastoGeral.objects.exclude(status='Pago').aggregate(total=Sum('valor_total'))['total'] or Decimal('0.00')
         
+        total_almoco = GastoAlmoco.objects.exclude(status='Pago').aggregate(total=Sum('valor_total'))['total'] or Decimal('0.00')
+        
         total_pagar_pendente += total_geral
 
         total_comissoes = ComissaoArquiteto.objects.exclude(status='Pago').aggregate(
@@ -62,6 +64,9 @@ def dashboard(request):
         )['total'] or Decimal('0.00')
         
         total_pagar_pendente += total_folha
+
+        total_pagar_pendente += total_almoco
+
 
         # Total Receber
         receber_total = Receber.objects.exclude(status='Recebido').aggregate(total=Sum('valor'))['total'] or Decimal('0.00')

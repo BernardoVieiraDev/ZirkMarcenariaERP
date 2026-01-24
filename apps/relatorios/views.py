@@ -6,6 +6,7 @@ from decimal import Decimal
 from itertools import chain
 
 import xlsxwriter
+from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.db.models import Sum
 from django.db.models.functions import Coalesce
@@ -20,7 +21,7 @@ from apps.financeiro.pagar.models import (Boleto, Cheque, ComissaoArquiteto,
                                           FaturaCartao, FolhaPagamento,
                                           GastoContabilidade, GastoGasolina,
                                           GastoGeral, GastoImovel,
-                                          GastoUtilidade,
+                                          GastoUtilidade, GastoAlmoco,
                                           GastoVeiculoConsorcio,
                                           PrestacaoEmprestimo)
 from apps.financeiro.receber.models import (Banco, CaixaDiario, MovimentoBanco,
@@ -42,14 +43,32 @@ from .extensions import (BNDESExcelService, BoletoExcelService,
                          GastoVeiculoConsorcioExcelService,
                          HoleriteExcelService, PrestacaoEmprestimoExcelService,
                          ReceberExcelService, RelatorioPagarMensalService,
-                         RelatorioReceberMensalService,
+                         RelatorioReceberMensalService,GastoAlmocoExcelService,
                          gerar_relatorio_movimento_banco)
 from .services.fluxo_caixa_export import RelatorioFluxoCaixaExport
 from .services.relatorio_anual_consolidado import RelatorioAnualConsolidado
 
+
+# ... (imports existentes)
+
 @login_required
 def list_planilhas(request):
-    return render(request, 'core/planilhas/list.html')
+    # ADICIONE ESTE BLOCO DE CÓDIGO
+    bancos = Banco.objects.all()
+    meses = [
+        (1, 'Janeiro'), (2, 'Fevereiro'), (3, 'Março'), (4, 'Abril'),
+        (5, 'Maio'), (6, 'Junho'), (7, 'Julho'), (8, 'Agosto'),
+        (9, 'Setembro'), (10, 'Outubro'), (11, 'Novembro'), (12, 'Dezembro')
+    ]
+    
+    context = {
+        'bancos': bancos,
+        'meses': meses,
+    }
+    # FIM DA ADIÇÃO
+    
+    # Passe o context para o render
+    return render(request, 'core/planilhas/list.html', context)
 
 @login_required
 def exportar_todos_boletos(request):
@@ -275,6 +294,11 @@ def exportar_multiplas_planilhas(request):
             GastoContabilidadeExcelService.gerar_relatorio_contabilidade(GastoContabilidade.objects.all().order_by('-data_vencimento'), workbook=wb)
         if 'cartoes' in relatorios:
             FaturaCartaoExcelService.gerar_relatorio_cartoes(FaturaCartao.objects.filter(cartao__in=['PF_SICOOB', 'PF_BRADESCO']).order_by('-data_vencimento'), workbook=wb)
+        if 'almoco' in relatorios:
+            GastoAlmocoExcelService.gerar_relatorio_almoco(
+                GastoAlmoco.objects.all().order_by('-data_gasto'), 
+                workbook=wb
+            )
         if 'bndes' in relatorios:
             BNDESExcelService.gerar_relatorio_bndes(FaturaCartao.objects.filter(cartao='BNDES').order_by('-data_vencimento'), workbook=wb)
         if 'gastos_gerais' in relatorios:
@@ -359,6 +383,18 @@ def exportar_rt(request):
     return response
 
 @login_required
+def exportar_almoco(request):
+    gastos = GastoAlmoco.objects.all().order_by('-data_gasto')
+    data_hoje = datetime.now().strftime("%Y-%m-%d")
+    nome_arquivo = f"Relatorio_Almoco_{data_hoje}.xlsx"
+
+    try:
+        buffer = GastoAlmocoExcelService.gerar_relatorio_almoco(gastos)
+        return FileResponse(buffer, as_attachment=True, filename=nome_arquivo)
+    except Exception as e:
+        return HttpResponse(f"Erro interno: {str(e)}", status=500)
+
+@login_required
 def list_planilhas_periodo(request):
     bancos = Banco.objects.all()
     meses = [
@@ -407,7 +443,9 @@ def exportar_por_periodo(request):
             service = RelatorioAnualConsolidado(inicio=dt_inicio, fim=dt_fim)
             buffer = service.gerar()
             filename = f"Relatorio_Anual_Consolidado_{periodo_str}.xlsx"    
-
+        elif tipo == 'almoco':
+                    dados = GastoAlmoco.objects.filter(data_gasto__range=[dt_inicio, dt_fim]).order_by('data_gasto')
+                    buffer = GastoAlmocoExcelService.gerar_relatorio_almoco(dados)
 
         elif tipo == 'fluxo_caixa':
             # Calcula a diferença de dias entre Inicio e Fim
@@ -676,7 +714,12 @@ def exportar_consolidado_periodo(request):
         
         if 'bndes' in relatorios:
             BNDESExcelService.gerar_relatorio_bndes(FaturaCartao.objects.filter(cartao='BNDES', data_vencimento__range=[dt_inicio, dt_fim]).order_by('data_vencimento'), workbook=wb)
-        
+
+        if 'almoco' in relatorios:
+                    GastoAlmocoExcelService.gerar_relatorio_almoco(
+                        GastoAlmoco.objects.filter(data_gasto__range=[dt_inicio, dt_fim]).order_by('data_gasto'),
+                        workbook=wb
+                    )
         if 'gastos_gerais' in relatorios:
             GastoGeralExcelService.gerar_relatorio_geral(GastoGeral.objects.filter(data_gasto__range=[dt_inicio, dt_fim]).order_by('data_gasto'), workbook=wb)
         
@@ -927,6 +970,10 @@ def exportar_pacote(request, tipo_pacote):
             )
             GastoUtilidadeExcelService.gerar_relatorio_utilidades(
                 GastoUtilidade.objects.filter(data_vencimento__range=[dt_inicio, dt_fim]).order_by('data_vencimento'), 
+                workbook=wb
+            )
+            GastoAlmocoExcelService.gerar_relatorio_almoco(
+                GastoAlmoco.objects.filter(data_gasto__range=[dt_inicio, dt_fim]).order_by('data_gasto'), 
                 workbook=wb
             )
             ChequeExcelService.gerar_relatorio_cheques(
@@ -1206,3 +1253,30 @@ def exportar_fluxo_caixa(request):
         return HttpResponse(f"Erro ao gerar fluxo de caixa: {str(e)}", status=500)
     
 
+@login_required
+def folha_exportar_decimo(request):
+    from apps.relatorios.services.follha_pagamento import \
+        FuncionarioFolhaExcelService
+
+    # Pega o mês/ano da URL ou usa o atual
+    mes = int(request.GET.get('mes', date.today().month))
+    ano = int(request.GET.get('ano', date.today().year))
+    data_ref = date(ano, mes, 1)
+    
+    # Busca apenas pagamentos que tenham valor de 13º
+    pagamentos = FolhaPagamento.objects.filter(
+        data_referencia=data_ref,
+        decimo_terceiro__gt=0
+    ).select_related('funcionario', 'funcionario__dados_trabalhistas').order_by('funcionario__nome')
+    
+    if not pagamentos.exists():
+        messages.warning(request, "Nenhum valor de 13º encontrado para este mês.")
+        return redirect(f"{request.META.get('HTTP_REFERER')}?mes={mes}&ano={ano}")
+
+    # Chama o serviço para gerar o Excel
+    excel_file = FuncionarioFolhaExcelService.gerar_relatorio_decimo(pagamentos)
+    
+    # Prepara o download
+    response = HttpResponse(excel_file, content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+    response['Content-Disposition'] = f'attachment; filename=DecimoTerceiro_{mes}_{ano}.xlsx'
+    return response

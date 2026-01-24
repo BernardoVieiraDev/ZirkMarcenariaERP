@@ -1,7 +1,6 @@
 from datetime import date
-
 import xlsxwriter
-
+import io
 
 class HoleriteExcelService:
     def __init__(self, buffer):
@@ -17,7 +16,7 @@ class HoleriteExcelService:
 
         self.styles = {}
         
-        # Estilos Gerais
+        # --- Estilos Gerais ---
         self.styles['company_box'] = self.workbook.add_format({
             'font_name': font_main, 'font_size': 8, 'bold': True,
             'align': 'left', 'valign': 'top',
@@ -28,83 +27,161 @@ class HoleriteExcelService:
             'align': 'right', 'valign': 'vcenter', 'bg_color': bg_header,
             'top': border_thick, 'right': border_thick, 'left': border_thin, 'bottom': border_thin
         })
+        
+        # 1. GARANTIA DO SALÁRIO: Borda completa (fina)
+        self.styles['salario_box'] = self.workbook.add_format({
+            'font_name': font_main, 'font_size': 10, 'bold': True,
+            'align': 'center', 'valign': 'vcenter',
+            'border': border_thin  # Borda em todos os lados
+        })
+
         self.styles['ref_box'] = self.workbook.add_format({
             'font_name': font_main, 'font_size': 10, 'bold': True,
             'align': 'center', 'valign': 'vcenter',
-            'bottom': border_thin, 'top': border_thin, 'right': border_thick
+            'bottom': border_thin, 'top': border_thin, 'right': border_thick, 'left': border_thin
         })
 
-        # Labels e Valores
-        self.styles['label'] = self.workbook.add_format({'font_name': font_main, 'font_size': 7, 'color': '#555555', 'align': 'left', 'valign': 'top', 'left': border_thick, 'right': border_thin})
-        self.styles['label_end'] = self.workbook.add_format({'font_name': font_main, 'font_size': 7, 'color': '#555555', 'align': 'left', 'valign': 'top', 'right': border_thick})
-        self.styles['value'] = self.workbook.add_format({'font_name': font_main, 'font_size': 9, 'bold': True, 'align': 'left', 'valign': 'bottom', 'left': border_thick, 'right': border_thin, 'bottom': border_thin, 'indent': 1})
-        self.styles['value_end'] = self.workbook.add_format({'font_name': font_main, 'font_size': 9, 'bold': True, 'align': 'left', 'valign': 'bottom', 'right': border_thick, 'bottom': border_thin, 'indent': 1})
+        # --- Labels e Valores ---
+        
+        # 2. SOLUÇÃO DO PROBLEMA D3/D4:
+        # Adicionamos 'top': border_thin nos labels abaixo do cabeçalho.
+        # Isso força o desenho da linha divisória entre o Salário (linha de cima) e o Cargo (linha de baixo).
+        
+        self.styles['label'] = self.workbook.add_format({
+            'font_name': font_main, 'font_size': 7, 'color': '#555555', 
+            'align': 'left', 'valign': 'top', 
+            'left': border_thick, 'right': border_thin,
+            'top': border_thin  # <--- ADICIONADO: Garante a linha acima (fechando com o Salário)
+        })
+        
+        self.styles['label_end'] = self.workbook.add_format({
+            'font_name': font_main, 'font_size': 7, 'color': '#555555', 
+            'align': 'left', 'valign': 'top', 
+            'right': border_thick,
+            'top': border_thin  # <--- ADICIONADO: Garante a linha acima (fechando com o Salário na col D)
+        })
+        
+        self.styles['value'] = self.workbook.add_format({
+            'font_name': font_main, 'font_size': 9, 'bold': True, 
+            'align': 'left', 'valign': 'bottom', 'left': border_thick, 
+            'right': border_thin, 'bottom': border_thin, 'indent': 1
+        })
+        self.styles['value_end'] = self.workbook.add_format({
+            'font_name': font_main, 'font_size': 9, 'bold': True, 
+            'align': 'left', 'valign': 'bottom', 'right': border_thick, 
+            'bottom': border_thin, 'indent': 1
+        })
 
-        # Tabela
-        self.styles['th'] = self.workbook.add_format({'font_name': font_main, 'font_size': 8, 'bold': True, 'bg_color': bg_header, 'align': 'center', 'valign': 'vcenter', 'border': border_thin, 'top': border_thick})
-        self.styles['th_first'] = self.workbook.add_format({'font_name': font_main, 'font_size': 8, 'bold': True, 'bg_color': bg_header, 'align': 'center', 'valign': 'vcenter', 'border': border_thin, 'top': border_thick, 'left': border_thick})
-        self.styles['th_last'] = self.workbook.add_format({'font_name': font_main, 'font_size': 8, 'bold': True, 'bg_color': bg_header, 'align': 'center', 'valign': 'vcenter', 'border': border_thin, 'top': border_thick, 'right': border_thick})
+        # --- Tabela ---
+        self.styles['th'] = self.workbook.add_format({
+            'font_name': font_main, 'font_size': 8, 'bold': True, 'bg_color': bg_header, 
+            'align': 'center', 'valign': 'vcenter', 'border': border_thin, 'top': border_thick
+        })
+        self.styles['th_first'] = self.workbook.add_format({
+            'font_name': font_main, 'font_size': 8, 'bold': True, 'bg_color': bg_header, 
+            'align': 'center', 'valign': 'vcenter', 'border': border_thin, 'top': border_thick, 'left': border_thick
+        })
+        self.styles['th_last'] = self.workbook.add_format({
+            'font_name': font_main, 'font_size': 8, 'bold': True, 'bg_color': bg_header, 
+            'align': 'center', 'valign': 'vcenter', 'border': border_thin, 'top': border_thick, 'right': border_thick
+        })
 
-        self.styles['item_center'] = self.workbook.add_format({'font_name': font_main, 'font_size': 8, 'align': 'center', 'left': border_thick, 'right': border_thin})
-        self.styles['item_left'] = self.workbook.add_format({'font_name': font_main, 'font_size': 8, 'align': 'left', 'left': border_thin, 'right': border_thin})
-        self.styles['item_money'] = self.workbook.add_format({'font_name': font_main, 'font_size': 8, 'align': 'right', 'num_format': '#,##0.00', 'left': border_thin, 'right': border_thin})
-        self.styles['item_money_end'] = self.workbook.add_format({'font_name': font_main, 'font_size': 8, 'align': 'right', 'num_format': '#,##0.00', 'left': border_thin, 'right': border_thick})
+        self.styles['item_center'] = self.workbook.add_format({
+            'font_name': font_main, 'font_size': 8, 'align': 'center', 
+            'left': border_thick, 'right': border_thin
+        })
+        self.styles['item_left'] = self.workbook.add_format({
+            'font_name': font_main, 'font_size': 8, 'align': 'left', 
+            'left': border_thin, 'right': border_thin
+        })
+        self.styles['item_money'] = self.workbook.add_format({
+            'font_name': font_main, 'font_size': 8, 'align': 'right', 
+            'num_format': '#,##0.00', 'left': border_thin, 'right': border_thin
+        })
+        self.styles['item_money_end'] = self.workbook.add_format({
+            'font_name': font_main, 'font_size': 8, 'align': 'right', 
+            'num_format': '#,##0.00', 'left': border_thin, 'right': border_thick
+        })
 
-        # Totais
-        self.styles['total_lbl'] = self.workbook.add_format({'font_name': font_main, 'font_size': 9, 'bold': True, 'align': 'right', 'bg_color': bg_header, 'top': border_thin, 'bottom': border_thin})
-        self.styles['total_val'] = self.workbook.add_format({'font_name': font_main, 'font_size': 9, 'bold': True, 'align': 'right', 'num_format': '#,##0.00', 'top': border_thin, 'bottom': border_thin, 'right': border_thick})
-        self.styles['net_lbl'] = self.workbook.add_format({'font_name': font_main, 'font_size': 10, 'bold': True, 'align': 'right', 'bg_color': '#E8E8E8', 'top': border_thick, 'bottom': border_thick, 'left': border_thick})
-        self.styles['net_box'] = self.workbook.add_format({'font_name': font_main, 'font_size': 11, 'bold': True, 'align': 'right', 'num_format': 'R$ #,##0.00', 'bg_color': '#E8E8E8', 'top': border_thick, 'bottom': border_thick, 'right': border_thick})
+        # --- Totais ---
+        self.styles['total_void_left'] = self.workbook.add_format({
+            'bg_color': bg_header, 'top': border_thin, 'bottom': border_thin, 'left': border_thick
+        })
+        self.styles['total_void_middle'] = self.workbook.add_format({
+            'bg_color': bg_header, 'top': border_thin, 'bottom': border_thin
+        })
 
-        # --- AJUSTE 2: Aumentar fonte do rodapé e da assinatura ---
+        self.styles['total_lbl'] = self.workbook.add_format({
+            'font_name': font_main, 'font_size': 9, 'bold': True, 'align': 'right', 
+            'bg_color': bg_header, 'top': border_thin, 'bottom': border_thin
+        })
+        self.styles['total_val'] = self.workbook.add_format({
+            'font_name': font_main, 'font_size': 9, 'bold': True, 'align': 'right', 
+            'num_format': '#,##0.00', 'top': border_thin, 'bottom': border_thin, 'right': border_thick
+        })
+        self.styles['net_lbl'] = self.workbook.add_format({
+            'font_name': font_main, 'font_size': 10, 'bold': True, 'align': 'right', 
+            'bg_color': '#E8E8E8', 'top': border_thick, 'bottom': border_thick, 'left': border_thick
+        })
+        self.styles['net_box'] = self.workbook.add_format({
+            'font_name': font_main, 'font_size': 11, 'bold': True, 'align': 'right', 
+            'num_format': 'R$ #,##0.00', 'bg_color': '#E8E8E8', 
+            'top': border_thick, 'bottom': border_thick, 'right': border_thick
+        })
+
+        # --- Rodapé e Assinatura ---
         self.styles['footer_txt'] = self.workbook.add_format({
-            'font_name': font_main, 
-            'font_size': 9,  # Aumentado de 7 para 9
-            'valign': 'top', 
-            'text_wrap': True
+            'font_name': font_main, 'font_size': 9, 'valign': 'top', 'text_wrap': True
         })
         
-        # Assinatura (Expandida)
-        self.styles['sig_line'] = self.workbook.add_format({'bottom': 1, 'align': 'center', 'valign': 'bottom'}) # Valign bottom importante para a linha ficar embaixo na célula alta
+        self.styles['sig_line'] = self.workbook.add_format({
+            'bottom': 1, 'align': 'center', 'valign': 'bottom'
+        }) 
         self.styles['sig_text'] = self.workbook.add_format({
-            'font_name': font_main, 
-            'font_size': 10, # Aumentado de 7 para 10
-            'align': 'center', 
-            'valign': 'top'
+            'font_name': font_main, 'font_size': 10, 'align': 'center', 'valign': 'top'
         })
         
-        self.styles['cut_line'] = self.workbook.add_format({'bottom': 1, 'bottom_color': '#999999', 'align': 'center', 'valign': 'center', 'font_size': 8, 'color': '#999999', 'font_script': 1})
+        self.styles['cut_line'] = self.workbook.add_format({
+            'bottom': 1, 'bottom_color': '#999999', 'align': 'center', 
+            'valign': 'center', 'font_size': 8, 'color': '#999999', 'font_script': 1
+        })
 
     def adicionar_holerite(self, dados, nome_aba="Holerite"):
         safe_name = nome_aba[:30].replace(':', '').replace('/', '')
         ws = self.workbook.add_worksheet(safe_name)
         self._configurar_layout(ws)
-        self._desenhar_holerite_compacto(ws, dados, start_row=0)
+        last_row = self._desenhar_holerite_compacto(ws, dados, start_row=0)
+        ws.print_area(0, 0, last_row, 4)
 
     def adicionar_holerite_duplo(self, dados1, dados2, nome_aba="Holerites"):
         safe_name = nome_aba[:30].replace(':', '').replace('/', '')
         ws = self.workbook.add_worksheet(safe_name)
+        
         self._configurar_layout(ws)
 
         last_row = self._desenhar_holerite_compacto(ws, dados1, start_row=0)
 
         if dados2:
-            # --- ALTERAÇÃO AQUI: Subiu de +2 para +1 ---
             cut_row = last_row + 1  
             ws.merge_range(cut_row, 0, cut_row, 4, "- - - - - - - - - - - - CORTE AQUI - - - - - - - - - - - -", self.styles['cut_line'])
-            self._desenhar_holerite_compacto(ws, dados2, start_row=cut_row + 2)
+            last_row = self._desenhar_holerite_compacto(ws, dados2, start_row=cut_row + 2)
+            
+        ws.print_area(0, 0, last_row, 4)
 
     def _configurar_layout(self, ws):
+        """Configuração otimizada para A4 Paisagem."""
         ws.hide_gridlines(2)
-        ws.set_paper(9) # A4
-        ws.set_portrait()
-        ws.set_margins(left=0.4, right=0.4, top=0.4, bottom=0.4)
+        ws.set_paper(9)      # A4
+        ws.set_landscape()   # Paisagem
+        ws.set_margins(left=0.5, right=0.5, top=0.5, bottom=0.5)
+        ws.fit_to_pages(1, 1)
+        ws.center_horizontally()
         
         ws.set_column('A:A', 8)   # Cód
-        ws.set_column('B:B', 38)  # Descrição
-        ws.set_column('C:C', 22)  # Ref
-        ws.set_column('D:D', 14)  # Venc
-        ws.set_column('E:E', 14)  # Desc
+        ws.set_column('B:B', 51)  # Descrição
+        ws.set_column('C:C', 10)  # Ref
+        ws.set_column('D:D', 18)  # Venc
+        ws.set_column('E:E', 18)  # Desc
 
     def _desenhar_holerite_compacto(self, ws, dados, start_row=0):
         s = self.styles
@@ -122,8 +199,10 @@ class HoleriteExcelService:
         
         salario_val = dados.get('bases', {}).get('salario_base', 0.0)
         salario_str = f"{salario_val:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
-        ws.write(r+2, 2, f"SALÁRIO: {salario_str}", s['ref_box'])
-        ws.merge_range(r+2, 3, r+2, 4, f"REF: {dados['cabecalho']['referencia']}", s['ref_box'])
+        
+        # O campo Salário usa o novo estilo com borda grossa
+        ws.merge_range(r+2, 2, r+2, 3, f"SALÁRIO: {salario_str}", s['salario_box'])
+        ws.write(r+2, 4, f"REF: {dados['cabecalho']['referencia']}", s['ref_box'])
 
         # 2. Funcionário
         r += 3
@@ -138,7 +217,7 @@ class HoleriteExcelService:
         ws.write(r, 2, dados['funcionario'].get('admissao', ''), s['value'])
         ws.merge_range(r, 3, r, 4, dados['funcionario']['cargo'], s['value_end'])
 
-        # 3. Tabela
+        # 3. Tabela de Eventos
         r += 1
         ws.set_row(r, 18)
         ws.write(r, 0, 'CÓD.', s['th_first'])
@@ -169,6 +248,9 @@ class HoleriteExcelService:
 
         # 4. Totais
         r += 1
+        ws.write(r, 0, '', s['total_void_left']) 
+        ws.write(r, 1, '', s['total_void_middle'])
+        
         ws.write(r, 2, 'TOTAIS:', s['total_lbl'])
         ws.write(r, 3, dados['totais']['bruto'], s['total_val'])
         ws.write(r, 4, dados['totais']['descontos'], s['total_val'])
@@ -179,33 +261,52 @@ class HoleriteExcelService:
         ws.merge_range(r, 0, r, 2, 'LÍQUIDO A RECEBER ➔ ', s['net_lbl'])
         ws.merge_range(r, 3, r, 4, dados['totais']['liquido'], s['net_box'])
 
-        # --- AJUSTE 1: REMOÇÃO DA SEÇÃO 6 (Rodapé Bases) ---
-        # A seção foi removida inteiramente para aproximar a assinatura do corpo
-        
-        # 7. Assinatura e Data (Expandida)
+        # 6. Assinatura e Rodapé
         r += 1
-        
-        # Texto de declaração
         ws.merge_range(r, 0, r, 2, 
             "Declaro ter recebido a importância líquida discriminada neste recibo.", 
             s['footer_txt'])
         
-        # Data
         data_pag = dados.get('data_pagamento', date.today())
         ws.write_string(r, 3, f"Data: {data_pag.strftime('%d/%m/%Y')}", s['footer_txt'])
         
-        # Linha para assinatura (ESPAÇO AUMENTADO)
         r += 1
-        ws.set_row(r, 50) # Altura da célula aumentada (era padrão ~15)
-        # --- ALTERAÇÃO AQUI: De (r,3,r,4) para (r,2,r,4) ---
+        ws.set_row(r, 45) 
         ws.merge_range(r, 2, r, 4, "", s['sig_line'])
         
-        # Texto "Assinatura"
         r += 1
-        # --- ALTERAÇÃO AQUI: De (r,3,r,4) para (r,2,r,4) ---
         ws.merge_range(r, 2, r, 4, "Assinatura do Funcionário", s['sig_text'])
 
         return r + 2
 
     def close(self):
         self.workbook.close()
+
+# --- Exemplo de Uso ---
+if __name__ == "__main__":
+    # Dados Mock
+    dados_exemplo = {
+        'empregador': {'nome': 'Minha Empresa Ltda', 'cnpj': '12.345.678/0001-99'},
+        'cabecalho': {'titulo': 'Recibo de Pagamento', 'referencia': '01/2024'},
+        'funcionario': {'nome': 'JOÃO DA SILVA', 'codigo': '001', 'admissao': '01/01/2020', 'cargo': 'ANALISTA DE SISTEMAS'},
+        'bases': {'salario_base': 12500.00},
+        'eventos': [
+            {'codigo': '001', 'descricao': 'Salário Base', 'ref': '30d', 'vencimento': 12500.00},
+            {'codigo': '002', 'descricao': 'Horas Extras 50%', 'ref': '10h', 'vencimento': 850.50},
+            {'codigo': '101', 'descricao': 'INSS', 'ref': '14%', 'desconto': 876.95},
+            {'codigo': '102', 'descricao': 'IRRF', 'ref': '27.5%', 'desconto': 2100.40},
+        ],
+        'totais': {'bruto': 13350.50, 'descontos': 2977.35, 'liquido': 10373.15},
+        'data_pagamento': date(2024, 2, 5)
+    }
+
+    output = io.BytesIO()
+    service = HoleriteExcelService(output)
+    
+    service.adicionar_holerite_duplo(dados_exemplo, dados_exemplo)
+    service.close()
+
+    output.seek(0)
+    with open("holerite_com_borda.xlsx", "wb") as f:
+        f.write(output.read())
+    print("Arquivo 'holerite_com_borda.xlsx' gerado com sucesso!")

@@ -301,13 +301,100 @@
         <td colspan="6" class="empty-msg">Nenhuma parcela encontrada.</td>
     </tr>
     {% endfor %}
-</tbody>
+                </tbody>
             </table>
         </div>
     </div>
-</div>
 
-<div id="modalGeneric" class="modal-overlay">
+    <div style="height: 40px;"></div>
+
+    <div class="content-panel">
+        <div class="panel-header-simple" style="border-left: 4px solid #f59e0b;">
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"></line><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>
+            Comissões a Pagar (RT)
+        </div>
+
+        <div style="padding: 16px 24px; background: #fffbeb; border-bottom: 1px solid #fcd34d; display: flex; gap: 24px; font-size: 14px; align-items: center;">
+            <div style="font-weight: 600; color: #78350f;">RESUMO RT:</div>
+            <div>Total: <strong>R$ {{ total_comissao_previsto|floatformat:"2g" }}</strong></div>
+            <div>Pago: <strong style="color: #15803d;">R$ {{ total_comissao_pago|floatformat:"2g" }}</strong></div>
+            <div>A Pagar: <strong style="color: #b45309;">R$ {{ saldo_comissao|floatformat:"2g" }}</strong></div>
+        </div>
+
+        <div class="table-responsive">
+            <table class="rh-table">
+                <thead>
+                    <tr>
+                        <th width="12%">Vencimento</th>
+                        <th width="30%">Descrição / Arquiteta</th>
+                        <th width="15%">Valor Previsto</th>
+                        <th width="15%">Valor Pago</th>
+                        <th width="15%">Status</th>
+                        <th width="13%">Ações</th>
+                    </tr>
+                </thead>
+                <tbody>
+                {% for comissao in comissoes %}
+                <tr>
+                    <td>
+                        {{ comissao.data_vencimento|date:"d/m/Y" }}
+                        {% if comissao.status == 'Pendente' and comissao.data_vencimento < today %}
+                            <span style="color: #ef4444; font-size: 11px; font-weight: 700;">(ATRASADO)</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <span style="font-weight: 500;">{{ comissao.observacoes|default:"Comissão RT" }}</span>
+                        <div style="font-size: 12px; color: #64748b; margin-top: 2px;">
+                            <i class="fas fa-user-circle"></i> {{ comissao.arquiteto.nome }}
+                        </div>
+                    </td>
+                    <td>R$ {{ comissao.valor_comissao|floatformat:"2g" }}</td>
+                    <td>
+                        {% if comissao.valor_pago > 0 %}
+                            <span style="color: #15803d; font-weight: 600;">R$ {{ comissao.valor_pago|floatformat:"2g" }}</span>
+                        {% else %}
+                            <span style="color: #94a3b8;">-</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if comissao.status == 'Pago' or comissao.status == 'PG' %}
+                            <span style="background: #dcfce7; color: #166534; padding: 4px 8px; border-radius: 4px; font-size: 12px; font-weight: 600;">Pago</span>
+                        {% else %}
+                            <span style="background: #ffedd5; color: #9a3412; padding: 4px 8px; border-radius: 4px; font-size: 12px; font-weight: 600;">Pendente</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if comissao.status != 'Pago' and comissao.status != 'PG' %}
+                            <button onclick="openRemoteModal('{% url 'pagar:confirmar_pagamento' pk=comissao.pk %}?tipo=ComissaoArquiteto')" 
+                                    class="btn-ghost" 
+                                    style="padding: 5px 10px; font-size: 12px; color: #b45309; border-color: #fcd34d; background: #fffbeb;"
+                                    title="Realizar Pagamento">
+                                <i class="fas fa-hand-holding-usd"></i> Pagar
+                            </button>
+                        {% else %}
+                            <button disabled class="btn-ghost" style="opacity: 0.5; cursor: not-allowed; font-size: 12px; padding: 5px 10px;">
+                                <i class="fas fa-check-double"></i> Pago
+                            </button>
+                        {% endif %}
+                        
+                        <button onclick="openRemoteModal('{% url 'pagar:pagar_edit' pk=comissao.pk %}?tipo=ComissaoArquiteto&modal=true')" class="btn-icon" title="Editar Parcela">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+                        </button>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="6" class="empty-msg" style="padding: 30px; text-align: center; color: #94a3b8;">
+                        Nenhuma comissão a pagar gerada para este contrato.
+                    </td>
+                </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+</div> <div id="modalGeneric" class="modal-overlay">
     <div class="modal-window" id="modalGenericContent">
         <div class="modal-loader">Carregando...</div>
     </div>

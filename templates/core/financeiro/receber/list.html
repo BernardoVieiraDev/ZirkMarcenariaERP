@@ -1,323 +1,166 @@
 {% extends "core/base.html" %}
 {% load static %}
 
-{% block title %}Contas a Receber{% endblock %}
+{% block title %}Painel Financeiro - Receber{% endblock %}
 
 {% block content %}
 <style>
-    /* === DESIGN SYSTEM (Mantido Fielmente) === */
+    /* === DESIGN SYSTEM (Baseado no Pagar) === */
     :root {
         --font-sans: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
         
-        /* Paleta de Cores Tailwind */
-        --slate-50: #f8fafc;
-        --slate-100: #f1f5f9;
-        --slate-200: #e2e8f0;
-        --slate-300: #cbd5e1;
-        --slate-400: #94a3b8;
-        --slate-500: #64748b;
-        --slate-600: #475569;
-        --slate-900: #0f172a;
+        --slate-50: #f8fafc; --slate-100: #f1f5f9; --slate-200: #e2e8f0;
+        --slate-300: #cbd5e1; --slate-400: #94a3b8; --slate-500: #64748b;
+        --slate-600: #475569; --slate-900: #0f172a;
         
-        --blue-50: #eff6ff;
-        --blue-100: #dbeafe;
-        --blue-500: #3b82f6;
-        --blue-600: #2563eb;
-        --blue-700: #1d4ed8;
-
-        --green-50: #ecfdf5;
-        --green-500: #10b981;
-        --green-600: #059669;
-        --green-700: #047857;
-
-        --amber-50: #fffbeb;
-        --amber-500: #f59e0b;
-        --amber-600: #d97706;
-
-        --red-50: #fef2f2;
-        --red-500: #ef4444;
-        
+        --blue-50: #eff6ff; --blue-500: #3b82f6; --blue-600: #2563eb;
+        --green-50: #ecfdf5; --green-500: #10b981; --green-700: #047857;
+        --amber-50: #fffbeb; --amber-500: #f59e0b; --amber-600: #d97706;
+        --red-50: #fef2f2; --red-500: #ef4444;
         --white: #ffffff;
         
-        /* Cores de Fundo dos Cards de Topo */
         --bg-blue-original: #1e3a5f;
         --bg-green-original: #10b981;
+        --bg-orange-original: #f59e0b; 
     }
 
     .dash-container {
-        font-family: var(--font-sans);
-        color: var(--slate-900);
-        padding-bottom: 60px;
-        max-width: 1200px;
-        margin: 0 auto;
+        font-family: var(--font-sans); color: var(--slate-900);
+        padding-bottom: 60px; max-width: 1200px; margin: 0 auto;
     }
 
     /* === HEADER === */
-    .dash-header { 
-        margin-bottom: 32px; 
-        display: flex; 
-        justify-content: space-between; 
-        align-items: flex-end;
-        flex-wrap: wrap;
-        gap: 16px;
-    }
-    .dash-title { font-size: 24px; font-weight: 700; color: var(--slate-900); margin: 0; letter-spacing: -0.025em; }
+    .dash-header { margin-bottom: 32px; display: flex; justify-content: space-between; align-items: flex-end; flex-wrap: wrap; gap: 16px; }
+    .dash-title { font-size: 24px; font-weight: 700; color: var(--slate-900); margin: 0; }
     .dash-subtitle { font-size: 14px; color: var(--slate-500); margin-top: 4px; }
 
-    /* Botões */
     .btn-primary {
-        background-color: var(--blue-500);
-        color: white;
-        padding: 10px 20px;
-        border-radius: 10px;
-        font-weight: 600;
-        font-size: 14px;
-        border: none;
-        cursor: pointer;
-        display: inline-flex;
-        align-items: center;
-        gap: 8px;
-        transition: all 0.2s;
-        text-decoration: none;
-        box-shadow: 0 4px 6px -1px rgba(59, 130, 246, 0.2);
+        background-color: var(--blue-500); color: white; padding: 10px 20px;
+        border-radius: 10px; font-weight: 600; font-size: 14px; border: none; cursor: pointer;
+        display: inline-flex; align-items: center; gap: 8px; transition: all 0.2s;
+        text-decoration: none; box-shadow: 0 4px 6px -1px rgba(59, 130, 246, 0.2);
     }
-    .btn-primary:hover { 
-        background-color: var(--blue-600); 
-        transform: translateY(-1px);
-    }
+    .btn-primary:hover { background-color: var(--blue-600); transform: translateY(-1px); }
 
-    .btn-ghost {
-        background-color: var(--white);
-        color: var(--slate-600);
-        border: 1px solid var(--slate-200);
-        padding: 10px 20px;
-        border-radius: 10px;
-        font-weight: 600;
-        font-size: 14px;
-        cursor: pointer;
-        display: inline-flex;
-        align-items: center;
-        gap: 8px;
-        text-decoration: none;
-        transition: all 0.2s;
+    .btn-ghost { 
+        background: white; border: 1px solid var(--slate-300); color: var(--slate-600); 
+        padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 14px;
+        display: inline-flex; align-items: center; gap: 8px; text-decoration: none; transition: all 0.2s;
     }
-    .btn-ghost:hover {
-        background-color: var(--slate-50);
-        border-color: var(--slate-300);
-        color: var(--slate-900);
-    }
-    
-    .btn-export { color: var(--green-700); }
-    .btn-export:hover { background-color: var(--green-50); border-color: var(--green-500); }
+    .btn-ghost:hover { background-color: var(--slate-100); color: var(--slate-900); }
 
     /* === STATS CARDS === */
-    .top-stats-grid { 
-        display: grid; 
-        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); 
-        gap: 16px; 
-        margin-bottom: 32px; 
-    }
-
+    .top-stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; margin-bottom: 32px; }
     .top-card {
-        border-radius: 16px; 
-        padding: 24px;
-        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-        display: flex;
-        justify-content: space-between;
-        align-items: flex-start;
-        color: white;
-        transition: transform 0.2s;
+        border-radius: 16px; padding: 24px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        display: flex; justify-content: space-between; align-items: flex-start; color: white;
     }
-    .top-card:hover { transform: translateY(-2px); }
-    
     .bg-green-original { background-color: var(--bg-green-original); }
-
+    .bg-blue-original { background-color: var(--bg-blue-original); }
+    .bg-orange-original { background-color: var(--bg-orange-original); }
     .top-label { font-size: 14px; font-weight: 500; opacity: 0.95; margin-bottom: 8px; }
-    .top-value { font-size: 32px; font-weight: 700; letter-spacing: -1px; line-height: 1; }
+    .top-value { font-size: 30px; font-weight: 700; letter-spacing: -1px; line-height: 1; }
     .top-sub { font-size: 13px; margin-top: 6px; opacity: 0.85; }
     .top-icon { width: 48px; height: 48px; background: rgba(255,255,255,0.2); border-radius: 12px; display: flex; align-items: center; justify-content: center; }
 
-    /* === TABELA & SEARCH === */
-    .standard-card {
-        background-color: var(--white);
-        border: 1px solid var(--slate-200);
-        border-radius: 16px;
-        box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05);
-        overflow: hidden;
+    /* === TOOLBAR DE FILTROS === */
+    .controls-container {
+        background-color: var(--white); border: 1px solid var(--slate-200);
+        border-radius: 16px; padding: 20px; margin-bottom: 32px;
+        box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
     }
-
-/* Barra de Busca */
-    .search-bar-row { 
-        padding: 20px 24px; 
-        border-bottom: 1px solid var(--slate-100); 
-        background-color: var(--white); 
-        
-        /* === CORREÇÃO ABAIXO === */
-        display: flex;           /* Faz os itens ficarem lado a lado */
-        align-items: center;     /* Alinha eles verticalmente ao centro */
-        gap: 16px;               /* Cria um espaço de 16px entre a barra e o filtro */
-        flex-wrap: wrap;         /* Permite quebrar linha em telas muito pequenas (celular) */
+    .toolbar-global { 
+        display: flex; gap: 10px; flex-wrap: wrap; align-items: center; 
+        background-color: var(--slate-50); padding: 12px; border-radius: 12px; border: 1px solid var(--slate-200);
     }
-    .rh-search { position: relative; max-width: 400px; }
+    .filter-group-date {
+        display: flex; align-items: center; gap: 8px; background-color: var(--white);
+        border: 1px solid var(--slate-300); border-radius: 8px; padding: 0 12px; height: 42px;
+    }
+    .filter-date-input {
+        border: none; background: transparent; font-family: var(--font-sans); font-size: 13px;
+        color: var(--slate-600); outline: none; width: 110px; cursor: pointer;
+    }
+    .btn-icon-sm {
+        display: flex; align-items: center; justify-content: center; width: 24px; height: 24px;
+        border-radius: 4px; border: none; background: transparent; color: var(--slate-400); cursor: pointer;
+    }
+    .btn-icon-sm:hover { background-color: var(--slate-100); color: var(--blue-500); }
+    .btn-icon-sm.danger:hover { background-color: var(--red-50); color: var(--red-500); }
+    
+    .rh-search { position: relative; flex: 1 1 200px; min-width: 200px; }
     .rh-search input { 
-        width: 100%; 
-        padding: 10px 16px 10px 40px; 
-        border-radius: 10px; 
-        border: 1px solid var(--slate-200); 
-        font-size: 14px; 
-        color: var(--slate-900);
-        background-color: var(--slate-50);
-        transition: all 0.2s;
+        width: 100%; height: 42px; padding: 0 16px 0 40px; border-radius: 8px; 
+        border: 1px solid var(--slate-300); font-size: 14px; background-color: var(--white);
     }
-    .rh-search svg {
-        position: absolute; left: 12px; top: 50%; transform: translateY(-50%);
-        color: var(--slate-400); pointer-events: none;
+    .rh-search svg { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--slate-400); }
+    
+    .filter-select {
+        height: 42px; padding: 0 16px; border-radius: 8px; border: 1px solid var(--slate-300); 
+        font-size: 13px; color: var(--slate-600); background-color: var(--white); cursor: pointer; min-width: 150px;
     }
-    .rh-search input:focus { 
-        outline: none; 
-        border-color: var(--blue-500); 
-        background-color: #fff; 
-        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+    .btn-reset {
+        height: 42px; padding: 0 16px; border-radius: 8px; background-color: var(--white); border: 1px solid var(--slate-300);
+        color: var(--slate-600); font-weight: 600; font-size: 13px; text-decoration: none; display: inline-flex; align-items: center;
     }
+    .btn-reset:hover { border-color: var(--red-200); background-color: var(--red-50); color: var(--red-600); }
 
-    /* Tabela */
-    .table-responsive { width: 100%; overflow-x: auto; }
+    /* === TABELAS === */
+    .dashboard-section { margin-bottom: 40px; animation: fadeIn 0.3s ease-out; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+
+    .section-header { display: flex; align-items: center; margin-bottom: 12px; gap: 12px; }
+    .section-title { font-size: 16px; font-weight: 700; color: var(--slate-900); margin: 0; }
+    .badge-count { background: var(--slate-200); color: var(--slate-600); padding: 2px 8px; border-radius: 99px; font-size: 12px; font-weight: 600; }
+
+    .standard-card { background-color: var(--white); border: 1px solid var(--slate-200); border-radius: 16px; box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05); overflow: hidden; }
+    .table-responsive { width: 100%; overflow-x: auto; max-height: 60vh; overflow-y: auto; }
+    
     .rh-table { width: 100%; border-collapse: collapse; text-align: left; }
-    
-    .rh-table thead { 
-        background-color: var(--slate-50);
-        border-bottom: 1px solid var(--slate-200);
-    }
-    .rh-table th { 
-        padding: 14px 24px; 
-        font-size: 12px; 
-        font-weight: 600; 
-        text-transform: uppercase; 
-        color: var(--slate-500); 
-        letter-spacing: 0.05em;
-    }
-    
-    .rh-table td { 
-        padding: 16px 24px; 
-        font-size: 14px; 
-        vertical-align: middle; 
-        border-bottom: 1px solid var(--slate-100);
-        color: var(--slate-900);
-    }
-    .rh-table tr:last-child td { border-bottom: none; }
+    .rh-table thead { background-color: var(--slate-50); border-bottom: 1px solid var(--slate-200); position: sticky; top: 0; z-index: 10; }
+    .rh-table th { padding: 14px 24px; font-size: 12px; font-weight: 600; text-transform: uppercase; color: var(--slate-500); background-color: var(--slate-50); }
+    .rh-table td { padding: 16px 24px; font-size: 14px; vertical-align: middle; border-bottom: 1px solid var(--slate-100); color: var(--slate-900); }
     .rh-table tr:hover td { background-color: #fcfcfc; }
 
-    /* Elementos da Tabela */
-    .text-main { font-weight: 600; color: var(--slate-900); }
+    .text-main { font-weight: 500; color: var(--slate-900); }
     .text-sub { font-size: 12px; color: var(--slate-500); margin-top: 2px; }
     .text-val { font-weight: 600; font-variant-numeric: tabular-nums; }
     
-    /* Badges */
     .badge { display: inline-flex; align-items: center; padding: 2px 8px; border-radius: 6px; font-size: 11px; font-weight: 600; border: 1px solid transparent; }
-    
     .bg-cat { background-color: var(--slate-100); color: var(--slate-600); border-color: var(--slate-200); }
-    
     .st-pago { background-color: var(--green-50); color: var(--green-700); border-color: #bbf7d0; }
-    .st-pendente { background-color: var(--amber-50); color: var(--amber-700); border-color: #fde68a; }
-    .st-info { background-color: var(--blue-50); color: var(--blue-700); border-color: #bfdbfe; }
+    .st-pendente { background-color: var(--amber-50); color: var(--amber-600); border-color: #fde68a; }
+    .st-atrasado { background-color: var(--red-50); color: var(--red-500); border-color: #fca5a5; }
 
     /* MENU DE AÇÕES */
     .action-menu { position: relative; display: inline-block; }
-    .dots-btn {
-        background: transparent; border: none; cursor: pointer; padding: 8px; border-radius: 8px;
-        color: var(--slate-400); transition: all 0.2s; display: flex; align-items: center; justify-content: center;
-    }
+    .dots-btn { background: transparent; border: none; cursor: pointer; padding: 8px; border-radius: 8px; color: var(--slate-400); }
     .dots-btn:hover { background: var(--slate-100); color: var(--blue-500); }
-    
-    .dropdown-content {
-        display: none; position: absolute; right: 0; top: 100%; margin-top: 4px; z-index: 50;
-        background-color: white; min-width: 160px;
-        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
-        border-radius: 10px; border: 1px solid var(--slate-200); overflow: hidden;
-    }
+    .dropdown-content { display: none; position: absolute; right: 0; top: 100%; margin-top: 4px; z-index: 50; background-color: white; min-width: 140px; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1); border-radius: 10px; border: 1px solid var(--slate-200); }
     .dropdown-content.show { display: block; }
-    .dropdown-content button {
-        background: none; border: none; cursor: pointer; text-align: left;
-        color: var(--slate-600); padding: 10px 16px; text-decoration: none; display: flex; align-items: center; gap: 10px; font-size: 13px; width: 100%; transition: background 0.1s;
-    }
+    .dropdown-content button { background: none; border: none; cursor: pointer; text-align: left; color: var(--slate-600); padding: 10px 16px; width: 100%; display: flex; align-items: center; gap: 8px; }
     .dropdown-content button:hover { background-color: var(--slate-50); color: var(--blue-600); }
-    .dropdown-content .delete-item:hover { background-color: var(--red-50); color: var(--red-500); }
 
-    /* === MODAIS (Visual Clean + Ajustes para Grid/Radios) === */
-    .modal-overlay {
-        display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.4); 
-        z-index: 1000; overflow-y: auto; padding: 20px;
-        align-items: flex-start; justify-content: center; backdrop-filter: blur(2px);
-    }
+    /* MODAIS */
+    .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.4); z-index: 1000; overflow-y: auto; padding: 20px; align-items: flex-start; justify-content: center; backdrop-filter: blur(2px); }
     .modal-overlay.open { display: flex; }
-    
-    .modal-window {
-        background: white; width: 100%; max-width: 700px; /* Aumentei um pouco para o Grid */
-        margin: 40px auto; 
-        border-radius: 16px; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
-        display: flex; flex-direction: column; position: relative;
-        animation: modalFadeIn 0.2s ease-out;
-    }
+    .modal-window { background: white; width: 100%; max-width: 600px; margin: 40px auto; border-radius: 16px; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25); display: flex; flex-direction: column; animation: modalFadeIn 0.2s ease-out; }
     @keyframes modalFadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-    
-    .modal-header {
-        padding: 24px; border-bottom: 1px solid var(--slate-100); display: flex; justify-content: space-between; align-items: center;
-        background: var(--slate-50); border-radius: 16px 16px 0 0;
-    }
+    .modal-header { padding: 24px; border-bottom: 1px solid var(--slate-100); display: flex; justify-content: space-between; align-items: center; background: var(--slate-50); border-radius: 16px 16px 0 0; }
     .modal-title { font-size: 18px; font-weight: 700; color: var(--slate-900); margin: 0; }
-    .btn-close { background: transparent; border: none; cursor: pointer; font-size: 20px; color: var(--slate-400); transition: color 0.2s; }
-    .btn-close:hover { color: var(--slate-900); }
-    
+    .btn-close { background: transparent; border: none; cursor: pointer; font-size: 20px; color: var(--slate-400); }
     .modal-body { padding: 24px; }
+    .modal-footer { padding: 20px 24px; border-top: 1px solid var(--slate-100); background: var(--slate-50); border-radius: 0 0 16px 16px; display: flex; justify-content: flex-end; gap: 12px; }
     
-    .form-group { margin-bottom: 5px; } /* Ajuste fino */
+    .form-group { margin-bottom: 16px; }
     .form-group label { display: block; font-size: 13px; font-weight: 600; color: var(--slate-600); margin-bottom: 6px; }
-    .form-group input, .form-group select, .form-group textarea { 
-        width: 100%; padding: 10px 12px; border-radius: 8px; border: 1px solid var(--slate-300); 
-        font-size: 14px; color: var(--slate-900); transition: border-color 0.15s;
-        box-sizing: border-box;
-    }
-    .form-group input:focus, .form-group select:focus { 
-        border-color: var(--blue-500); outline: none; box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1); 
-    }
-    
-    .modal-footer { 
-        padding: 20px 24px; border-top: 1px solid var(--slate-100); background: var(--slate-50); 
-        border-radius: 0 0 16px 16px; display: flex; justify-content: flex-end; gap: 12px; 
-    }
+    .form-group input, .form-group select { width: 100%; padding: 10px 12px; border-radius: 8px; border: 1px solid var(--slate-300); font-size: 14px; box-sizing: border-box; }
+    .empty-msg { text-align: center; padding: 48px; color: var(--slate-400); font-style: italic; }
 
-    /* === ESTILOS PARA O RADIO BUTTON (BANCO/CAIXA) === */
-    .radio-group-container {
-        grid-column: span 2; /* Ocupa linha inteira no grid */
-        background: var(--slate-50);
-        padding: 15px;
-        border-radius: 10px;
-        border: 1px solid var(--slate-200);
-        margin-bottom: 10px;
-    }
-    .radio-options {
-        display: flex;
-        gap: 20px;
-        align-items: center;
-        margin-top: 8px;
-    }
-    .radio-options div {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        cursor: pointer;
-    }
-    .radio-options input[type="radio"] {
-        width: 18px !important; 
-        height: 18px;
-        margin: 0;
-        cursor: pointer;
-        accent-color: var(--blue-500);
-    }
-    .span-2 { grid-column: span 2; }
-
-    .empty-msg { text-align: center; padding: 48px; color: var(--slate-400); }
-
+    /* Radio Group p/ Banco/Caixa */
+    .radio-group-container { background: var(--slate-50); padding: 15px; border-radius: 10px; border: 1px solid var(--slate-200); margin-bottom: 10px; }
+    .radio-options { display: flex; gap: 20px; margin-top: 8px; }
+    .radio-options div { display: flex; align-items: center; gap: 8px; cursor: pointer; }
 </style>
 
 <div class="dash-container">
@@ -325,18 +168,13 @@
     <div class="dash-header">
         <div>
             <h1 class="dash-title">Contas a Receber</h1>
-            <p class="dash-subtitle">Gerenciamento de receitas e entradas previstas</p>
+            <p class="dash-subtitle">Visão geral unificada de receitas e entradas</p>
         </div>
         <div style="display: flex; gap: 12px;">
-            <a href="{% url 'relatorios:exportar_receber' %}" class="btn-ghost btn-export">
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                    <polyline points="7 10 12 15 17 10"></polyline>
-                    <line x1="12" y1="15" x2="12" y2="3"></line>
-                </svg>
+            <a href="{% url 'relatorios:exportar_receber' %}" class="btn-ghost" title="Exportar dados atuais">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
                 Exportar Excel
             </a>
-
             <button onclick="openModal('modalReceita')" class="btn-primary">
                 <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
                 Nova Receita
@@ -345,151 +183,216 @@
     </div>
 
     <div class="top-stats-grid">
-        <div class="top-card bg-green-original">
+        <div class="top-card bg-orange-original">
             <div>
-                <div class="top-label">Total Previsto / Recebido</div>
-                <div class="top-value">R$ {{ total|default:"0"|floatformat:"2g" }}</div>
-                <div class="top-sub">Soma de todos os lançamentos ativos</div>
+                <div class="top-label">A Receber (Pendente)</div>
+                <div class="top-value">R$ {{ total_pendente|floatformat:"2g" }}</div>
+                <div class="top-sub">Previsto no período</div>
             </div>
             <div class="top-icon">
-                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/></svg>
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+            </div>
+        </div>
+
+        <div class="top-card bg-green-original">
+            <div>
+                <div class="top-label">Total Recebido</div>
+                <div class="top-value">R$ {{ total_recebido|floatformat:"2g" }}</div>
+                <div class="top-sub">Baixado + Entradas Caixa</div>
+            </div>
+            <div class="top-icon">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+            </div>
+        </div>
+
+        <div class="top-card bg-blue-original">
+            <div>
+                <div class="top-label">Total Registros</div>
+                <div class="top-value">{{ total_registros }}</div>
+                <div class="top-sub">Quantidade total</div>
+            </div>
+            <div class="top-icon">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
             </div>
         </div>
     </div>
 
-    <div class="standard-card">
-        <div class="search-bar-row">
+    <div class="controls-container">
+        <form method="GET" class="toolbar-global" id="filterForm">
+            {% if mes_atual %}<input type="hidden" name="mes" value="{{ mes_atual }}">{% endif %}
+            {% if ano_atual %}<input type="hidden" name="ano" value="{{ ano_atual }}">{% endif %}
+
+            <div class="filter-group-date">
+                <input type="date" name="data_inicio" value="{{ filtros_ativos.data_inicio|default:'' }}" 
+                       class="filter-date-input" title="Data Início">
+                <span style="color:var(--slate-400); font-size:12px; font-weight:500;">até</span>
+                <input type="date" name="data_fim" value="{{ filtros_ativos.data_fim|default:'' }}" 
+                       class="filter-date-input" title="Data Fim">
+                
+                <div style="width: 1px; height: 20px; background: var(--slate-200); margin: 0 4px;"></div>
+
+                <button type="submit" class="btn-icon-sm" title="Aplicar Filtro de Data">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                </button>
+                <button type="button" class="btn-icon-sm danger" title="Limpar Datas" onclick="limparDatas()">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                </button>
+            </div>
+
             <div class="rh-search">
                 <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-                <input id="searchInput" type="search" placeholder="Filtrar por cliente, categoria..." onkeyup="filterTable()">
-                
+                <input type="search" name="q" value="{{ filtros_ativos.q|default:'' }}" placeholder="Buscar por cliente, descrição..." onchange="this.form.submit()">
             </div>
-            <select id="sortOrder" class="filter-select" onchange="filterTable()" 
-            style="padding: 10px 16px; border-radius: 10px; border: 1px solid var(--slate-200); color: var(--slate-600);">
-        <option value="asc">Próximas de Vencer (Antigas Primeiro)</option>
-        <option value="desc">Data (Mais Recentes Primeiro)</option>
-    </select>
+
+            <select name="order" class="filter-select" onchange="this.form.submit()">
+                <option value="asc" {% if filtros_ativos.order == 'asc' %}selected{% endif %}>▲ Vencimento (Próximas)</option>
+                <option value="desc" {% if filtros_ativos.order == 'desc' %}selected{% endif %}>▼ Vencimento (Recentes)</option>
+            </select>
+            
+            <select name="status" class="filter-select" onchange="this.form.submit()">
+                <option value="">Status: Todos</option>
+                <option value="Pendente" {% if filtros_ativos.status == 'Pendente' %}selected{% endif %}>Pendente</option>
+                <option value="Recebido" {% if filtros_ativos.status == 'Recebido' %}selected{% endif %}>Recebido</option>
+                <option value="Atrasado" {% if filtros_ativos.status == 'Atrasado' %}selected{% endif %}>Atrasado</option>
+            </select>
+
+            {% if filtros_ativos.q or filtros_ativos.status or filtros_ativos.data_inicio or filtros_ativos.data_fim %}
+                <a href="?mes={{ mes_atual }}&ano={{ ano_atual }}" class="btn-reset" title="Remover todos os filtros">
+                    Limpar Filtros
+                </a>
+            {% endif %}
+        </form>
+    </div>
+
+    <div id="dash-receber" class="dashboard-section">
+        <div class="section-header">
+            <h2 class="section-title">Contas a Receber <span class="badge-count">{{ list_receber|length }}</span></h2>
         </div>
-
-        <div class="table-responsive">
-            <table class="rh-table">
-                <thead>
-                    <tr>
-                        <th width="20%">Cliente</th>
-                        <th width="12%">Categoria</th>
-                        <th width="12%">Forma</th>
-                        <th width="12%">Vencimento</th>
-                        <th width="15%">Valor Previsto</th>
-                        <th width="15%">Valor Recebido</th>
-                        <th width="10%">Status</th>
-                        <th width="4%"></th>
-                    </tr>
-                </thead>
-                <tbody id="tableBody">
-                    {% for it in receber %}
-                    <tr class="receber-row" data-vencimento="{{ it.data_vencimento|date:'Y-m-d' }}">
-                        <td>
-{% if it.contrato_rt and it.contrato_rt.cliente %}
-    <a href="{% url 'clientes:detail' it.contrato_rt.cliente.pk %}" 
-       class="text-main" 
-       title="Ver detalhes do cliente"
-       style="text-decoration: none; color: inherit; cursor: pointer; display: flex; align-items: center; gap: 4px; transition: color 0.2s;"
-       onmouseover="this.style.color='var(--blue-600)'" 
-       onmouseout="this.style.color='var(--slate-900)'">
-        
-        {{ it.cliente }} 
-        
-    </a>
-{% else %}
-    <div class="text-main">{{ it.cliente }}</div>
-{% endif %}
-
-                            {% if it.observacoes %}
-                                <div class="text-sub">{{ it.observacoes|truncatechars:30 }}</div>
-                            {% endif %}
-                        </td>
-                        <td>
-                            {% if it.categoria %}
-                                <span class="badge bg-cat">{{ it.categoria }}</span>
-                            {% else %}
-                                <span style="color:var(--slate-300)">-</span>
-                            {% endif %}
-                        </td>
-                        <td class="text-sub">
-                            {{ it.get_forma_recebimento_display|default:"-" }}
-                        </td>
-                        <td class="text-main">
-                            {{ it.data_vencimento|date:"d/m/Y"|default:"-" }}
-                        </td>
-                        <td>
-                            <div class="text-val">R$ {{ it.valor|floatformat:"2g" }}</div>
-                        </td>
-                        <td>
-                            {% if it.valor_recebido %}
-                                <div class="text-val" style="color: var(--green-600);">
-                                     R$ {{ it.valor_recebido|floatformat:"2g" }}
+        <div class="standard-card">
+            <div class="table-responsive">
+                <table class="rh-table">
+                    <thead>
+                        <tr>
+                            <th width="30%">Cliente / Descrição</th>
+                            <th width="15%">Categoria</th>
+                            <th width="15%">Vencimento</th>
+                            <th width="15%">Valor Previsto</th>
+                            <th width="15%">Valor Recebido</th>
+                            <th width="10%">Status</th>
+                            <th width="5%"></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in list_receber %}
+                        <tr class="receber-row">
+                            <td>
+                                <div class="text-main">
+                                    {% if item.cliente %}
+                                        <a href="{% url 'clientes:detail' item.cliente.pk %}" style="text-decoration:none; color:inherit;">{{ item.cliente }}</a>
+                                    {% else %}
+                                        {{ item.descricao|default:"Receita Avulsa" }}
+                                    {% endif %}
                                 </div>
-                            {% else %}
-                                <span style="color:var(--slate-300)">-</span>
-                            {% endif %}
-                        </td>    
-
-                        <td>
-                            {% if it.status|lower == 'pago' or it.status|lower == 'recebido' %}
-                                <span class="badge st-pago">Recebido</span>
-                            {% elif it.status|lower == 'agendado' or it.status|lower == 'pendente' %}
-                                <span class="badge st-pendente">Agendado</span>
-                            {% else %}
-                                <span class="badge st-info">{{ it.status|default:'-' }}</span>
-                            {% endif %}
-                        </td>
-                        <td style="text-align: right;">
-                            <div class="action-menu">
-                                <button class="dots-btn" onclick="toggleMenu('menu-{{ it.pk }}')">
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="1"/><circle cx="12" cy="5" r="1"/><circle cx="12" cy="19" r="1"/></svg>
-                                </button>
-                                
-                                <div id="menu-{{ it.pk }}" class="dropdown-content">
-                                    <button onclick="openRemoteModal('{% url 'receber:receber_edit' it.pk %}')">
-                                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/></svg>
-                                        Editar
+                                <div class="text-sub">{{ item.observacoes|truncatechars:40 }}</div>
+                            </td>
+                            <td><span class="badge bg-cat">{{ item.categoria|default:"-" }}</span></td>
+                            <td class="text-main">{{ item.data_vencimento|date:"d/m/Y" }}</td>
+                            <td><div class="text-val">R$ {{ item.valor|floatformat:"2g" }}</div></td>
+                            <td>
+                                {% if item.valor_recebido %}
+                                    <div class="text-val" style="color: var(--green-700);">R$ {{ item.valor_recebido|floatformat:"2g" }}</div>
+                                {% else %}
+                                    <span style="color:var(--slate-300)">-</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if item.status == 'Recebido' %}
+                                    <span class="badge st-pago">Recebido</span>
+                                {% elif item.status == 'Pendente' and item.data_vencimento < today %}
+                                    <span class="badge st-atrasado">Atrasado</span>
+                                {% else %}
+                                    <span class="badge st-pendente">Pendente</span>
+                                {% endif %}
+                            </td>
+                            <td style="text-align: right;">
+                                <div class="action-menu">
+                                    <button class="dots-btn" onclick="toggleMenu('menu-r-{{ item.pk }}')">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="1"/><circle cx="12" cy="5" r="1"/><circle cx="12" cy="19" r="1"/></svg>
                                     </button>
-                                    <button onclick="openRemoteModal('{% url 'receber:receber_delete' it.pk %}')" class="delete-item">
-                                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>
-                                        Excluir
-                                    </button>
+                                    <div id="menu-r-{{ item.pk }}" class="dropdown-content">
+                                        <button onclick="openRemoteModal('{% url 'receber:receber_edit' item.pk %}')">Editar</button>
+                                        <button onclick="openRemoteModal('{% url 'receber:receber_delete' item.pk %}')" class="delete-item">Excluir</button>
+                                    </div>
                                 </div>
-                            </div>
-                        </td>
-                    </tr>
-                    {% empty %}
-                    <tr>
-                        <td colspan="8" class="empty-msg">
-                            Nenhuma conta a receber registrada.
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr class="no-data"><td colspan="7" class="empty-msg">Nenhum lançamento encontrado para os filtros.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
         </div>
     </div>
+
+    {% if list_caixa %}
+    <div id="dash-caixa" class="dashboard-section">
+        <div class="section-header">
+            <h2 class="section-title">Entradas de Caixa (Avulsas) <span class="badge-count">{{ list_caixa|length }}</span></h2>
+        </div>
+        <div class="standard-card">
+            <div class="table-responsive">
+                <table class="rh-table">
+                    <thead>
+                        <tr>
+                            <th width="40%">Histórico / Descrição</th>
+                            <th width="20%">Data</th>
+                            <th width="20%">Valor</th>
+                            <th width="15%">Tipo</th>
+                            <th width="5%"></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in list_caixa %}
+                        <tr>
+                            <td><div class="text-main">{{ item.historico }}</div></td>
+                            <td class="text-main">{{ item.data|date:"d/m/Y" }}</td>
+                            <td><div class="text-val" style="color: var(--green-700);">R$ {{ item.valor|floatformat:"2g" }}</div></td>
+                            <td><span class="badge st-pago">Caixa Diário</span></td>
+                            <td style="text-align: right;">
+                                <div class="action-menu">
+                                    <button class="dots-btn" onclick="toggleMenu('menu-c-{{ item.pk }}')">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="1"/><circle cx="12" cy="5" r="1"/><circle cx="12" cy="19" r="1"/></svg>
+                                    </button>
+                                    <div id="menu-c-{{ item.pk }}" class="dropdown-content">
+                                        <button onclick="openRemoteModal('{% url 'receber:caixa_diario_delete' item.pk %}')" class="delete-item">Excluir</button>
+                                    </div>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
 </div>
 
 <div id="modalReceita" class="modal-overlay">
     <div class="modal-window">
         <form method="POST" action="{% url 'receber:receber_add' %}">
             {% csrf_token %}
-            
             <div class="modal-header">
                 <h3 class="modal-title">Nova Receita</h3>
                 <button type="button" class="btn-close" onclick="closeModal('modalReceita')">✕</button>
             </div>
-            
             <div class="modal-body">
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
                     {% for field in form %}
                         {% if field.name == 'destino_recebimento' %}
-                             <div class="radio-group-container">
+                             <div class="radio-group-container" style="grid-column: span 2;">
                                 <label style="font-size:13px; font-weight:600; color:var(--slate-600);">{{ field.label }}</label>
                                 <div class="radio-options">
                                     {% for radio in field %}
@@ -499,20 +402,16 @@
                                         </div>
                                     {% endfor %}
                                 </div>
-                                {% if field.errors %}<div style="color:var(--red-500);font-size:11px;margin-top:2px">{{ field.errors.0 }}</div>{% endif %}
                             </div>
-
                         {% else %}
-                            <div class="form-group {% if field.name == 'observacoes' or field.name == 'descricao' %}span-2{% endif %}" id="div_{{ field.auto_id }}">
+                            <div class="form-group {% if field.name == 'observacoes' or field.name == 'descricao' %}span-2{% endif %}" style="{% if field.name == 'observacoes' or field.name == 'descricao' %}grid-column: span 2;{% endif %}">
                                 <label>{{ field.label }}</label>
                                 {{ field }}
-                                {% if field.errors %}<div style="color:var(--red-500);font-size:11px;margin-top:2px">{{ field.errors.0 }}</div>{% endif %}
                             </div>
                         {% endif %}
                     {% endfor %}
                 </div>
             </div>
-            
             <div class="modal-footer">
                 <button type="button" class="btn-ghost" onclick="closeModal('modalReceita')">Cancelar</button>
                 <button type="submit" class="btn-primary">Salvar Receita</button>
@@ -528,159 +427,75 @@
 </div>
 
 <script>
-
-
-
-    // --- Lógica para Esconder/Mostrar Banco (Novo) ---
+    // --- LÓGICA DE INTERFACE ---
+    
+    // Toggle para campo Banco no Modal
     function toggleBancoField() {
-        // Tenta pegar pelo nome (seja pagar ou receber)
         const radioOrigem = document.querySelector('input[name="destino_recebimento"]:checked');
-        
-        // Pega o campo de banco pelo ID gerado pelo Django
         const campoBanco = document.getElementById('id_banco_destino');
-        
         if (campoBanco) {
-            // Acha o container pai (a div .form-group) para esconder o label junto
-            const containerBanco = campoBanco.closest('.form-group');
-
+            const container = campoBanco.closest('.form-group');
             if (radioOrigem && radioOrigem.value === 'CAIXA') {
-                if (containerBanco) containerBanco.style.display = 'none';
+                if(container) container.style.display = 'none';
                 campoBanco.value = ''; 
             } else {
-                if (containerBanco) containerBanco.style.display = 'block';
+                if(container) container.style.display = 'block';
             }
         }
     }
-
-    // Monitora mudanças nos radios
     document.addEventListener("change", function(e) {
-        if (e.target.name === "destino_recebimento") {
-            toggleBancoField();
-        }
+        if (e.target.name === "destino_recebimento") toggleBancoField();
     });
 
-    // --- Controle do Modal Local ---
-    function openModal(modalId) {
-        document.getElementById(modalId).classList.add('open');
+    // Modais
+    function openModal(id) {
+        document.getElementById(id).classList.add('open');
         document.body.style.overflow = 'hidden';
-        toggleBancoField(); // Garante o estado correto ao abrir
+        toggleBancoField();
     }
-
-    function closeModal(modalId) {
-        if (!modalId) modalId = 'modalReceita'; 
-        document.getElementById(modalId).classList.remove('open');
+    function closeModal(id) {
+        document.getElementById(id).classList.remove('open');
         document.body.style.overflow = '';
     }
+    document.querySelectorAll('.modal-overlay').forEach(m => {
+        m.addEventListener('click', e => { if(e.target === m) closeModal(m.id); });
+    });
 
-    // --- Controle do Modal Remoto (AJAX) ---
+    // Modal Remoto (AJAX)
     function openRemoteModal(url) {
         const modal = document.getElementById('modalGeneric');
         const content = document.getElementById('modalGenericContent');
-        
         content.innerHTML = '<div style="text-align:center; padding:40px; color:var(--slate-400);">Carregando...</div>';
         modal.classList.add('open');
         document.body.style.overflow = 'hidden';
 
-        fetch(url)
-            .then(response => response.text())
-            .then(html => {
-                const parser = new DOMParser();
-                const doc = parser.parseFromString(html, 'text/html');
-                
-                let newContent = doc.querySelector('form');
-                
-                if (newContent) {
-                    content.innerHTML = newContent.outerHTML;
-                    const scripts = content.getElementsByTagName("script");
-                    for (let i = 0; i < scripts.length; i++) {
-                        eval(scripts[i].innerText);
-                    }
-                } else {
-                    let fallbackContent = doc.querySelector('.remote-content') || doc.querySelector('.panel') || doc.body;
-                    content.innerHTML = `
-                        <div class="modal-header">
-                            <h3 class="modal-title">Ação</h3>
-                            <button type="button" class="btn-close" onclick="closeModal('modalGeneric')">✕</button>
-                        </div>
-                        <div class="modal-body">
-                            ${fallbackContent.innerHTML}
-                        </div>
-                    `;
-                }
-            })
-            .catch(err => {
-                console.error(err);
-                content.innerHTML = `
-                    <div class="modal-header">
-                        <h3 class="modal-title" style="color:var(--red-500)">Erro</h3>
-                        <button type="button" class="btn-close" onclick="closeModal('modalGeneric')">✕</button>
-                    </div>
-                    <div class="modal-body">Erro de conexão. Tente novamente.</div>
-                `;
-            });
-    }
-
-    // Fechar ao clicar fora
-    document.querySelectorAll('.modal-overlay').forEach(modal => {
-        modal.addEventListener('click', function(e) {
-            if (e.target === this) closeModal(this.id);
+        fetch(url).then(res => res.text()).then(html => {
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(html, 'text/html');
+            const newContent = doc.querySelector('form') || doc.querySelector('.remote-content') || doc.body;
+            content.innerHTML = newContent.innerHTML || newContent.outerHTML;
+        }).catch(() => {
+            content.innerHTML = '<div class="modal-body">Erro de conexão.</div>';
         });
-    });
-
-    // Filtro da tabela
-function filterTable() {
-    const query = document.getElementById('searchInput').value.toLowerCase();
-    const sortOrder = document.getElementById('sortOrder').value; 
-    const tbody = document.getElementById('tableBody');
-    
-    // Converte a lista de linhas em um Array real para poder ordenar
-    const rows = Array.from(tbody.querySelectorAll('.receber-row'));
-
-    // 1. Aplica Filtro de Busca
-    rows.forEach(row => {
-        const text = row.innerText.toLowerCase();
-        const visible = text.includes(query);
-        row.style.display = visible ? '' : 'none';
-    });
-
-    // 2. Aplica Ordenação
-    rows.sort((a, b) => {
-        // Pega a data ou define uma data muito distante/antiga se não houver
-        const dateA = a.getAttribute('data-vencimento') || (sortOrder === 'asc' ? '9999-99-99' : '0000-00-00');
-        const dateB = b.getAttribute('data-vencimento') || (sortOrder === 'asc' ? '9999-99-99' : '0000-00-00');
-        
-        if (sortOrder === 'asc') {
-            // Do mais antigo para o mais recente (Próximas de Vencer)
-            return dateA.localeCompare(dateB);
-        } else {
-            // Do mais recente para o mais antigo
-            return dateB.localeCompare(dateA);
-        }
-    });
-
-    // Reinsere as linhas na tabela na ordem certa
-    rows.forEach(row => tbody.appendChild(row));
-}
-    // Menu Dropdown
-    function toggleMenu(menuId) {
-        document.querySelectorAll('.dropdown-content').forEach(menu => {
-            if (menu.id !== menuId) menu.classList.remove('show');
-        });
-        const menu = document.getElementById(menuId);
-        if (menu) menu.classList.toggle('show');
     }
 
-    window.onclick = function(event) {
-        if (!event.target.closest('.dots-btn')) {
-            document.querySelectorAll('.dropdown-content').forEach(menu => {
-                menu.classList.remove('show');
-            });
-        }
+    // Menus Dropdown
+    function toggleMenu(id) {
+        document.querySelectorAll('.dropdown-content').forEach(m => { if(m.id !== id) m.classList.remove('show'); });
+        const m = document.getElementById(id); if(m) m.classList.toggle('show');
+    }
+    window.onclick = function(e) {
+        if (!e.target.closest('.dots-btn')) document.querySelectorAll('.dropdown-content').forEach(m => m.classList.remove('show'));
     }
 
-    // Inicializa estado ao carregar
-    document.addEventListener("DOMContentLoaded", function() {
-        toggleBancoField();
-    });
+    // Limpar Datas
+    function limparDatas() {
+        const form = document.getElementById('filterForm');
+        form.querySelector('input[name="data_inicio"]').value = '';
+        form.querySelector('input[name="data_fim"]').value = '';
+        form.submit();
+    }
+
+    document.addEventListener("DOMContentLoaded", toggleBancoField);
 </script>
 {% endblock %}

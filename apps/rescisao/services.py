@@ -136,12 +136,15 @@ class RescisaoExcelService:
         ws.write(row, 4, salario_base, fmt['money'])
         row += 1
 
+        # --- AQUI FOI A ALTERAÇÃO ---
         ws.write(row, 0, "Data Demissão", fmt['label'])
         ws.write(row, 1, rescisao.data_demissao, fmt['data'])
         ws.write(row, 2, "", fmt['center'])
-        ws.write(row, 3, "Motivo", fmt['label'])
-        ws.write(row, 4, rescisao.get_motivo_display(), fmt['center'])
+        # Removido: Motivo e get_motivo_display()
+        ws.write(row, 3, "", fmt['label'])
+        ws.write(row, 4, "", fmt['center'])
         row += 2
+        # ----------------------------
 
         # 3. CÁLCULOS
         ws.merge_range(row, 0, row, 4, "2. DEMONSTRATIVO DE VERBAS RESCISÓRIAS", fmt['secao'])
@@ -193,7 +196,6 @@ class RescisaoExcelService:
         total_d = Decimal(0)
         
         # Loop apenas pelos itens que passaram no filtro (> 0)
-        # REMOVIDA LÓGICA DE LINHAS MÍNIMAS (WHILE)
         for nome, valor, tipo, ref, base_val in itens:
             ws.write(row, 0, f"  {nome}", fmt['texto'])
             ws.write(row, 1, ref, fmt['center'])

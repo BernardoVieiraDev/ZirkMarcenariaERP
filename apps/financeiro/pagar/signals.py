@@ -1,16 +1,22 @@
-from django.db.models.signals import post_save, post_delete
-from django.dispatch import receiver
-from decimal import Decimal
 from datetime import date
-from django.db import transaction
+from decimal import Decimal
 
+from django.db import transaction
+from django.db.models.signals import post_delete, post_save
+from django.dispatch import receiver
+
+from apps.financeiro.pagar.models import (Boleto, Cheque, ComissaoArquiteto,
+                                          FaturaCartao, FolhaPagamento,
+                                          GastoContabilidade, GastoGasolina,
+                                          GastoGeral, GastoImovel,
+                                          GastoUtilidade,
+                                          GastoVeiculoConsorcio,
+                                          PrestacaoEmprestimo)
 # Importe seus modelos
-from apps.financeiro.receber.models import Banco, MovimentoBanco, CaixaDiario, Receber
-from apps.financeiro.pagar.models import (
-    Boleto, GastoUtilidade, FaturaCartao, PrestacaoEmprestimo,
-    GastoVeiculoConsorcio, GastoContabilidade, GastoImovel,
-    GastoGeral, GastoGasolina, FolhaPagamento, ComissaoArquiteto, Cheque
-)
+from apps.financeiro.receber.models import (Banco, CaixaDiario, MovimentoBanco,
+                                            Receber)
+
+from .models import GastoAlmoco
 
 # Lista de modelos que devem disparar a automação
 MODELOS_FINANCEIROS = [
@@ -182,3 +188,18 @@ def remover_do_extrato(sender, instance, **kwargs):
 for model in MODELOS_FINANCEIROS:
     post_save.connect(atualizar_extrato, sender=model)
     post_delete.connect(remover_do_extrato, sender=model)
+
+
+@receiver(post_save, sender=GastoAlmoco)
+def update_financeiro_almoco(sender, instance, created, **kwargs):
+    from apps.financeiro.pagar.services import GestorPagamentoService
+    service = GestorPagamentoService(instance)
+    service.processar_lancamento()
+
+# Adicione esta função para lidar com a exclusão
+@receiver(post_delete, sender=GastoAlmoco)
+def delete_financeiro_almoco(sender, instance, **kwargs):
+    if instance.movimento_banco:
+        instance.movimento_banco.delete()
+    if instance.movimento_caixa:
+        instance.movimento_caixa.delete()

@@ -290,6 +290,14 @@
             <div class="card-desc">Abastecimentos</div>
         </a>
 
+        <a href="{% url 'relatorios:exportar_almoco' %}" class="report-card" data-category="financeiro-pagar">
+            <div class="card-icon">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V2"/><path d="M7 2v20"/><path d="M21 15V2v0a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3Zm0 0v7"/></svg>
+            </div>
+            <div class="card-title">Almoço</div>
+            <div class="card-desc">Refeições funcionários</div>
+        </a>
+
 <a href="{% url 'relatorios:exportar_fluxo_caixa' %}" class="report-card" data-category="financeiro-receber">
     <div class="card-icon" style="color: #0891b2; background: #cffafe;">
         <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
@@ -466,6 +474,7 @@
                     <label class="check-label" data-group="pagar"><input type="checkbox" name="relatorios" value="veiculos"> Veículos</label>
                     <label class="check-label" data-group="pagar"><input type="checkbox" name="relatorios" value="condominio"> Condomínio</label>
                     <label class="check-label" data-group="pagar"><input type="checkbox" name="relatorios" value="iptu"> IPTU</label>
+                    <label class="check-label" data-group="pagar"><input type="checkbox" name="relatorios" value="almoco"> Almoço Func.</label>
                     <label class="check-label" data-group="pagar"><input type="checkbox" name="relatorios" value="gasolina"> Gasolina</label>
                     <label class="check-label" data-group="pagar"><input type="checkbox" name="relatorios" value="prestacoes"> Empréstimos</label>
                     

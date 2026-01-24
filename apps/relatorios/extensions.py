@@ -19,3 +19,4 @@ from .services.iptu import GastoIPTUExcelService
 from .services.movimento_banco import gerar_relatorio_movimento_banco
 from .services.receber import ReceberExcelService
 from .services.Utilidades import GastoUtilidadeExcelService
+from .services.almoco import GastoAlmocoExcelService # <--- Adicionar este import

@@ -581,3 +581,83 @@ tbody tr:hover {
     box-shadow: none !important;
   }
 }
+
+/* =========================================
+   MODAIS (Adicionado para suportar rolagem)
+   ========================================= */
+
+/* Fundo escuro atrás do modal */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;     /* Centraliza verticalmente */
+  justify-content: center; /* Centraliza horizontalmente */
+  z-index: 1000;
+  padding: 20px; /* Garante um espaçamento mínimo das bordas da tela */
+}
+
+/* O container principal do modal */
+/* CORREÇÃO: Faz o formulário herdar o comportamento de Flexbox
+   Necessário porque seus templates usam <form> como wrapper direto */
+.modal-content > form {
+    display: flex;
+    flex-direction: column;
+    height: 100%;       /* Ocupa toda a altura do modal-content */
+    max-height: 100%;   /* Não deixa ultrapassar o limite */
+    overflow: hidden;   /* Mantém as bordas arredondadas */
+}
+
+/* Cabeçalho do Modal (Fixo no topo) */
+.modal-header {
+  padding: 15px 20px;
+  border-bottom: 1px solid var(--border-color);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-shrink: 0; /* Impede que o cabeçalho encolha */
+}
+
+.modal-title {
+  margin: 0;
+  font-size: 1.1rem;
+  color: var(--text);
+}
+
+/* Corpo do Modal (Onde ocorre a rolagem) */
+.modal-body {
+  padding: 20px;
+  
+  /* O SEGREDO DA ROLAGEM: */
+  overflow-y: auto; /* Cria barra de rolagem apenas se o conteúdo estourar */
+  flex: 1;          /* Ocupa todo o espaço disponível entre header e footer */
+}
+
+/* Rodapé do Modal (Fixo no fundo) */
+.modal-footer {
+  padding: 15px 20px;
+  border-top: 1px solid var(--border-color);
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  flex-shrink: 0; /* Impede que o rodapé encolha */
+  background-color: var(--surface); /* Garante fundo sólido */
+  border-bottom-left-radius: var(--radius);
+  border-bottom-right-radius: var(--radius);
+}
+
+/* Botão de fechar (X) */
+.btn-close {
+  background: transparent;
+  border: none;
+  font-size: 1.2rem;
+  color: var(--muted);
+  cursor: pointer;
+}
+.btn-close:hover {
+  color: var(--danger);
+}

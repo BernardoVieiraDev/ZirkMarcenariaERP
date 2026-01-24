@@ -42,7 +42,7 @@ class ParcelamentoPagar(SoftDeleteMixin):
             'parcelas_faturacartao', 'parcelas_gastoveiculoconsorcio',
             'parcelas_gastocontabilidade', 'parcelas_gastoimovel', 
             'parcelas_gastoutilidade', 'parcelas_gastogasolina',
-            'parcelas_comissaoarquiteto'
+            'parcelas_comissaoarquiteto', 'parcelas_gastoalmoco'
         ]
         
         for related in modelos_filhos:
@@ -732,3 +732,97 @@ class FolhaPagamento(SoftDeleteMixin):
     def get_model_name(self): return self.__class__.__name__
     def get_tipo_classe(self): return self.__class__.__name__
     def get_data_consolidada(self): return self.data_referencia
+
+
+class GastoAlmoco(SoftDeleteMixin):
+    funcionario = models.ForeignKey(
+        Funcionario, 
+        on_delete=models.PROTECT, 
+        verbose_name="Funcionário"
+    )
+    # --- ALTERADO: De restaurante para observacoes (TextField) ---
+    observacoes = models.TextField(verbose_name="Observações", null=True, blank=True)
+    # -------------------------------------------------------------
+    
+    descricao = models.CharField(default=f"Almoço", max_length=255, verbose_name="Descrição (Opcional)", null=True, blank=True)
+    data_gasto = models.DateField(verbose_name="Data do Almoço")
+    valor_total = models.DecimalField(max_digits=10, decimal_places=2, verbose_name="Valor Total")
+    
+    forma_pagamento = models.CharField(
+        max_length=20, 
+        choices=FormaPagamento.choices, 
+        default=FormaPagamento.PIX, 
+        verbose_name="Forma de Pagamento"
+    )
+    status = models.CharField(
+        'Status', 
+        max_length=20, 
+        choices=StatusPagamento.choices, 
+        default=StatusPagamento.PAGO
+    )
+
+    banco_origem = models.ForeignKey(
+        'receber.Banco', 
+        on_delete=models.PROTECT,
+        null=True, 
+        blank=True, 
+        verbose_name="Conta de Saída"
+    )
+    movimento_banco = models.OneToOneField(
+        'receber.MovimentoBanco', 
+        on_delete=models.PROTECT,
+        null=True, 
+        blank=True, 
+        related_name='gasto_almoco_origem'
+    )
+    movimento_caixa = models.OneToOneField(
+        'receber.CaixaDiario', 
+        on_delete=models.PROTECT,
+        null=True, 
+        blank=True, 
+        related_name='gasto_almoco_origem'
+    )
+
+    origem_pagamento = models.CharField(
+        max_length=10,
+        choices=[('BANCO', 'Banco'), ('CAIXA', 'Caixa')],
+        default='BANCO',
+        verbose_name="Origem do Pagamento"
+    )
+    
+    parcelamento = models.ForeignKey(
+        ParcelamentoPagar, 
+        on_delete=models.CASCADE,
+        null=True, 
+        blank=True,
+        related_name='parcelas_%(class)s',
+        verbose_name="Vínculo de Parcelamento"
+    )
+
+    class Meta:
+        verbose_name = "Gasto com Almoço"
+        verbose_name_plural = "Almoços de Funcionários"
+
+    def __str__(self):
+        # Atualizado para remover referência a self.restaurante
+        return f"Almoço: {self.funcionario.nome} - R$ {self.valor_total}"
+
+    def save(self, *args, **kwargs):
+        # Se não houver descrição, gera uma automática baseada no funcionário
+        if not self.descricao and self.funcionario:
+            self.descricao = f"Almoço - {self.funcionario.nome}"
+        
+        super().save(*args, **kwargs)
+
+    @property
+    def descricao_formatada(self):
+        """Retorna a descrição salva ou um padrão 'Almoço - Funcionario'"""
+        if self.descricao:
+            return self.descricao
+        if self.funcionario:
+            return f"Almoço - {self.funcionario.nome}"
+        return "Gasto com Almoço"
+    def get_valor_consolidado(self): return self.valor_total
+    def get_data_consolidada(self): return self.data_gasto
+    def get_model_name(self): return "Almoço"
+    def get_tipo_classe(self): return self.__class__.__name__

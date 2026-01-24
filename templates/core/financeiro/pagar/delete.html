@@ -1,7 +1,7 @@
 {% load static %}
 
-<form method="POST" action="{{ request.path }}" style="margin:0; width: 100%; display: flex; flex-direction: column;">
-    {% csrf_token %}
+<form method="POST" action="{{ request.get_full_path }}" style="margin:0; width: 100%; display: flex; flex-direction: column;">
+        {% csrf_token %}
     
     <div class="modal-header" style="padding: 20px 24px; border-bottom: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center; background: white; border-radius: 12px 12px 0 0;">
         <h3 class="modal-title" style="font-size: 18px; font-weight: 700; color: #1e293b; margin: 0;">Confirmar Exclusão</h3>

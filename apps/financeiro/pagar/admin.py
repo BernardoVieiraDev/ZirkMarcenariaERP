@@ -18,6 +18,7 @@ from .models import (
     GastoGeral,
     GastoGasolina,
     FolhaPagamento,
+    GastoAlmoco
 )
 
 # ==============================================================================
@@ -71,6 +72,22 @@ class GastoBaseAdmin(SoftDeleteAdmin):
 # ==============================================================================
 # ADMINS ESPECÍFICOS (HERDAM DE GASTO BASE)
 # ==============================================================================
+
+@admin.register(GastoAlmoco)
+class GastoAlmocoAdmin(SoftDeleteAdmin):  # Herda de SoftDeleteAdmin, não de GastoBaseAdmin
+    list_display = (
+        "get_model_name",
+        "descricao",
+        "funcionario",   # Campo específico deste model
+        "data_gasto",    # Em vez de data_vencimento
+        "valor_total",   # Em vez de valor
+        "status",
+        "forma_pagamento",
+        "is_deleted",
+    )
+    list_filter = ("status", "forma_pagamento", "is_deleted")
+    search_fields = ("descricao", "funcionario__nome")
+    ordering = ("-data_gasto",) # Ordena pelo campo correto
 
 @admin.register(Boleto)
 class BoletoAdmin(GastoBaseAdmin):

@@ -3,12 +3,6 @@ from decimal import Decimal
 from apps.configuracoes.mixin import SoftDeleteMixin
 from apps.funcionarios.models import Funcionario
 
-class MotivoDemissao(models.TextChoices):
-    SEM_JUSTA_CAUSA = 'SJC', 'Dispensa sem Justa Causa'
-    POR_JUSTA_CAUSA = 'PJC', 'Dispensa por Justa Causa'
-    PEDIDO_DEMISSAO = 'PED', 'Pedido de Demissão'
-    TERMINO_CONTRATO = 'TER', 'Término de Contrato'
-    ACORDO = 'ACO', 'Acordo (Art. 484-A)'
 
 class TipoOutro(models.TextChoices):
     PROVENTO = 'P', 'Provento (+)'
@@ -17,7 +11,6 @@ class TipoOutro(models.TextChoices):
 class Rescisao(SoftDeleteMixin):
     funcionario = models.OneToOneField(Funcionario, on_delete=models.CASCADE, related_name='rescisao')
     data_demissao = models.DateField(verbose_name="Data de Demissão")
-    motivo = models.CharField(max_length=3, choices=MotivoDemissao.choices, default=MotivoDemissao.SEM_JUSTA_CAUSA)
     
     # Proventos
     val_dias_trabalhados = models.DecimalField(max_digits=10, decimal_places=2, blank=True, null=True, verbose_name="Dias Trabalhados")

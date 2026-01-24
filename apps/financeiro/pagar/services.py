@@ -3,13 +3,14 @@ from datetime import date
 from decimal import Decimal
 
 from django.core.exceptions import ObjectDoesNotExist
-from django.db.models import F, OuterRef, Subquery, Sum, Value, Q
+from django.db.models import F, OuterRef, Q, Subquery, Sum, Value
 from django.db.models.functions import Coalesce
 
 from apps.banco_horas.models import LancamentoHoras
 from apps.empreitadas.models import Empreitada, PagamentoEmpreitada
 from apps.ferias.models import PagamentoFerias
 from apps.financeiro.pagar.models import FolhaPagamento, ParcelamentoPagar
+from apps.financeiro.receber.models import CaixaDiario, MovimentoBanco
 from apps.funcionarios.models import Funcionario
 
 
@@ -225,3 +226,114 @@ def gerar_folha_mensal(mes, ano):
         registros.append(folha)
         
     return registros
+
+
+# --- ADICIONE ESTES IMPORTS NO TOPO DO ARQUIVO ---
+
+# --- ADICIONE ESTA CLASSE NO FINAL DO ARQUIVO ---
+
+class GestorPagamentoService:
+    """
+    Serviço responsável por pegar um Gasto (Almoço, Gasolina, Geral)
+    e criar/atualizar o lançamento correspondente no Banco ou Caixa.
+    """
+    def __init__(self, instance):
+        self.instance = instance
+        # Descobre qual é o nome do modelo (Ex: 'GastoAlmoco', 'GastoGasolina')
+        self.model_name = instance.__class__.__name__
+
+    def processar_lancamento(self):
+        # 1. Se não estiver pago, removemos qualquer lançamento financeiro existente
+        if self.instance.status != 'Pago':
+            self._remover_financeiro()
+            return
+
+        # 2. Prepara os dados comuns
+        valor = self._get_valor()
+        data = self._get_data()
+        descricao = str(self.instance)
+
+        # 3. Direciona para Banco ou Caixa
+        if self.instance.origem_pagamento == 'BANCO':
+            self._processar_banco(valor, data, descricao)
+        elif self.instance.origem_pagamento == 'CAIXA':
+            self._processar_caixa(valor, data, descricao)
+
+    def _get_valor(self):
+        # GastoAlmoco usa 'valor_total', outros usam 'valor'
+        if hasattr(self.instance, 'valor_total'):
+            return self.instance.valor_total
+        return getattr(self.instance, 'valor', 0)
+
+    def _get_data(self):
+        # GastoAlmoco usa 'data_gasto', outros usam 'data_pagamento'
+        if hasattr(self.instance, 'data_gasto'):
+            return self.instance.data_gasto
+        return getattr(self.instance, 'data_pagamento', self.instance.data_vencimento)
+
+# No método _processar_banco e _processar_caixa em GestorPagamentoService
+
+# Em apps/financeiro/pagar/services.py
+
+    def _processar_banco(self, valor, data, descricao):
+        if not self.instance.banco_origem:
+            return 
+
+        if valor > 0:
+            valor = valor * -1
+
+        dados_movimento = {
+            'data': data,
+            'historico': descricao,  # CORREÇÃO: De 'descricao' para 'historico'
+            'valor': valor,
+            'tipo': 'SAIDA',
+            'banco': self.instance.banco_origem,
+            # 'categoria': ... (REMOVIDO: O modelo MovimentoBanco não tem esse campo)
+        }
+
+        movimento = self.instance.movimento_banco
+
+        if movimento:
+            for key, value in dados_movimento.items():
+                setattr(movimento, key, value)
+            movimento.save()
+        else:
+            movimento = MovimentoBanco.objects.create(**dados_movimento)
+            
+            self.instance.movimento_banco = movimento
+            self.instance.save(update_fields=['movimento_banco'])
+            
+        if self.instance.movimento_caixa:
+            self.instance.movimento_caixa.delete()
+
+    def _processar_caixa(self, valor, data, descricao):
+        if valor > 0:
+            valor = valor * -1
+
+        dados_caixa = {
+            'data': data,
+            'historico': descricao, # CORREÇÃO: De 'descricao' para 'historico'
+            'valor': valor,
+            'tipo': 'SAIDA',
+        }
+
+        movimento = self.instance.movimento_caixa
+
+        if movimento:
+            for key, value in dados_caixa.items():
+                setattr(movimento, key, value)
+            movimento.save()
+        else:
+            movimento = CaixaDiario.objects.create(**dados_caixa)
+            
+            self.instance.movimento_caixa = movimento
+            self.instance.save(update_fields=['movimento_caixa'])
+
+        if self.instance.movimento_banco:
+            self.instance.movimento_banco.delete()
+
+    def _remover_financeiro(self):
+        if self.instance.movimento_banco:
+            self.instance.movimento_banco.delete()
+        if self.instance.movimento_caixa:
+            self.instance.movimento_caixa.delete()

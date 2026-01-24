@@ -50,6 +50,19 @@ class ContratoRT(SoftDeleteMixin):
     def total_recebido(self):
         return self.parcelas_receber.filter(status='Recebido').aggregate(models.Sum('valor_recebido'))['valor_recebido__sum'] or Decimal('0.00')
 
+
+    @property
+    def total_pago_arquiteto(self):
+        """
+        Calcula o total efetivamente pago de RT para a arquiteta.
+        Usa 'valor_pago' se disponível, caso contrário usa o valor nominal.
+        """
+        # Filtra apenas comissões ativas e com status 'Pago'
+        comissoes_pagas = self.comissoes_pagar.filter(is_deleted=False, status='Pago')
+        
+        # Soma: Se tiver valor_pago (real), usa ele. Se não, usa valor_comissao (previsto).
+        total = sum((c.valor_pago or c.valor_comissao) for c in comissoes_pagas)
+        return total
     # --- ADICIONE ISTO ---
     @property
     def total_previsto_financeiro(self):

@@ -8,7 +8,7 @@ from apps.financeiro.receber.models import Receber, CaixaDiario, Banco, Moviment
 from apps.financeiro.pagar.models import (
     Boleto, Cheque, ComissaoArquiteto, FaturaCartao, FolhaPagamento,
     GastoContabilidade, GastoGasolina, GastoGeral, GastoImovel,
-    GastoUtilidade, GastoVeiculoConsorcio, PrestacaoEmprestimo
+    GastoUtilidade, GastoVeiculoConsorcio, PrestacaoEmprestimo, GastoAlmoco
 )
 
 class FluxoCaixaService:
@@ -79,15 +79,9 @@ class FluxoCaixaService:
             (GastoContabilidade, 'data_vencimento', 'pagamentos_contas'),
             (FaturaCartao, 'data_vencimento', 'pagamentos_contas'),
             (Cheque, 'data_emissao', 'pagamentos_contas'), 
-            
-            # --- CORREÇÕES AQUI ---
-            # Folha: Mantém data_referencia (ou altere para uma data de vencimento se criar o campo)
+            (GastoAlmoco, 'data_gasto', 'outros_pagamentos'),
             (FolhaPagamento, 'data_referencia', 'outros_pagamentos'), 
-            
-            # Comissão: Alterado de 'data_pagamento' para 'data_vencimento' (Previsão)
             (ComissaoArquiteto, 'data_vencimento', 'outros_pagamentos'),
-            # -----------------------
-
             (PrestacaoEmprestimo, 'data_vencimento', 'outras_saidas'),
             (GastoVeiculoConsorcio, 'data_vencimento', 'outras_saidas'),
         ]

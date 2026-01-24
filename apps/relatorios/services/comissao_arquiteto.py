@@ -87,8 +87,6 @@ class ComissaoExcelService:
             row += 1 
             total_valor = Decimal('0.00')
 
-            # --- CORREÇÃO AQUI ---
-            # Agora 'item' é uma instância de ComissaoArquiteto
             for item in pagamentos:
                 # O campo no modelo ComissaoArquiteto é 'arquiteto' (ForeignKey)
                 arquiteta_nome = item.arquiteto.nome if item.arquiteto else "N/A"
@@ -97,15 +95,21 @@ class ComissaoExcelService:
                 cliente_nome = "N/A"
                 if item.contrato_rt:
                     if hasattr(item.contrato_rt, 'cliente') and item.contrato_rt.cliente:
-                        # Assumindo que __str__ do cliente retorna o nome ou existe um campo nome
                         cliente_nome = str(item.contrato_rt.cliente)
                     else:
-                        # Fallback se não tiver cliente mas tiver __str__ no contrato
                          cliente_nome = str(item.contrato_rt)
                 
-                # Acesso direto aos campos do pagamento
                 dt_pag = item.data_pagamento
-                valor = item.valor_pago if item.valor_pago else Decimal('0.00')
+                
+                # --- LÓGICA CORRIGIDA ---
+                # Verifica se existe o método get_valor_consolidado (recomendado)
+                # Se não, faz o fallback manual: se valor_pago for None, usa valor_comissao.
+                if hasattr(item, 'get_valor_consolidado'):
+                    valor = item.get_valor_consolidado()
+                else:
+                    valor = item.valor_pago if item.valor_pago else item.valor_comissao
+                # -------------------------
+
                 obs = item.observacoes if item.observacoes else ''
 
                 ws.write(row, 0, arquiteta_nome, fmt['data_text'])
@@ -121,7 +125,6 @@ class ComissaoExcelService:
 
                 total_valor += valor
                 row += 1
-            # ---------------------
 
             row += 1
             ws.merge_range(row, 0, row, 2, "TOTAL PAGO:", fmt['total_label'])

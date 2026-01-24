@@ -34,5 +34,6 @@ path('exportar/consolidado-anual/', views.exportar_consolidado_anual, name='expo
     path('exportar-receber-mensal/', views.exportar_receber_mensal, name='exportar_receber_mensal'),
 path('exportar/pacote/<str:tipo_pacote>/', views.exportar_pacote, name='exportar_pacote'),
    path('exportar-fluxo-caixa/', views.exportar_fluxo_caixa, name='exportar_fluxo_caixa'),
-   
+   path('folha/exportar-13/', views.folha_exportar_decimo, name='folha_exportar_decimo'),
+ path('exportar_almoco/', views.exportar_almoco, name='exportar_almoco'),  
     ]
