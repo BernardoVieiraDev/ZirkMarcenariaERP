@@ -58,21 +58,6 @@ class FeriasForm(forms.ModelForm):
         if (recesso + carnaval) > dias_tirados:
              raise ValidationError("A soma dos dias de Recesso e Carnaval não pode ser maior que o Total de Dias Tirados.")
 
-        # 3. Validação de Saldo (Não permitir estourar o saldo do período)
-        if periodo:
-            # Pega o saldo atual do período
-            saldo_atual = periodo.saldo_restante()
-            
-            # Se for edição, precisamos adicionar de volta os dias deste registro para recalcular o saldo disponível
-            if self.instance.pk:
-                consumo_anterior = max(0, self.instance.dias_tirados + (self.instance.faltas_justificadas_descontadas or 0))
-                saldo_atual += consumo_anterior
-
-            consumo_novo = max(0, dias_tirados - faltas)
-
-            if consumo_novo > saldo_atual:
-                raise ValidationError(f"Saldo insuficiente no período. Saldo disponível: {saldo_atual} dias. Tentativa de consumo: {consumo_novo} dias.")
-
         return cleaned_data
 
     

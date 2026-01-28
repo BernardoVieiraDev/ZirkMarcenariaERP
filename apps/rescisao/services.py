@@ -136,15 +136,12 @@ class RescisaoExcelService:
         ws.write(row, 4, salario_base, fmt['money'])
         row += 1
 
-        # --- AQUI FOI A ALTERAÇÃO ---
         ws.write(row, 0, "Data Demissão", fmt['label'])
         ws.write(row, 1, rescisao.data_demissao, fmt['data'])
         ws.write(row, 2, "", fmt['center'])
-        # Removido: Motivo e get_motivo_display()
         ws.write(row, 3, "", fmt['label'])
         ws.write(row, 4, "", fmt['center'])
         row += 2
-        # ----------------------------
 
         # 3. CÁLCULOS
         ws.merge_range(row, 0, row, 4, "2. DEMONSTRATIVO DE VERBAS RESCISÓRIAS", fmt['secao'])
@@ -165,19 +162,14 @@ class RescisaoExcelService:
                 base_final = base_calc if base_calc is not None else ""
                 itens.append((nome, valor, tipo, ref, base_final))
 
-        # -- Proventos --
+        # -- Proventos Fixos --
         add("Saldo de Salário", rescisao.val_dias_trabalhados, 'P', base_calc=salario_base)
         add("Férias Vencidas", rescisao.val_ferias, 'P', base_calc=salario_base)
         add("1/3 Constitucional de Férias", rescisao.val_terco_ferias, 'P', ref="") 
         add("13º Salário Proporcional", rescisao.val_13_salario, 'P', base_calc=salario_base)
         add("Remunerados (DSR)", rescisao.val_remunerados, 'P') 
         
-        # Outros (Provento)
-        if rescisao.outro_tipo == 'P' and rescisao.outro_valor:
-            nome_outro = rescisao.outro_nome if rescisao.outro_nome else "Outros Proventos"
-            add(nome_outro, rescisao.outro_valor, 'P', ref="")
-
-        # -- Descontos --
+        # -- Descontos Fixos --
         add("Adiantamento Salarial", rescisao.val_adiantamento, 'D')
         add("Atrasos", rescisao.val_atrasos, 'D')
         add("Multa Art. 480 CLT", rescisao.val_multa_480, 'D')
@@ -186,10 +178,12 @@ class RescisaoExcelService:
         desc_falta = f"Faltas ({rescisao.desc_faltas})" if rescisao.desc_faltas else "Faltas"
         add(desc_falta, rescisao.val_faltas, 'D')
 
-        # Outros (Desconto)
-        if rescisao.outro_tipo == 'D' and rescisao.outro_valor:
-            nome_outro = rescisao.outro_nome if rescisao.outro_nome else "Outros Descontos"
-            add(nome_outro, rescisao.outro_valor, 'D', ref="")
+        # -- Itens Adicionais (Outros) --
+        # Aqui corrigimos o erro: iteramos sobre a relação OneToMany ao invés de buscar campos únicos
+        if rescisao.pk:
+            for item in rescisao.itens_adicionais.all():
+                # item.tipo vem do model ItemRescisao ('P' ou 'D')
+                add(item.descricao, item.valor, item.tipo, ref="")
 
         # Escrita na Planilha
         total_p = Decimal(0)

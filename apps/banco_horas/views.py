@@ -1,12 +1,15 @@
 from django import forms
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
+from django.db.models import Sum
+from django.db.models.functions import TruncMonth
 from django.shortcuts import get_object_or_404, redirect, render
 
 from apps.funcionarios.models import Funcionario
 
 from .forms import LancamentoHorasForm
 from .models import BancoHoras, LancamentoHoras
+
 
 @login_required
 def registrar_horas(request):
@@ -27,27 +30,46 @@ def registrar_horas(request):
     # Se der erro ou for GET direto (fallback), renderiza a página antiga ou redireciona
     return redirect('banco_horas:banco_horas_list')
 
+
 @login_required
 def banco_horas_list(request):
     """
-    Lista todos os saldos de Banco de Horas dos funcionários.
+    Lista todos os saldos de Banco de Horas e pré-calcula o acumulado mensal.
     """
-    # Garante que um BancoHoras exista para cada funcionário, se for o caso
-    # (Opcional: criar objetos BancoHoras se não existirem, mas o prefetch abaixo funciona)
-    
+    # Buscamos todos os bancos com os dados do funcionário
     bancos = BancoHoras.objects.select_related('funcionario').order_by('funcionario__nome')
+    
+    dados_consolidados = []
 
-    # --- NOVO: Formulário para o Modal ---
+    for banco in bancos:
+        # Aqui está a mágica: Agrupamos os lançamentos deste funcionário por Mês
+        # e somamos as horas de cada mês.
+        resumo_mensal = (
+            LancamentoHoras.objects
+            .filter(funcionario=banco.funcionario)
+            .annotate(mes_ano=TruncMonth('data'))  # Corta a data para apenas Mês/Ano
+            .values('mes_ano')                     # Agrupa por esse Mês/Ano
+            .annotate(saldo_no_mes=Sum('horas'))   # Soma as horas desse grupo
+            .order_by('-mes_ano')                  # Ordena do mais recente para o antigo
+        )
+
+        dados_consolidados.append({
+            'banco_obj': banco,       # O objeto BancoHoras original (para pegar o total geral)
+            'mensal': resumo_mensal,  # A lista com os saldos mês a mês
+        })
+
+    # --- NOVO: Formulário para o Modal (mantido do seu código) ---
     form = LancamentoHorasForm()
 
     context = {
-        'bancos': bancos,
-        'form': form, # Enviando o formulário
+        'lista_bancos': dados_consolidados, # Note que mudamos a variável de 'bancos' para 'lista_bancos'
+        'form': form,
         'title': 'Saldos de Banco de Horas'
     }
     return render(request, 'core/banco_horas/banco_horas_list.html', context)
 
-# ... (Mantenha o resto do arquivo: BancoHorasEditForm e banco_horas_edit) ...
+
+
 class BancoHorasEditForm(forms.ModelForm):
     class Meta:
         model = BancoHoras
@@ -98,3 +120,29 @@ def banco_horas_delete(request, pk):
         
     # Fallback (caso precise de uma página dedicada, crie o template delete.html depois)
     return redirect('banco_horas:banco_horas_list')
+
+
+@login_required
+def historico_funcionario(request, pk):
+    """
+    Exibe o extrato de lançamentos de um funcionário específico em um Modal.
+    pk: ID do Funcionario
+    """
+    funcionario = get_object_or_404(Funcionario, pk=pk)
+    
+    # Busca lançamentos e ordena por data decrescente
+    lancamentos = LancamentoHoras.objects.filter(
+        funcionario=funcionario
+    ).order_by('-data')
+
+    context = {
+        'funcionario': funcionario,
+        'lancamentos': lancamentos,
+    }
+    
+    # Se for requisição AJAX (Modal), renderiza apenas o pedaço do modal
+    if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+        return render(request, 'core/banco_horas/historico_modal.html', context)
+        
+    # Fallback caso alguém acesse a URL diretamente (opcional)
+    return render(request, 'core/banco_horas/historico_modal.html', context)

@@ -384,23 +384,21 @@ def registrar_ferias_coletivas(request):
             dias_totais = (data_fim - data_inicio).days + 1
 
             funcionarios_processados = 0
-            funcionarios_sem_saldo = []
+            funcionarios_sem_periodo = [] # Lista para quem não tem período cadastrado
 
             try:
                 with transaction.atomic():
                     for func in funcionarios:
-                        # 1. Busca todos os períodos do funcionário
-                        periodos = PeriodoAquisitivo.objects.filter(funcionario=func).order_by('data_inicio')
+                        # 1. Busca todos os períodos do funcionário e converte para lista
+                        # (Necessário para verificar qual é o último pelo índice)
+                        periodos = list(PeriodoAquisitivo.objects.filter(funcionario=func).order_by('data_inicio'))
                         
-                        # 2. Verifica saldo TOTAL disponível somando todos os períodos
-                        saldo_total_disponivel = sum(p.saldo_restante() for p in periodos)
-                        
-                        if saldo_total_disponivel < dias_totais:
-                            # Se não tem saldo suficiente no total, ignora e avisa
-                            funcionarios_sem_saldo.append(func.nome)
+                        # Se o funcionário não tiver nenhum período cadastrado, não tem onde lançar
+                        if not periodos:
+                            funcionarios_sem_periodo.append(func.nome)
                             continue
 
-                        # 3. Lógica de Distribuição (Split)
+                        # 2. Lógica de Distribuição (Split) com Antecipação
                         dias_a_distribuir = dias_totais
                         
                         # Controladores para distribuir os dias especiais proporcionalmente
@@ -409,16 +407,29 @@ def registrar_ferias_coletivas(request):
                         
                         teve_registro = False
 
-                        for p in periodos:
+                        for i, p in enumerate(periodos):
+                            # Verifica se é o último período da lista (o mais recente)
+                            eh_ultimo_periodo = (i == len(periodos) - 1)
+                            
                             saldo_p = p.saldo_restante()
                             
-                            if saldo_p <= 0:
+                            # Se NÃO for o último período e o saldo já estiver zerado (ou negativo), pula para o próximo
+                            if not eh_ultimo_periodo and saldo_p <= 0:
                                 continue
                             
-                            # O quanto vamos tirar deste período? (O que couber ou o que falta)
-                            dias_para_este_periodo = min(dias_a_distribuir, saldo_p)
+                            # DEFINIÇÃO DE QUANTOS DIAS TIRAR DESTE PERÍODO:
+                            if eh_ultimo_periodo:
+                                # Se é o último, ele assume TUDO o que falta, mesmo que estoure o saldo (Antecipação)
+                                dias_para_este_periodo = dias_a_distribuir
+                            else:
+                                # Se é período antigo, consome apenas o saldo disponível (se houver)
+                                dias_para_este_periodo = min(dias_a_distribuir, saldo_p)
                             
-                            # Distribui dias especiais (tenta alocar no primeiro período possível)
+                            # Safety check: se por algum motivo for <= 0, não cria registro vazio
+                            if dias_para_este_periodo <= 0:
+                                continue
+
+                            # Distribui dias especiais (aloca o máximo possível neste registro)
                             recesso_neste = min(dias_para_este_periodo, recesso_restante)
                             carnaval_neste = min(dias_para_este_periodo, carnaval_restante)
 
@@ -430,27 +441,28 @@ def registrar_ferias_coletivas(request):
                                 ferias_no_carnaval=carnaval_neste
                             )
                             
-                            # Atualiza os contadores
+                            # Atualiza os contadores do que falta distribuir
                             dias_a_distribuir -= dias_para_este_periodo
                             recesso_restante -= recesso_neste
                             carnaval_restante -= carnaval_neste
                             teve_registro = True
                             
-                            # Se já distribuímos tudo, para o loop de períodos
-                            if dias_a_distribuir == 0:
+                            # Se já distribuímos todos os dias solicitados, encerra o loop de períodos
+                            if dias_a_distribuir <= 0:
                                 break
                         
                         if teve_registro:
                             funcionarios_processados += 1
                             logger.info(f"Férias coletivas registradas para {func.nome}")
 
-                # --- FEEDBACK ---
+                # --- FEEDBACK AO USUÁRIO ---
                 if funcionarios_processados > 0:
                     messages.success(request, f"Férias coletivas processadas para {funcionarios_processados} funcionário(s).")
                 
-                if funcionarios_sem_saldo:
-                    lista_nomes = ", ".join(funcionarios_sem_saldo)
-                    messages.warning(request, f"Saldo insuficiente para realizar o período completo ({dias_totais} dias): {lista_nomes}")
+                # Avisa apenas se alguém ficou SEM lançar por falta de período cadastrado
+                if funcionarios_sem_periodo:
+                    lista_nomes = ", ".join(funcionarios_sem_periodo)
+                    messages.warning(request, f"Funcionários ignorados por não terem período aquisitivo cadastrado: {lista_nomes}")
 
                 return redirect('ferias:listar_funcionarios')
                 

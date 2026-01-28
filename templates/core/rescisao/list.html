@@ -396,11 +396,10 @@
                     return;
                 }
                 return response.text().then(html => {
-                    // Se retornou HTML, verifica se é erro ou sucesso (geralmente forms com erro retornam o form)
                     if (html.includes('modal-header')) {
-                        modalContent.innerHTML = html; // Re-renderiza com erros
+                        modalContent.innerHTML = html; 
                     } else {
-                        window.location.reload(); // Sucesso
+                        window.location.reload(); 
                     }
                 });
             })
@@ -409,6 +408,53 @@
                 alert('Erro ao salvar.');
                 if(btn) { btn.disabled = false; btn.innerHTML = 'Salvar'; }
             });
+        }
+    });
+
+    // --- CORREÇÃO: Lógica para adicionar itens (Delegação de Evento) ---
+    // Como o botão está dentro do modal (carregado dinamicamente),
+    // precisamos ouvir o clique no documento e verificar se o alvo foi o botão.
+    document.addEventListener('click', function(e) {
+        const addBtn = e.target.closest('#add-item-btn');
+        
+        if (addBtn) {
+            const totalFormsInput = document.querySelector('input[name$="-TOTAL_FORMS"]');
+            const container = document.getElementById('itens-container');
+            
+            if (!totalFormsInput || !container) return;
+            
+            const totalForms = parseInt(totalFormsInput.value);
+            const rows = container.getElementsByClassName('item-row');
+            
+            if (rows.length === 0) return;
+            
+            // Clona a primeira linha
+            const newRow = rows[0].cloneNode(true);
+            
+            // Limpa inputs e atualiza IDs/Names
+            const inputs = newRow.querySelectorAll('input, select');
+            inputs.forEach(function(input) {
+                const nameRegex = /-\d+-/;
+                const newPrefix = '-' + totalForms + '-';
+                
+                if (input.name) input.name = input.name.replace(nameRegex, newPrefix);
+                if (input.id) input.id = input.id.replace(nameRegex, newPrefix);
+                
+                if (input.type !== 'hidden' && input.type !== 'checkbox') {
+                    input.value = '';
+                }
+                if (input.type === 'checkbox') {
+                    input.checked = false;
+                }
+                // Limpa campo ID oculto (pk)
+                if (input.name && input.name.endsWith('-id')) input.value = '';
+            });
+            
+            // Remove erros visuais clonados
+            newRow.querySelectorAll('.error-msg').forEach(el => el.innerHTML = '');
+
+            container.appendChild(newRow);
+            totalFormsInput.value = totalForms + 1;
         }
     });
 </script>

@@ -120,7 +120,7 @@ class GastoBase(SoftDeleteMixin):
 
     banco_origem = models.ForeignKey(
         'receber.Banco', 
-        on_delete=models.PROTECT,  # Alterado para PROTECT (Segurança Financeira)
+        on_delete=models.SET_NULL,  
         null=True, 
         blank=True, 
         verbose_name="Conta Bancária"
@@ -129,7 +129,7 @@ class GastoBase(SoftDeleteMixin):
     # Vínculos automáticos
     movimento_banco = models.OneToOneField(
         'receber.MovimentoBanco', 
-        on_delete=models.PROTECT,  # Alterado para PROTECT
+        on_delete=models.SET_NULL,  
         null=True, 
         blank=True,
         related_name='%(class)s_origem'
@@ -502,14 +502,14 @@ class ComissaoArquiteto(SoftDeleteMixin):
 
     banco_origem = models.ForeignKey(
         'receber.Banco', 
-        on_delete=models.PROTECT, # Alterado para PROTECT
+        on_delete=models.SET_NULL, 
         null=True, 
         blank=True, 
         verbose_name="Conta de Saída"
     )
     movimento_banco = models.OneToOneField(
         'receber.MovimentoBanco', 
-        on_delete=models.PROTECT, # Alterado para PROTECT
+        on_delete=models.SET_NULL, 
         null=True, 
         blank=True, 
         related_name='comissao_arquiteto_origem'

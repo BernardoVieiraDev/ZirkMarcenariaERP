@@ -1,3 +1,4 @@
+from decimal import Decimal
 from django import forms
 
 from apps.clientes.models import Cliente
@@ -20,13 +21,13 @@ class ArquitetaForm(forms.ModelForm):
         }
 
 class ContratoRTForm(forms.ModelForm):
-    # Campos extras mantidos...
+    # Campos extras para controle do financeiro
     gerar_financeiro = forms.BooleanField(
         initial=True, required=False, label="Gerar Comissão a Pagar Automaticamente?"
     )
     banco_pagamento = forms.ModelChoiceField(
         queryset=Banco.objects.all(), 
-        required=False, 
+        required=False,  # Banco agora é opcional
         label="Conta/Banco de Saída",
         widget=forms.Select(attrs={'class': 'form-select'})
     )
@@ -53,7 +54,6 @@ class ContratoRTForm(forms.ModelForm):
             'valor_servico', 'percentual', 'valor_rt', 
             'observacoes'
         ]
-        # (Widgets mantidos iguais ao seu código original)
         widgets = {
             'arquiteta': forms.Select(attrs={'class': 'form-select select2'}),
             'cliente': forms.Select(attrs={'class': 'form-select select2'}),
@@ -66,22 +66,37 @@ class ContratoRTForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        # CORREÇÃO PARA A EDIÇÃO:
+        
+        # Define valor_rt como não obrigatório no formulário para permitir
+        # que o usuário deixe em branco (acionando o cálculo automático no clean)
+        self.fields['valor_rt'].required = False
+
         # Se o formulário já tem uma instância (está editando), 
-        # desativamos a geração automática para evitar erro de validação do banco.
+        # desativamos a geração automática para evitar duplicidade ou erros.
         if self.instance and self.instance.pk:
             self.fields['gerar_financeiro'].initial = False
             self.fields['gerar_financeiro'].widget = forms.HiddenInput()
-            # Opcional: Você pode esconder os outros campos também se desejar
             self.fields['banco_pagamento'].required = False
 
     def clean(self):
         cleaned_data = super().clean()
-        gerar = cleaned_data.get('gerar_financeiro')
-        banco = cleaned_data.get('banco_pagamento')
         
-        # Só valida banco se for criar financeiro
-        if gerar and not banco:
-            self.add_error('banco_pagamento', 'Selecione um banco para gerar o financeiro.')
+        # --- LÓGICA DE CÁLCULO AUTOMÁTICO ---
+        valor_rt = cleaned_data.get('valor_rt')
+        valor_servico = cleaned_data.get('valor_servico')
+        percentual = cleaned_data.get('percentual')
+
+        # Se o usuário não preencheu o Valor da RT, mas preencheu serviço e percentual:
+        if not valor_rt and valor_servico and percentual:
+            # Calcula: (Serviço * Percentual) / 100
+            novo_valor_rt = (valor_servico * percentual) / 100
+            
+            # Arredonda e atribui ao cleaned_data e à instância
+            cleaned_data['valor_rt'] = novo_valor_rt.quantize(Decimal('0.01'))
+            self.instance.valor_rt = cleaned_data['valor_rt']
+
+        # --- VALIDAÇÃO DE BANCO REMOVIDA ---
+        # A validação que obrigava o banco foi removida conforme solicitado.
+        # O sistema aceitará gerar financeiro com 'banco_origem' NULL.
         
         return cleaned_data

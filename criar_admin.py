@@ -1,4 +1,5 @@
 import os
+
 import django
 
 # Configura o Django
@@ -6,7 +7,9 @@ os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'config.settings')
 django.setup()
 
 from django.contrib.auth.models import User
+
 from apps.dashboard.models import PerfilUsuario
+
 
 def criar():
     username = "BernardoVieira"

@@ -14,8 +14,8 @@
                 Alterar este valor recalculará o saldo de <u>todas</u> as movimentações passadas e futuras desta conta. Faça isso apenas para correções de abertura de conta.
             </div>
 
-            <form method="POST">
-                {% csrf_token %}
+<form method="POST" action="{% url 'receber:banco_edit' banco.pk %}">
+    {% csrf_token %}
                 
                 {% for field in form %}
                     <div class="mb-3">

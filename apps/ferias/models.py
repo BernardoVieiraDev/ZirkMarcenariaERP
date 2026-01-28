@@ -23,7 +23,7 @@ class PeriodoAquisitivo(SoftDeleteMixin):
 
     def saldo_restante(self):
         saldo = self.dias_direito - self.dias_gozados()
-        return max(0, saldo)
+        return saldo
 
 class Ferias(SoftDeleteMixin):
     periodo = models.ForeignKey(PeriodoAquisitivo, on_delete=models.CASCADE, related_name='ferias_registradas')

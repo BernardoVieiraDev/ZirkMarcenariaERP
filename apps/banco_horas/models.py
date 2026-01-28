@@ -1,7 +1,11 @@
+from decimal import Decimal
+
 from django.db import models
+from django.utils import timezone  
+
 from apps.configuracoes.mixin import SoftDeleteMixin
 from apps.funcionarios.models import Funcionario
-from decimal import Decimal
+
 
 class BancoHoras(SoftDeleteMixin):
     funcionario = models.OneToOneField(
@@ -15,6 +19,8 @@ class BancoHoras(SoftDeleteMixin):
 
     def __str__(self):
         return f"Banco de Horas - {self.funcionario.nome}"
+
+
 
 
 class LancamentoHoras(SoftDeleteMixin):
@@ -33,12 +39,18 @@ class LancamentoHoras(SoftDeleteMixin):
         help_text="Valor da hora neste lançamento específico"
     )
     
-    data = models.DateTimeField(auto_now_add=True)
+    # ALTERAÇÃO AQUI: De DateTimeField(auto_now_add=True) para DateField editável
+    data = models.DateField(
+        default=timezone.now, 
+        verbose_name="Data do Evento"
+    ) 
+
+    # Adicionei um campo opcional de descrição, ajuda muito na visualização do extrato
+    descricao = models.CharField(max_length=255, blank=True, null=True, verbose_name="Descrição")
 
     @property
     def total_monetario(self):
-        """Calcula quanto vale este lançamento em dinheiro"""
         return self.horas * self.valor_hora
 
     def __str__(self):
-        return f"{self.horas}h - {self.funcionario.nome}"
+        return f"{self.horas}h - {self.funcionario.nome} em {self.data}"

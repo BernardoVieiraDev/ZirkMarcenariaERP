@@ -25,6 +25,32 @@
         .radio-group { display: flex; gap: 15px; padding-top: 8px; }
         .radio-item { display: flex; align-items: center; gap: 6px; font-size: 14px; cursor: pointer; }
         .radio-item input { width: auto; margin: 0; cursor: pointer; }
+        
+        /* Estilos extras para a tabela dinâmica */
+        .item-row {
+            background-color: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 12px;
+            margin-bottom: 12px;
+            display: grid; 
+            grid-template-columns: 2fr 1fr 1fr 30px; 
+            gap: 12px; 
+            align-items: end;
+        }
+        .btn-add-item {
+            background: #eff6ff; 
+            border: 1px solid #bfdbfe; 
+            color: #1d4ed8; 
+            padding: 6px 12px; 
+            border-radius: 6px; 
+            font-size: 12px; 
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .btn-add-item:hover { background: #dbeafe; }
+        .delete-checkbox { display: flex; align-items: center; justify-content: center; padding-bottom: 10px; }
     </style>
 
     <div class="modal-header" style="padding: 20px 24px; border-bottom: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center; background: white; border-radius: 12px 12px 0 0;">
@@ -57,9 +83,7 @@
                 {{ form.data_demissao }}
                 <div class="error-msg">{{ form.data_demissao.errors }}</div>
             </div>
-
-            
-            </div>
+        </div>
 
         <div class="section-header">
             <span class="badge-section bg-proventos">Proventos (+)</span>
@@ -123,32 +147,49 @@
             </div>
         </div>
 
-        <div class="section-header">
-            <i class="fas fa-plus-circle" style="color: #64748b;"></i> 4. Outros (Opcional)
+        <div class="section-header" style="justify-content: space-between;">
+            <div style="display: flex; align-items: center; gap: 8px;">
+                <i class="fas fa-plus-circle" style="color: #64748b;"></i> 
+                <span>4. Outros Lançamentos</span>
+            </div>
+            <button type="button" id="add-item-btn" class="btn-add-item">
+                <i class="fas fa-plus"></i> Adicionar Item
+            </button>
         </div>
-        <div style="display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 16px; align-items: start;">
-            <div>
-                <label class="form-label">Descrição</label>
-                {{ form.outro_nome }}
-                <div class="error-msg">{{ form.outro_nome.errors }}</div>
-            </div>
-            <div>
-                <label class="form-label">Valor (R$)</label>
-                {{ form.outro_valor }}
-                <div class="error-msg">{{ form.outro_valor.errors }}</div>
-            </div>
-            <div>
-                <label class="form-label">Tipo</label>
-                <div class="radio-group">
-                    {% for radio in form.outro_tipo %}
-                        <label class="radio-item" for="{{ radio.id_for_label }}">
-                            {{ radio.tag }}
-                            {{ radio.choice_label }}
-                        </label>
+
+        <div id="itens-container">
+            {{ itens_formset.management_form }}
+            
+            {% for item_form in itens_formset %}
+                <div class="item-row">
+                    {% for hidden in item_form.hidden_fields %}
+                        {{ hidden }}
                     {% endfor %}
+
+                    <div>
+                        <label class="form-label" style="font-size: 11px;">Descrição</label>
+                        {{ item_form.descricao }}
+                        <div class="error-msg">{{ item_form.descricao.errors }}</div>
+                    </div>
+                    <div>
+                        <label class="form-label" style="font-size: 11px;">Valor (R$)</label>
+                        {{ item_form.valor }}
+                        <div class="error-msg">{{ item_form.valor.errors }}</div>
+                    </div>
+                    <div>
+                        <label class="form-label" style="font-size: 11px;">Tipo</label>
+                        {{ item_form.tipo }}
+                    </div>
+                    
+                    <div class="delete-checkbox" title="Remover este item">
+                        {% if itens_formset.can_delete %}
+                            <label style="font-size: 11px; color: #dc2626; cursor: pointer;">
+                                {{ item_form.DELETE }} <br> Excluir
+                            </label>
+                        {% endif %}
+                    </div>
                 </div>
-                <div class="error-msg">{{ form.outro_tipo.errors }}</div>
-            </div>
+            {% endfor %}
         </div>
 
     </div>
@@ -159,4 +200,54 @@
             Salvar Rescisão
         </button>
     </div>
+
+    <script>
+        document.getElementById('add-item-btn').addEventListener('click', function() {
+            // Localiza o input que guarda o número total de forms (gerado pelo management_form)
+            // O ID padrão costuma ser id_itens_adicionais-TOTAL_FORMS
+            var totalFormsInput = document.querySelector('input[name$="-TOTAL_FORMS"]');
+            var container = document.getElementById('itens-container');
+            var totalForms = parseInt(totalFormsInput.value);
+            
+            // Clona a primeira linha de item existente (ou cria um template se preferir)
+            var rows = container.getElementsByClassName('item-row');
+            if (rows.length === 0) {
+                // Caso extremo: não há linhas para clonar (ex: deletou todas). 
+                // Idealmente o backend manda extra=1, mas por segurança pode-se recarregar.
+                console.error("Não há linha base para clonar.");
+                return;
+            }
+            var newRow = rows[0].cloneNode(true);
+            
+            // Limpa os valores dos inputs clonados e atualiza os IDs/Names
+            var inputs = newRow.querySelectorAll('input, select');
+            
+            inputs.forEach(function(input) {
+                // Atualiza o índice no name e id (ex: itens_adicionais-0-valor -> itens_adicionais-1-valor)
+                // Substitui o número do índice antigo pelo novo totalForms
+                var nameRegex = /-\d+-/; 
+                if (input.name) {
+                    input.name = input.name.replace(nameRegex, '-' + totalForms + '-');
+                }
+                if (input.id) {
+                    input.id = input.id.replace(nameRegex, '-' + totalForms + '-');
+                }
+                
+                // Limpa o valor
+                if (input.type !== 'hidden' && input.type !== 'checkbox') {
+                    input.value = '';
+                }
+                // Desmarca checkbox e remove valor se for hidden de ID
+                if (input.type === 'checkbox') input.checked = false;
+                // Se for o input hidden "id" (chave primária), limpa para criar um novo
+                if (input.name && input.name.endsWith('-id')) input.value = '';
+            });
+
+            // Adiciona a nova linha ao container
+            container.appendChild(newRow);
+            
+            // Atualiza o contador total de forms
+            totalFormsInput.value = totalForms + 1;
+        });
+    </script>
 </form>

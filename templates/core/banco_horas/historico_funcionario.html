@@ -1,0 +1,49 @@
+{% extends 'core/base.html' %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>Extrato: {{ funcionario.nome }}</h2>
+    <div class="mb-3">
+        <strong>Saldo Atual:</strong> 
+        <span class="badge {% if funcionario.banco_horas.saldo < 0 %}bg-danger{% else %}bg-success{% endif %}">
+            {{ funcionario.banco_horas.saldo }}h
+        </span>
+    </div>
+
+    {% regroup lancamentos by data|date:"F Y" as lancamentos_por_mes %}
+
+    {% for mes in lancamentos_por_mes %}
+        <div class="card mb-4">
+            <div class="card-header bg-light">
+                <h5 class="mb-0">{{ mes.grouper|title }}</h5>
+            </div>
+            <div class="card-body p-0">
+                <table class="table table-hover mb-0">
+                    <thead>
+                        <tr>
+                            <th>Data</th>
+                            <th>Descrição</th>
+                            <th class="text-end">Horas</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in mes.list %}
+                        <tr>
+                            <td>{{ item.data|date:"d/m/Y" }}</td>
+                            <td>{{ item.descricao|default:"-" }}</td>
+                            <td class="text-end {% if item.horas < 0 %}text-danger{% else %}text-success{% endif %}">
+                                {{ item.horas }}h
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    {% empty %}
+        <p>Nenhum lançamento registrado.</p>
+    {% endfor %}
+    
+    <a href="{% url 'banco_horas:banco_horas_list' %}" class="btn btn-secondary mt-3">Voltar</a>
+</div>
+{% endblock %}

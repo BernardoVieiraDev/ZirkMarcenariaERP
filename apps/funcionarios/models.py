@@ -1,8 +1,10 @@
 from django.db import models
+from django.db import transaction # Importante para garantir integridade
 from apps.configuracoes.mixin import SoftDeleteMixin
 
-# Choices
+# Choices (Mantenha igual)
 class GrauInstrucao(models.IntegerChoices):
+    # ... (mantenha as opções)
     ANALFABETO = 1, "Analfabeto"
     FUNDAMENTAL_INCOMPLETO = 2, "1ª a 4ª Série incompleta"
     FUNDAMENTAL_COMPLETO = 3, "4ª Série completa"
@@ -14,6 +16,7 @@ class GrauInstrucao(models.IntegerChoices):
     SUPERIOR_COMPLETO = 9, "Superior completo"
 
 class EstadoCivil(models.TextChoices):
+    # ... (mantenha as opções)
     SOLTEIRO = "SOL", "Solteiro(a)"
     CASADO = "CAS", "Casado(a)"
     DIVORCIADO = "DIV", "Divorciado(a)"
@@ -25,7 +28,7 @@ class Sexo(models.TextChoices):
     FEMININO = "F", "Feminino"
     OUTRO = "O", "Outro"
 
-# Model principal
+# --- MODELO PRINCIPAL ---
 class Funcionario(SoftDeleteMixin):
     nome = models.CharField(max_length=200)
     data_nascimento = models.DateField(null=True, blank=True)
@@ -34,7 +37,6 @@ class Funcionario(SoftDeleteMixin):
         max_length=1, 
         choices=Sexo.choices,
         default=Sexo.OUTRO)
-
 
     grau_instrucao = models.IntegerField(choices=GrauInstrucao.choices, null=True, blank=True)
     estado_civil = models.CharField(max_length=3, choices=EstadoCivil.choices, blank=True, null=True)
@@ -48,10 +50,65 @@ class Funcionario(SoftDeleteMixin):
     def __str__(self):
         return self.nome
     
-    
+    def delete(self, using=None, keep_parents=False):
+        """
+        Sobrescreve o delete para propagar o Soft Delete para os modelos 1-to-1 relacionados.
+        """
+        with transaction.atomic():
+            # Tenta excluir (soft delete) os relacionados se existirem
+            if hasattr(self, 'endereco'):
+                self.endereco.delete(using=using)
+            
+            if hasattr(self, 'documentos'):
+                self.documentos.delete(using=using)
+                
+            if hasattr(self, 'dados_trabalhistas'):
+                self.dados_trabalhistas.delete(using=using)
+            
+            # Chama o delete do SoftDeleteMixin (que seta is_deleted=True no Funcionario)
+            super().delete(using=using, keep_parents=keep_parents)
 
-# Endereço separado
-class EnderecoFuncionario(models.Model):
+    def restore(self):
+        """
+        Restaura o funcionário e seus dados relacionados.
+        """
+        with transaction.atomic():
+            # Restaura os relacionados usando o manager 'trash' (pois estão deletados)
+            # Nota: O acesso direto (self.endereco) pode falhar se estiver deletado dependendo do Manager padrão,
+            # então acessamos via query explícita na lixeira ou verify check.
+            
+            # Como o SoftDeleteMixin esconde itens deletados do 'objects', usamos o 'all_objects' ou 'trash'
+            
+            # Endereço
+            try:
+                end = EnderecoFuncionario.all_objects.get(funcionario=self)
+                if end.is_deleted:
+                    end.restore()
+            except EnderecoFuncionario.DoesNotExist:
+                pass
+
+            # Documentos
+            try:
+                docs = DocumentosFuncionario.all_objects.get(funcionario=self)
+                if docs.is_deleted:
+                    docs.restore()
+            except DocumentosFuncionario.DoesNotExist:
+                pass
+
+            # Dados Trabalhistas
+            try:
+                trab = DadosTrabalhistas.all_objects.get(funcionario=self)
+                if trab.is_deleted:
+                    trab.restore()
+            except DadosTrabalhistas.DoesNotExist:
+                pass
+
+            # Restaura o próprio funcionário
+            super().restore()
+
+# --- MODELOS RELACIONADOS (AGORA COM SoftDeleteMixin) ---
+
+class EnderecoFuncionario(SoftDeleteMixin): # Alterado de models.Model para SoftDeleteMixin
     funcionario = models.OneToOneField(Funcionario, on_delete=models.CASCADE, related_name="endereco")
     endereco = models.CharField(max_length=255)
     numero = models.CharField(max_length=10)
@@ -65,8 +122,7 @@ class TipoDocumentoPis(models.TextChoices):
     PIS = "PIS", "PIS"
     PASEP = "PASEP", "PASEP"
 
-# Documentos
-class DocumentosFuncionario(models.Model):
+class DocumentosFuncionario(SoftDeleteMixin): # Alterado de models.Model para SoftDeleteMixin
     funcionario = models.OneToOneField(Funcionario, on_delete=models.CASCADE, related_name="documentos")
 
     pis_pasep = models.CharField(max_length=20, blank=True, null=True, verbose_name="PIS/PASEP")
@@ -88,25 +144,15 @@ class DocumentosFuncionario(models.Model):
             verbose_name="Tipo (PIS/PASEP)"
         )
 
-    rg = models.CharField(max_length=20, blank=True, null=True)
-
-
     @property
     def cpf_formatado(self):
-        """Retorna o CPF formatado como 000.000.000-00"""
-        if not self.cpf:
-            return None
-        
-        # Garante que só temos números
+        if not self.cpf: return None
         numeros = ''.join(filter(str.isdigit, self.cpf))
-        
         if len(numeros) == 11:
             return f"{numeros[:3]}.{numeros[3:6]}.{numeros[6:9]}-{numeros[9:]}"
-        
-        return self.cpf # Retorna original se não tiver 11 dígitos
+        return self.cpf
 
-# Dados trabalhistas
-class DadosTrabalhistas(models.Model):
+class DadosTrabalhistas(SoftDeleteMixin): # Alterado de models.Model para SoftDeleteMixin
     funcionario = models.OneToOneField(Funcionario, on_delete=models.CASCADE, related_name="dados_trabalhistas")
 
     data_admissao_contabilidade = models.DateField()
@@ -120,5 +166,3 @@ class DadosTrabalhistas(models.Model):
 
     contrato_experiencia_dias = models.PositiveIntegerField(null=True, blank=True)
     prorrogação_dias = models.PositiveIntegerField(null=True, blank=True)
-
-

@@ -302,15 +302,36 @@
 
         fetch(url)
             .then(response => response.text())
-            .then(html => {
+.then(html => {
                 const parser = new DOMParser();
                 const doc = parser.parseFromString(html, 'text/html');
                 
-                // Tenta pegar o formulário da página de resposta
-                let newContent = doc.querySelector('form');
+                // 1. Tenta pegar o Título original do Card
+                let titleElement = doc.querySelector('.card-header h5');
+                let modalTitle = titleElement ? titleElement.innerText.trim() : 'Editar';
+
+                // 2. Tenta pegar o conteúdo completo (Formulário + Alertas)
+                let bodyElement = doc.querySelector('.card-body');
+                let contentHTML = bodyElement ? bodyElement.innerHTML : '';
+
+                // Fallback: se não achar card-body, tenta pegar só o form
+                if (!contentHTML) {
+                    let formElement = doc.querySelector('form');
+                    if (formElement) contentHTML = formElement.outerHTML;
+                }
                 
-                if (newContent) {
-                    content.innerHTML = newContent.outerHTML;
+                if (contentHTML) {
+                    // 3. Reconstrói a estrutura do Modal com Cabeçalho e Padding (modal-body)
+                    content.innerHTML = `
+                        <div class="modal-header">
+                            <h3 class="modal-title">${modalTitle}</h3>
+                            <button type="button" class="btn-close" onclick="closeModal('modalGeneric')">✕</button>
+                        </div>
+                        <div class="modal-body">
+                            ${contentHTML}
+                        </div>
+                    `;
+
                     // Re-ativa scripts se houver
                     const scripts = content.getElementsByTagName("script");
                     for (let i = 0; i < scripts.length; i++) {
@@ -318,6 +339,7 @@
                     }
                 } else {
                     // Fallback para página de confirmação de exclusão ou erro
+                    // ... (mantém o código original do 'else' aqui se quiser)
                     let fallbackContent = doc.querySelector('.container') || doc.body;
                     content.innerHTML = `
                         <div class="modal-header">
