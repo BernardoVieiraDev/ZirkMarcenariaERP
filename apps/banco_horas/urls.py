@@ -11,5 +11,5 @@ urlpatterns = [
     # Adicionado a rota para deletar:
     path('excluir/<int:pk>/', views.banco_horas_delete, name='banco_horas_delete'),
     path('historico/<int:pk>/', views.historico_funcionario, name='historico_funcionario'),
-
+    path('exportar/', views.exportar_banco_horas, name='exportar_excel'),
 ]

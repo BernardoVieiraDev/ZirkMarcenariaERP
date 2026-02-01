@@ -1,17 +1,18 @@
 import random
+from datetime import date, timedelta
 from decimal import Decimal
-from datetime import timedelta, date
+
 from django.core.management.base import BaseCommand
 from django.db import transaction
 from faker import Faker
 
-# Importação dos Models
-from apps.funcionarios.models import (
-    Funcionario, EnderecoFuncionario, DocumentosFuncionario, 
-    DadosTrabalhistas, Sexo, EstadoCivil, GrauInstrucao
-)
-from apps.ferias.models import PeriodoAquisitivo
 from apps.banco_horas.models import BancoHoras
+from apps.ferias.models import PeriodoAquisitivo
+# Importação dos Models
+from apps.funcionarios.models import (DadosTrabalhistas, DocumentosFuncionario,
+                                      EnderecoFuncionario, EstadoCivil,
+                                      Funcionario, GrauInstrucao, Sexo)
+
 
 class Command(BaseCommand):
     help = 'Gera funcionários fictícios com dados completos (Endereço, Docs, RH) para teste.'

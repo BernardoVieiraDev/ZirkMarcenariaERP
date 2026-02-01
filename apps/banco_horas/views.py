@@ -3,9 +3,11 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.db.models import Sum
 from django.db.models.functions import TruncMonth
+from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 
 from apps.funcionarios.models import Funcionario
+from apps.relatorios.services.banco_horas import BancoHorasExcelService
 
 from .forms import LancamentoHorasForm
 from .models import BancoHoras, LancamentoHoras
@@ -146,3 +148,32 @@ def historico_funcionario(request, pk):
         
     # Fallback caso alguém acesse a URL diretamente (opcional)
     return render(request, 'core/banco_horas/historico_modal.html', context)
+
+
+
+@login_required
+def exportar_banco_horas(request):
+    """
+    Gera o download do relatório Excel de Banco de Horas.
+    """
+    # 1. Busca os dados (QuerySets)
+    # Trazemos todos os bancos ativos ordenados por nome
+    bancos = BancoHoras.objects.select_related('funcionario').filter(
+        funcionario__is_deleted=False
+    ).order_by('funcionario__nome')
+    
+    # Trazemos todos os lançamentos, ordenados por data (mais recente primeiro)
+    lancamentos = LancamentoHoras.objects.select_related('funcionario').filter(
+        funcionario__is_deleted=False
+    ).order_by('-data', 'funcionario__nome')
+    # 2. Gera o arquivo Excel usando o Service
+    excel_file = BancoHorasExcelService.gerar_relatorio(bancos, lancamentos)
+
+    # 3. Prepara a resposta HTTP para download
+    response = HttpResponse(
+        excel_file,
+        content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    )
+    response['Content-Disposition'] = 'attachment; filename="Relatorio_Banco_Horas.xlsx"'
+    
+    return response
