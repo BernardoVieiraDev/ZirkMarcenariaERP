@@ -436,13 +436,20 @@ def pagar_delete(request, pk):
 @login_required
 def folha_mensal_view(request):
     hoje = date.today()
-    mes = int(request.GET.get('mes', hoje.month))
-    ano = int(request.GET.get('ano', hoje.year))
     
+    # Adicionado bloco try/except para capturar parâmetros inválidos
+    try:
+        mes = int(request.GET.get('mes', hoje.month))
+        ano = int(request.GET.get('ano', hoje.year))
+    except (ValueError, TypeError):
+        mes = hoje.month
+        ano = hoje.year
+        
     gerar_folha_mensal(mes, ano)
     
     data_ref = date(ano, mes, 1)
     
+
     queryset = FolhaPagamento.objects.filter(
         data_referencia=data_ref
     ).select_related('funcionario').order_by('funcionario__nome')
@@ -499,8 +506,15 @@ def folha_mensal_view(request):
 
 @login_required
 def folha_pagar_todos(request):
-    mes = int(request.GET.get('mes'))
-    ano = int(request.GET.get('ano'))
+    # Adicionado bloco try/except para proteger a ação
+    try:
+        mes = int(request.GET.get('mes'))
+        ano = int(request.GET.get('ano'))
+    except (ValueError, TypeError):
+        messages.error(request, "Parâmetros de mês e ano em falta ou inválidos na URL.")
+        # Redireciona para uma rota segura em vez de quebrar (ajuste a rota se necessário)
+        return redirect(request.META.get('HTTP_REFERER', '/')) 
+
     data_ref = date(ano, mes, 1)
     
     count = FolhaPagamento.objects.filter(data_referencia=data_ref).update(status='Pago')
@@ -510,11 +524,16 @@ def folha_pagar_todos(request):
 
 @login_required
 def folha_exportar_excel(request):
-    from apps.relatorios.services.follha_pagamento import \
-        FuncionarioFolhaExcelService
+    from apps.relatorios.services.follha_pagamento import FuncionarioFolhaExcelService
     
-    mes = int(request.GET.get('mes', date.today().month))
-    ano = int(request.GET.get('ano', date.today().year))
+    hoje = date.today()
+    try:
+        mes = int(request.GET.get('mes', hoje.month))
+        ano = int(request.GET.get('ano', hoje.year))
+    except (ValueError, TypeError):
+        mes = hoje.month
+        ano = hoje.year
+        
     data_ref = date(ano, mes, 1)
     
     pagamentos = FolhaPagamento.objects.filter(data_referencia=data_ref).order_by('funcionario__nome')
@@ -526,8 +545,12 @@ def folha_exportar_excel(request):
 
 @login_required
 def folha_fechar_mes(request):
-    mes = int(request.GET.get('mes'))
-    ano = int(request.GET.get('ano'))
+    try:
+        mes = int(request.GET.get('mes'))
+        ano = int(request.GET.get('ano'))
+    except (ValueError, TypeError):
+        return HttpResponse("Erro: Mês e ano obrigatórios ou em formato inválido.", status=400)
+
     data_ref = date(ano, mes, 1)
 
     try:

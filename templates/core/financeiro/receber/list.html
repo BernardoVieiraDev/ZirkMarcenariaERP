@@ -473,7 +473,7 @@
             const parser = new DOMParser();
             const doc = parser.parseFromString(html, 'text/html');
             const newContent = doc.querySelector('form') || doc.querySelector('.remote-content') || doc.body;
-            content.innerHTML = newContent.innerHTML || newContent.outerHTML;
+            content.innerHTML = newContent.outerHTML;
         }).catch(() => {
             content.innerHTML = '<div class="modal-body">Erro de conexão.</div>';
         });

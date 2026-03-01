@@ -201,11 +201,16 @@ def deletar_cliente(request, pk):
 
     return redirect('clientes:list')
 
+
 @login_required
 def detalhe_cliente(request, pk):
     cliente = get_object_or_404(Cliente, pk=pk)
     contratos = ContratoRT.objects.filter(cliente=cliente).select_related('arquiteta').order_by('-data_contrato')
-    financeiro = Receber.objects.filter(contrato_rt__cliente=cliente).order_by('data_vencimento')
+    
+    # MODIFICAÇÃO AQUI: Busca as parcelas ligadas diretamente ao cliente ou através de um contrato
+    financeiro = Receber.objects.filter(
+        Q(cliente=cliente) | Q(contrato_rt__cliente=cliente)
+    ).distinct().order_by('data_vencimento')
     
     context = {
         'cliente': cliente,
