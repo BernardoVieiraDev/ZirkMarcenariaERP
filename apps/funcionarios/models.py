@@ -47,6 +47,7 @@ class Funcionario(SoftDeleteMixin):
     nome_mae = models.CharField(max_length=200, blank=True, null=True)
 
     numero_filhos = models.PositiveIntegerField(default=0)
+    chave_pix = models.CharField(max_length=255, verbose_name="Chave PIX", null=True, blank=True)
 
     def __str__(self):
         return self.nome

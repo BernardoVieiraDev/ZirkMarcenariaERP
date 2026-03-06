@@ -10,7 +10,8 @@ class Cliente(SoftDeleteMixin):
     telefone = models.CharField(max_length=20, verbose_name="Telefone")
     email = models.EmailField(max_length=255, verbose_name="E-mail", null=True, blank=True)
     data_cadastro = models.DateTimeField(auto_now_add=True)
-
+    chave_pix = models.CharField(max_length=255, verbose_name="Chave PIX", null=True, blank=True)
+    
     class Meta:
         verbose_name = "Cliente"
         verbose_name_plural = "Clientes"

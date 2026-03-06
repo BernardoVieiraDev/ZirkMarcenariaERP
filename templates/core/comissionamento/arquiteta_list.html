@@ -298,6 +298,7 @@
                 <thead>
                     <tr>
                         <th width="40%">Arquiteta</th>
+                        <th width="20%">Chave PIX</th>
                         <th width="20%">CPF</th>
                         <th width="30%">Dados Bancários</th>
                         <th width="10%"></th>
@@ -319,6 +320,9 @@
                         </td>
                         <td class="text-main">
                             {{ arquiteta.cpf|default:"-" }}
+                        </td>
+                        <td class="text-main">
+                            {{ arquiteta.chave_pix|default:"-" }}
                         </td>
                         <td>
                             <div class="search-bank">

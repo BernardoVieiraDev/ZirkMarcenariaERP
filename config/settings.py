@@ -7,25 +7,21 @@ from dotenv import load_dotenv
 # --- CONFIGURAÇÃO DE CAMINHOS ---
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-# --- CARREGAMENTO DE ENV (LOCAL) ---
+# --- CARREGAMENTO DE ENV ---
 dotenv_path = BASE_DIR / '.env'
 if dotenv_path.exists():
     load_dotenv(dotenv_path)
 
 # --- AMBIENTE ---
-# No PythonAnywhere, defina DJANGO_ENV='production' nas Environment Variables
+# No PythonAnywhere, certifique-se de ter DJANGO_ENV='production' no arquivo .env
 IS_PRODUCTION = os.getenv('DJANGO_ENV') == 'production'
 
-# Em produção, DEBUG deve ser False, mas para seu teste inicial, 
-# se quiser ver erros na tela, pode definir DJANGO_DEBUG='True' no painel
 DEBUG = os.getenv('DJANGO_DEBUG', 'False') == 'True' if IS_PRODUCTION else True
 
 SECRET_KEY = os.getenv('DJANGO_SECRET_KEY')
 
-# Geração automática de chave provisória para testes se não houver ENV configurada
 if not SECRET_KEY:
     if IS_PRODUCTION:
-        # AVISO: Em um deploy final real, isso seria perigoso. Para teste é aceitável.
         print("AVISO: Usando chave secreta provisória. Configure DJANGO_SECRET_KEY.")
         SECRET_KEY = 'django-insecure-test-deploy-key-change-me-later'
     else:
@@ -36,7 +32,7 @@ allowed_hosts_env = os.getenv('ALLOWED_HOSTS')
 if allowed_hosts_env:
     ALLOWED_HOSTS = [host.strip() for host in allowed_hosts_env.split(',')]
 else:
-    # Permite o domínio padrão do PythonAnywhere automaticamente em produção
+    # Domínios permitidos em produção. Inclua o seu domínio customizado aqui se for o caso.
     ALLOWED_HOSTS = ['.pythonanywhere.com', 'localhost', '127.0.0.1']
 
 # --- APPS ---
@@ -101,21 +97,17 @@ TEMPLATES = [
 
 WSGI_APPLICATION = "config.wsgi.application"
 
-# --- BANCO DE DADOS (LÓGICA HÍBRIDA) ---
-# Se as variáveis existirem (MySQL/Postgres), usa elas.
-# Se NÃO existirem, cai automaticamente para SQLite (Ideal para seu teste).
-# zirk_rh_financeiro/config/settings.py
-
 # --- BANCO DE DADOS ---
 DB_NAME = os.getenv('DB_NAME')
 DB_USER = os.getenv('DB_USER')
 DB_PASSWORD = os.getenv('DB_PASSWORD')
 DB_HOST = os.getenv('DB_HOST')
 
+# Lógica Híbrida: Tenta conectar ao MySQL de produção, se faltar dados usa o SQLite de desenvolvimento
 if all([DB_NAME, DB_USER, DB_PASSWORD, DB_HOST]):
     DATABASES = {
         'default': {
-            'ENGINE': 'django.db.backends.mysql',  # <--- MUDANÇA AQUI (Era postgresql)
+            'ENGINE': 'django.db.backends.mysql',
             'NAME': DB_NAME,
             'USER': DB_USER,
             'PASSWORD': DB_PASSWORD,
@@ -128,7 +120,6 @@ if all([DB_NAME, DB_USER, DB_PASSWORD, DB_HOST]):
         }
     }
 else:
-    # Fallback para SQLite (Desenvolvimento Local)
     DATABASES = {
         "default": {
             "ENGINE": "django.db.backends.sqlite3",
@@ -136,17 +127,8 @@ else:
         }
     }
 
-# settings.py
-CACHES = {
-    'default': {
-        'BACKEND': 'django.core.cache.backends.dummy.DummyCache',
-    }
-}
-
+# --- SESSÕES ---
 SESSION_ENGINE = "django.contrib.sessions.backends.db"
-SESSION_CACHE_ALIAS = "default"
-
-
 
 # --- LOGGING ---
 LOGGING = {
@@ -198,18 +180,15 @@ STATICFILES_DIRS = [BASE_DIR / 'static']
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
 
-# --- E-MAIL (MODO TESTE/CONSOLE) ---
-# Não envia de verdade, apenas mostra no log o que seria enviado.
+# --- E-MAIL ---
 EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
 
 # --- CRIPTOGRAFIA (FERNET) ---
-# Se não definir no PA, usa chave fixa (apenas para este teste, não use em produção real)
 fernet_key = os.getenv('DJANGO_FERNET_KEY', 'pPz3-FoPxGNLD9SglRd-0L65svR4TA3WqoqPFEgrYeg=')
 FERNET_KEYS = [fernet_key]
 
-# --- SEGURANÇA WEB ---
+# --- SEGURANÇA WEB DE PRODUÇÃO ---
 if IS_PRODUCTION:
-    # Força HTTPS e Cookies seguros
     SECURE_SSL_REDIRECT = True
     SESSION_COOKIE_SECURE = True
     CSRF_COOKIE_SECURE = True
@@ -220,7 +199,6 @@ LOGIN_URL = '/'
 LOGIN_REDIRECT_URL = '/dashboard/'
 LOGOUT_REDIRECT_URL = '/'
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
-
 
 MESSAGE_TAGS = {
     messages.ERROR: 'danger',

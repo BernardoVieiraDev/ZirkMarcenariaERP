@@ -7,10 +7,11 @@ class FuncionarioForm(forms.ModelForm):
         fields = [
             'nome', 'data_nascimento', 'sexo', 'natural_de',
             'grau_instrucao', 'estado_civil', 'conjuge', 
-            'nome_pai', 'nome_mae', 'numero_filhos'
+            'nome_pai', 'nome_mae', 'numero_filhos','chave_pix'
         ]
         widgets = {
             'data_nascimento': forms.DateInput(attrs={'type': 'date'}, format='%Y-%m-%d'  ),
+            'chave_pix': forms.TextInput(attrs={'placeholder': 'CPF, E-mail, Celular ou Aleatória'}),
             }
 
 class EnderecoFuncionarioForm(forms.ModelForm):

@@ -10,6 +10,7 @@ class Arquiteta(SoftDeleteMixin):
     banco = models.CharField(max_length=50, verbose_name="Banco de Pagamento")
     agencia = models.CharField(max_length=20, verbose_name="Agência")
     conta = models.CharField(max_length=50, verbose_name="Conta Bancária")
+    chave_pix = models.CharField(max_length=255, verbose_name="Chave PIX", null=True, blank=True)
     
     class Meta:
         verbose_name = "Arquiteta"

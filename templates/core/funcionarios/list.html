@@ -283,8 +283,8 @@
     }
     .form-section-title:first-child { margin-top: 0; }
     
-    .form-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
-    .form-group label { display: block; font-size: 13px; font-weight: 600; color: var(--slate-600); margin-bottom: 6px; }
+    .form-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+    .form-group label { display: block; font-size: 13px; font-weight: 600; color: var(--slate-600); margin-bottom: 4px; }
     .form-group input, .form-group select, .form-group textarea { 
         width: 100%; padding: 10px 12px; border-radius: 8px; border: 1px solid var(--slate-300); 
         font-size: 14px; color: var(--slate-900); transition: border-color 0.15s;
@@ -361,8 +361,9 @@
             <table class="rh-table" id="funcionariosTable">
                 <thead>
                     <tr>
-                        <th width="40%">Colaborador</th>
-                        <th width="20%">Cargo / Função</th>
+                        <th width="25%">Colaborador</th>
+                        <th width="20%">Chave PIX</th>
+                        <th width="15%">Cargo / Função</th>
                         <th width="15%">Admissão</th>
                         <th width="15%">Salário</th>
                         <th width="10%" style="text-align: right;">Ações</th>
@@ -381,6 +382,9 @@
                                     <div class="text-muted">{{ funcionario.documentos.cpf_formatado|default:"-" }}</div>
                                 </div>
                             </div>
+                        </td>
+                        <td class="text-muted">
+                            {{ funcionario.chave_pix|default:"-" }}
                         </td>
                         <td>
                             {% if funcionario.dados_trabalhistas.funcao %}

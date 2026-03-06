@@ -11,13 +11,14 @@ from .models import Arquiteta, ContratoRT
 class ArquitetaForm(forms.ModelForm):
     class Meta:
         model = Arquiteta
-        fields = ['nome', 'cpf', 'banco', 'agencia', 'conta']
+        fields = ['nome', 'cpf', 'banco', 'agencia', 'conta', 'chave_pix']
         widgets = {
             'nome': forms.TextInput(attrs={'class': 'form-control'}),
             'cpf': forms.TextInput(attrs={'class': 'form-control', 'data-mask': '000.000.000-00'}),
             'banco': forms.TextInput(attrs={'class': 'form-control'}),
             'agencia': forms.TextInput(attrs={'class': 'form-control'}),
             'conta': forms.TextInput(attrs={'class': 'form-control'}),
+            'chave_pix': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'CPF, E-mail, Celular ou Aleatória'}),
         }
 
 class ContratoRTForm(forms.ModelForm):
