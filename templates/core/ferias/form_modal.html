@@ -1,14 +1,14 @@
-<form method="POST" action="{{ request.path }}">
+<form method="POST" action="{{ request.path }}" style="display: flex; flex-direction: column; max-height: 85vh; overflow: hidden; margin: 0;">
     {% csrf_token %}
     
-    <div class="modal-header">
+    <div class="modal-header" style="flex-shrink: 0;">
         <h3 class="modal-title">
             {% if object %}Editar Pagamento{% else %}Novo Pagamento{% endif %}
         </h3>
         <button type="button" class="btn-close" onclick="closeActionModal()">✕</button>
     </div>
     
-    <div class="modal-body">
+    <div class="modal-body" style="flex: 1 1 auto; overflow-y: auto; max-height: calc(85vh - 130px); padding-right: 10px; padding-bottom: 20px;">
         {% if form.non_field_errors %}
             <div class="alert alert-danger">
                 {{ form.non_field_errors }}
@@ -37,7 +37,7 @@
         </div>
     </div>
     
-    <div class="modal-footer">
+    <div class="modal-footer" style="flex-shrink: 0;">
         <button type="button" class="btn-ghost" onclick="closeActionModal()">Cancelar</button>
         <button type="submit" class="rh-btn rh-btn-primary">Salvar Alterações</button>
     </div>

@@ -29,6 +29,9 @@ class Sexo(models.TextChoices):
     FEMININO = "F", "Feminino"
     OUTRO = "O", "Outro"
 
+
+
+
 # --- MODELO PRINCIPAL ---
 class Funcionario(SoftDeleteMixin):
     nome = models.CharField(max_length=200)
@@ -75,6 +78,9 @@ class Funcionario(SoftDeleteMixin):
             # Iteramos para garantir que o método .delete() do SoftDeleteMixin de cada lançamento seja chamado
             for lancamento in self.lancamentos_horas.all():
                 lancamento.delete(using=using)
+
+            for beneficio in self.beneficios.all():
+                beneficio.delete(using=using)
             
             # Chama o delete do SoftDeleteMixin no próprio funcionário
             super().delete(using=using, keep_parents=keep_parents)
@@ -116,10 +122,23 @@ class Funcionario(SoftDeleteMixin):
             for lancamento in lancamentos_deletados:
                 lancamento.restore()
 
+            # --- Restaura Benefícios ---
+            beneficios_deletados = BeneficioFuncionario.trash.filter(funcionario=self)
+            for beneficio in beneficios_deletados:
+                beneficio.restore()
+
             # Restaura o próprio funcionário
             super().restore()
 
 # --- MODELOS RELACIONADOS ---
+
+class BeneficioFuncionario(SoftDeleteMixin):
+    funcionario = models.ForeignKey(Funcionario, on_delete=models.CASCADE, related_name="beneficios")
+    nome = models.CharField(max_length=100, verbose_name="Nome do Benefício (Ex: Odontológico)")
+    valor_desconto = models.DecimalField(max_digits=10, decimal_places=2, verbose_name="Valor a Descontar (R$)")
+
+    def __str__(self):
+        return f"{self.nome} - R$ {self.valor_desconto}"
 
 class EnderecoFuncionario(SoftDeleteMixin):
     funcionario = models.OneToOneField(Funcionario, on_delete=models.CASCADE, related_name="endereco")

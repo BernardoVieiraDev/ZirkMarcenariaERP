@@ -64,4 +64,26 @@
     .empty{padding:20px;text-align:center;color:var(--muted)}
 
     /* Responsive */
+
+/* Garante que a caixa de diálogo respeite o limite vertical da tela */
+.modal-dialog {
+    max-height: 90vh; /* Ocupa no máximo 90% da altura da viewport */
+    display: flex;
+    flex-direction: column;
+    margin: 1.75rem auto; /* Mantém a margem padrão */
+}
+
+/* O conteúdo não pode transbordar do limite estabelecido acima */
+.modal-content {
+    max-height: 100%;
+    overflow: hidden;
+}
+
+/* O "corpo" do modal é quem vai rolar verticalmente */
+.modal-body {
+    overflow-y: auto;
+    /* Adiciona um padding extra para os últimos elementos não colarem no rodapé */
+    padding-bottom: 2rem; 
+}
+
     @media (max-width:720px){.content{flex-direction:column}.modal{width:92%}}

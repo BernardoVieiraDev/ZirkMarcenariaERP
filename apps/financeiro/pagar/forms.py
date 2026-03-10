@@ -87,24 +87,23 @@ class GastoBaseForm(forms.ModelForm):
         cleaned_data = super().clean()
         origem = cleaned_data.get('origem_pagamento')
         banco = cleaned_data.get('banco_origem')
+        
+        # 1. Pegue o status atual do formulário
+        status = cleaned_data.get('status') 
 
         # --- LÓGICA CORRIGIDA ---
-        
         if origem == 'CAIXA':
-            # 1. Se é Caixa, FORÇA o banco a ser vazio
+            # Se é Caixa, FORÇA o banco a ser vazio e pagamento para DINHEIRO
             cleaned_data['banco_origem'] = None
-            
-            # 2. FORÇA a forma de pagamento para "DINHEIRO" automaticamente
             cleaned_data['forma_pagamento'] = 'DINHEIRO'
             
-            # 3. Se houver erro de "Campo obrigatório" no banco, removemos o erro
             if 'banco_origem' in self._errors:
                 del self._errors['banco_origem']
         
         elif origem == 'BANCO':
-            # Se é Banco, aí sim exigimos que o usuário tenha selecionado um banco
-            if not banco:
-                self.add_error('banco_origem', 'Selecione uma conta bancária para esta operação.')
+            # 2. SÓ EXIGE o banco se a conta estiver sendo salva como 'Pago' ou 'Compensado'
+            if status in ['Pago', 'Compensado'] and not banco:
+                self.add_error('banco_origem', 'Selecione uma conta bancária para confirmar o pagamento.')
 
         return cleaned_data
     
@@ -207,7 +206,7 @@ class ChequeForm(forms.ModelForm):
     )
     class Meta:
         model = Cheque
-        fields = 'descricao', 'valor','parcelas', 'data_emissao', 'numero_cheque', 'status','banco_origem', 'tipo_entidade'
+        fields = 'descricao', 'valor', 'data_emissao', 'numero_cheque', 'status','banco_origem', 'tipo_entidade'
         widgets = {
             'descricao': forms.TextInput(attrs={'class': 'form-control'}),
             'valor': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
@@ -234,6 +233,15 @@ class GastoGeralForm(forms.ModelForm):
         label="Origem do Recurso"
     )
 
+    parcelas = forms.IntegerField(
+        initial=1, 
+        min_value=1, 
+        label="Qtd. Parcelas", 
+        required=False,
+        widget=forms.NumberInput(attrs={'class': 'form-control', 'placeholder': '1 = À vista'})
+    )
+    
+
     class Meta:
         model = GastoGeral
         fields = [
@@ -250,6 +258,7 @@ class GastoGeralForm(forms.ModelForm):
             'tipo_pagamento',
             'status',
             'forma_pagamento',
+            
             'banco_origem',  # <--- ADICIONE ESTE CAMPO
         ]
         widgets = {
@@ -309,6 +318,7 @@ class GastoGasolinaForm(GastoGeralForm):
             'carro',
             'status',
             'forma_pagamento',
+            
             'banco_origem', # Necessário pois é usado na lógica de clean() do GastoGeralForm
         ]
 
@@ -390,10 +400,14 @@ class ComissaoArquitetoForm(forms.ModelForm):
 
 
 class FolhaPagamentoForm(forms.ModelForm):
+    parcelas = forms.IntegerField(
+        initial=1, min_value=1, label="Parcelamento", required=False,
+        widget=forms.NumberInput(attrs={'class': 'form-control', 'placeholder': 'Qtd Parcelas'})
+    )
     class Meta:
         model = FolhaPagamento
         fields = [
-            'funcionario', 'data_referencia', 'salario_real', 'adiantamento',
+         'funcionario', 'data_referencia', 'salario_real', 'adiantamento',
             'ferias_terco', 'empreitada', 'decimo_terceiro', 'vale',
             'horas_extras_valor','referencia_holerite', 'observacoes'
         ]
@@ -466,6 +480,7 @@ class GastoAlmocoForm(GastoGeralForm):
             'observacoes',  # <--- Campo Novo
             'status',
             'forma_pagamento',
+            
             'banco_origem',
         ]
         widgets = {

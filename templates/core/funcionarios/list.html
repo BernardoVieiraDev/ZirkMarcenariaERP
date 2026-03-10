@@ -498,7 +498,38 @@
                     {% endfor %}
                 </div>
 
-            </div>
+                <div class="form-section-title">5. Benefícios e Descontos</div>
+                <div id="beneficios-formset-criacao">
+                    {{ beneficios_formset.management_form }}
+                    <div id="beneficios-container-criacao">
+                        {% for form in beneficios_formset %}
+                        <div class="form-grid beneficio-row-criacao" style="grid-template-columns: 1fr 1fr auto; align-items: end; margin-bottom: 10px; border-bottom: 1px dashed #ccc; padding-bottom: 10px;">
+                            
+                            {% for hidden in form.hidden_fields %}
+                                {{ hidden }}
+                            {% endfor %}
+                            
+                            <div class="form-group" style="margin-bottom: 0;">
+                                <label>{{ form.nome.label }}</label>
+                                {{ form.nome }}
+                            </div>
+                            
+                            <div class="form-group" style="margin-bottom: 0;">
+                                <label>{{ form.valor_desconto.label }}</label>
+                                {{ form.valor_desconto }}
+                            </div>
+                            
+                            <div class="form-group" style="margin-bottom: 0;">
+                                </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    
+                    <button type="button" id="add-beneficio-btn-criacao" style="margin-top: 10px; background: #e0e0e0; color: #333; border: 1px solid #ccc; padding: 6px 12px; cursor: pointer; border-radius: 4px; font-weight: bold;">
+                        + Adicionar Outro Benefício
+                    </button>
+                </div>
+                </div>
             
             <div class="modal-footer">
                 <button type="button" class="btn-ghost" onclick="closeModal()">Cancelar</button>
@@ -636,6 +667,43 @@
         const cepInputNovo = modalNovo.querySelector('#id_cep');
         if (cepInputNovo) {
             initCepScript(cepInputNovo, modalNovo);
+        }
+    });
+
+    // === SCRIPT PARA ADICIONAR BENEFÍCIOS NO MODAL DE CRIAÇÃO ===
+    document.addEventListener('DOMContentLoaded', function() {
+        const addBtnCriacao = document.getElementById('add-beneficio-btn-criacao');
+        const containerCriacao = document.getElementById('beneficios-container-criacao');
+        
+        // Pega o input escondido que o Django usa para contar os formulários de criação
+        const totalFormsInputCriacao = document.querySelector('#beneficios-formset-criacao input[id$="-TOTAL_FORMS"]'); 
+        
+        if(addBtnCriacao && containerCriacao && totalFormsInputCriacao) {
+            addBtnCriacao.addEventListener('click', function() {
+                const formCount = parseInt(totalFormsInputCriacao.value);
+                
+                const rowModel = containerCriacao.querySelector('.beneficio-row-criacao');
+                if(!rowModel) return;
+                
+                const newRow = rowModel.cloneNode(true);
+                
+                // Atualiza os IDs e Names para o novo índice
+                const regex = new RegExp(`-[0-9]+-`, 'g');
+                newRow.innerHTML = newRow.innerHTML.replace(regex, `-${formCount}-`);
+                
+                // Limpa os valores
+                const inputs = newRow.querySelectorAll('input:not([type=hidden])');
+                inputs.forEach(input => {
+                    if (input.type === 'checkbox') {
+                        input.checked = false;
+                    } else {
+                        input.value = '';
+                    }
+                });
+                
+                containerCriacao.appendChild(newRow);
+                totalFormsInputCriacao.value = formCount + 1;
+            });
         }
     });
 </script>

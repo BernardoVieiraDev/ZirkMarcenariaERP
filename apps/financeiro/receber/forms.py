@@ -90,11 +90,10 @@ class ReceberForm(forms.ModelForm):
         banco = cleaned_data.get('banco_destino')
         status = cleaned_data.get('status')
 
-        # Se escolheu CAIXA, forçamos o banco a ser None
         if destino == 'CAIXA':
             cleaned_data['banco_destino'] = None
         
-        # Se escolheu BANCO e está Recebido, o banco é obrigatório
+        # Só bloqueia se estiver marcado como Recebido sem informar o banco
         elif destino == 'BANCO' and status == 'Recebido' and not banco:
             self.add_error('banco_destino', 'Selecione a conta bancária para confirmar o recebimento.')
 

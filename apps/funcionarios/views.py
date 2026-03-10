@@ -12,7 +12,7 @@ from django.http import FileResponse, HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 
 from .forms import (DadosTrabalhistasForm, DocumentosFuncionarioForm,
-                    EnderecoFuncionarioForm, FuncionarioForm)
+                    EnderecoFuncionarioForm, FuncionarioForm, BeneficioFormSet)
 from .models import (DadosTrabalhistas, DocumentosFuncionario,
                      EnderecoFuncionario, Funcionario)
 from .services import CadastroFuncionarioExcelService
@@ -28,6 +28,7 @@ def _get_dashboard_context():
         'total_funcionarios': total_funcionarios,
         'total_folha': total_folha,
     }
+
 @login_required
 def criar_funcionario(request):
     # GET: Redireciona para a lista (onde o modal de criação vive)
@@ -39,8 +40,13 @@ def criar_funcionario(request):
     endereco_form = EnderecoFuncionarioForm(request.POST)
     documentos_form = DocumentosFuncionarioForm(request.POST)
     dados_trabalhistas_form = DadosTrabalhistasForm(request.POST)
+    beneficios_formset = BeneficioFormSet(request.POST)
 
-    if funcionario_form.is_valid() and endereco_form.is_valid() and documentos_form.is_valid() and dados_trabalhistas_form.is_valid():
+    # Adicionado a validação do beneficios_formset
+    if (funcionario_form.is_valid() and endereco_form.is_valid() and 
+        documentos_form.is_valid() and dados_trabalhistas_form.is_valid() and 
+        beneficios_formset.is_valid()):
+        
         funcionario = funcionario_form.save()
         
         endereco = endereco_form.save(commit=False)
@@ -54,6 +60,10 @@ def criar_funcionario(request):
         dados_trabalhistas = dados_trabalhistas_form.save(commit=False)
         dados_trabalhistas.funcionario = funcionario
         dados_trabalhistas.save()
+
+        # Salva os benefícios atrelando ao funcionário recém-criado
+        beneficios_formset.instance = funcionario
+        beneficios_formset.save()
 
         return redirect('funcionarios:funcionarios')
     
@@ -75,7 +85,10 @@ def criar_funcionario(request):
             adicionar_erros(documentos_form, "Documentos")
             
         if not dados_trabalhistas_form.is_valid():
-            adicionar_erros(dados_trabalhistas_form, "Dados Trabalhistas")        
+            adicionar_erros(dados_trabalhistas_form, "Dados Trabalhistas")
+            
+        if not beneficios_formset.is_valid():
+            messages.error(request, "Erro em Benefícios: Verifique os dados inseridos nas linhas de benefícios.")
         
         print("\n\n❌ ERRO DE VALIDAÇÃO AO CRIAR FUNCIONÁRIO:")
         if not funcionario_form.is_valid():
@@ -86,6 +99,8 @@ def criar_funcionario(request):
             print(f"Erro Documentos: {documentos_form.errors.as_json()}")
         if not dados_trabalhistas_form.is_valid():
             print(f"Erro Trabalhistas: {dados_trabalhistas_form.errors.as_json()}")
+        if not beneficios_formset.is_valid():
+            print(f"Erro Beneficios: {beneficios_formset.errors}")
         print("=================================================================\n")
 
     # ERRO: Renderiza a lista novamente, mas com os forms preenchidos e flag para abrir modal
@@ -95,6 +110,7 @@ def criar_funcionario(request):
         'endereco_form': endereco_form,
         'documentos_form': documentos_form,
         'dados_trabalhistas_form': dados_trabalhistas_form,
+        'beneficios_formset': beneficios_formset, # Passa o formset para o context de erro
         'abrir_modal': 'modalFuncionario' # Flag para seu template abrir o modal via JS se necessário
     })
     return render(request, 'core/funcionarios/list.html', context)
@@ -108,6 +124,7 @@ def lista_funcionarios(request):
         'endereco_form': EnderecoFuncionarioForm(),
         'documentos_form': DocumentosFuncionarioForm(),
         'dados_trabalhistas_form': DadosTrabalhistasForm(),
+        'beneficios_formset': BeneficioFormSet(), # Formset vazio para criação
     })
     return render(request, 'core/funcionarios/list.html', context)
 
@@ -130,24 +147,32 @@ def editar_funcionario(request, pk):
         endereco_form = EnderecoFuncionarioForm(request.POST, instance=endereco)
         documentos_form = DocumentosFuncionarioForm(request.POST, instance=documentos)
         dados_trabalhistas_form = DadosTrabalhistasForm(request.POST, instance=dados_trabalhistas)
+        beneficios_formset = BeneficioFormSet(request.POST, instance=funcionario) # Passa request.POST e a instância
 
-        if funcionario_form.is_valid() and endereco_form.is_valid() and documentos_form.is_valid() and dados_trabalhistas_form.is_valid():
+        if (funcionario_form.is_valid() and endereco_form.is_valid() and 
+            documentos_form.is_valid() and dados_trabalhistas_form.is_valid() and 
+            beneficios_formset.is_valid()):
+            
             funcionario_form.save()
             endereco_form.save()
             documentos_form.save()
             dados_trabalhistas_form.save()
+            beneficios_formset.save() # Salva as edições, adições ou deleções do formset
+            
             return redirect('funcionarios:funcionarios')
     else:
         funcionario_form = FuncionarioForm(instance=funcionario)
         endereco_form = EnderecoFuncionarioForm(instance=endereco)
         documentos_form = DocumentosFuncionarioForm(instance=documentos)
         dados_trabalhistas_form = DadosTrabalhistasForm(instance=dados_trabalhistas)
+        beneficios_formset = BeneficioFormSet(instance=funcionario) # Carrega os benefícios do funcionário
 
     context = {
         'funcionario_form': funcionario_form,
         'endereco_form': endereco_form,
         'documentos_form': documentos_form,
         'dados_trabalhistas_form': dados_trabalhistas_form,
+        'beneficios_formset': beneficios_formset, # Passando para o form_modal.html
         'title': 'Editar Funcionário'
     }
 
@@ -190,8 +215,6 @@ def gerar_excel_funcionario(request, pk):
 
 @login_required
 def buscar_endereco_por_cep(request):
-
-
     cep = request.GET.get('cep', '').replace('-', '')
     
     if len(cep) != 8:

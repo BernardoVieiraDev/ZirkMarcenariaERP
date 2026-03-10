@@ -27,37 +27,50 @@ def gerar_lancamentos_parcelados(form, model_class, user=None):
     Gera múltiplos lançamentos e cria a entidade pai ParcelamentoPagar.
     """
     instance_base = form.save(commit=False)
+
+    # 1. Pega a data base correta, independentemente de qual formulário seja
+    data_inicial = getattr(instance_base, 'data_vencimento', None) or \
+                   getattr(instance_base, 'data_gasto', None) or \
+                   getattr(instance_base, 'data_referencia', None) or \
+                   getattr(instance_base, 'data_emissao', None) or \
+                   date.today()
+
     qtd_parcelas = form.cleaned_data.get('parcelas', 1) or 1
     is_recorrente = form.cleaned_data.get('is_recorrente', False)
     
-    # --- CORREÇÃO: Identificar qual campo de valor o model usa (valor ou valor_total) ---
+    # --- Identificar DINAMICAMENTE qual campo de valor o model usa ---
     campo_valor = 'valor'
-    if hasattr(instance_base, 'valor'):
-        valor_total_form = instance_base.valor or Decimal('0.00')
-    elif hasattr(instance_base, 'valor_total'):
+    if hasattr(instance_base, 'valor') and instance_base.valor is not None:
+        valor_total_form = instance_base.valor
+    elif hasattr(instance_base, 'valor_total') and instance_base.valor_total is not None:
         campo_valor = 'valor_total'
-        valor_total_form = instance_base.valor_total or Decimal('0.00')
+        valor_total_form = instance_base.valor_total
+    elif hasattr(instance_base, 'valor_comissao') and instance_base.valor_comissao is not None:
+        campo_valor = 'valor_comissao'
+        valor_total_form = instance_base.valor_comissao
+    elif hasattr(instance_base, 'salario_real') and instance_base.salario_real is not None:
+        campo_valor = 'salario_real'
+        valor_total_form = instance_base.salario_real
     else:
-        # Fallback de segurança
         valor_total_form = Decimal('0.00')
-    # ------------------------------------------------------------------------------------
+    # ---------------------------------------------------------------------------
 
-    descricao_base = instance_base.descricao
+    descricao_base = getattr(instance_base, 'descricao', '') or "Despesa"
     
-    # 1. Cria o Pai (Parcelamento) se for mais de 1 parcela ou recorrente
     parcelamento_pai = None
     if qtd_parcelas > 1 or is_recorrente:
+        credor_nome = getattr(instance_base, 'credor', '')
+        if not credor_nome and hasattr(instance_base, 'arquiteto'): credor_nome = str(instance_base.arquiteto)
+        if not credor_nome and hasattr(instance_base, 'funcionario'): credor_nome = str(instance_base.funcionario)
+        
         parcelamento_pai = ParcelamentoPagar.objects.create(
-            descricao=f"{descricao_base} (Ref: {instance_base.credor or ''})",
+            descricao=f"{descricao_base} (Ref: {credor_nome})",
             valor_total_original=valor_total_form if not is_recorrente else (valor_total_form * qtd_parcelas),
             qtd_parcelas=qtd_parcelas
         )
 
     objetos_criados = []
-    # Verifica qual campo de data usar (vencimento ou gasto)
-    data_inicial = getattr(instance_base, 'data_vencimento', None) or getattr(instance_base, 'data_gasto', None) or date.today()
     
-    # Cálculos de valor para parcelamento
     if is_recorrente:
         valor_parcela = valor_total_form
         resto = Decimal('0.00')
@@ -68,41 +81,38 @@ def gerar_lancamentos_parcelados(form, model_class, user=None):
     for i in range(qtd_parcelas):
         nova_instancia = model_class()
         
-        # Copia todos os campos da instância base, ignorando chaves primárias e vínculos
         for field in instance_base._meta.fields:
             if field.name not in ['id', 'pk', 'parcelamento', 'parcelamento_uuid']:
                 setattr(nova_instancia, field.name, getattr(instance_base, field.name))
         
-        # Define datas (incrementa meses para cada parcela)
         nova_data = add_months(data_inicial, i)
-        if hasattr(nova_instancia, 'data_vencimento'):
+        
+        # 2. Atualiza a data da parcela avançando 1 mês por vez no campo correto
+        if hasattr(nova_instancia, 'data_vencimento'): 
             nova_instancia.data_vencimento = nova_data
-        elif hasattr(nova_instancia, 'data_gasto'):
+        elif hasattr(nova_instancia, 'data_gasto'): 
             nova_instancia.data_gasto = nova_data
+        elif hasattr(nova_instancia, 'data_referencia'): 
+            nova_instancia.data_referencia = nova_data
+        elif hasattr(nova_instancia, 'data_emissao'): 
+            nova_instancia.data_emissao = nova_data
             
-        # Define a descrição com o número da parcela
-        nova_instancia.descricao = f"{descricao_base} ({i+1}/{qtd_parcelas})"
+        if hasattr(nova_instancia, 'descricao'):
+            nova_instancia.descricao = f"{descricao_base} ({i+1}/{qtd_parcelas})"
 
-        # Calcula o valor desta parcela específica
-        if is_recorrente:
-            valor_atual = valor_parcela
-        else:
-            valor_atual = valor_parcela + resto if i == 0 else valor_parcela
+        valor_atual = valor_parcela if is_recorrente else (valor_parcela + resto if i == 0 else valor_parcela)
 
-        # --- CORREÇÃO: Atribui o valor ao campo correto identificado anteriormente ---
+        # --- ATRIBUI O VALOR DIVIDIDO PARA O CAMPO CORRETO ---
         if campo_valor == 'valor':
             nova_instancia.valor = valor_atual
-            # Sincroniza valor_total se existir (ex: para compatibilidade futura)
-            if hasattr(nova_instancia, 'valor_total'):
-                nova_instancia.valor_total = valor_atual
         elif campo_valor == 'valor_total':
             nova_instancia.valor_total = valor_atual
-            # Sincroniza valor se existir
-            if hasattr(nova_instancia, 'valor'):
-                nova_instancia.valor = valor_atual
-        # -----------------------------------------------------------------------------
+        elif campo_valor == 'valor_comissao':
+            nova_instancia.valor_comissao = valor_atual
+        elif campo_valor == 'salario_real':
+            nova_instancia.salario_real = valor_atual
+        # -----------------------------------------------------
 
-        # VÍNCULO COM O PAI
         if parcelamento_pai:
             nova_instancia.parcelamento = parcelamento_pai
 
@@ -110,7 +120,6 @@ def gerar_lancamentos_parcelados(form, model_class, user=None):
         objetos_criados.append(nova_instancia)
         
     return objetos_criados
-
 
 def gerar_folha_mensal(mes, ano):
     data_ref = date(ano, mes, 1)

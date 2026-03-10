@@ -42,7 +42,7 @@ class ParcelamentoPagar(SoftDeleteMixin):
             'parcelas_faturacartao', 'parcelas_gastoveiculoconsorcio',
             'parcelas_gastocontabilidade', 'parcelas_gastoimovel', 
             'parcelas_gastoutilidade', 'parcelas_gastogasolina',
-            'parcelas_comissaoarquiteto', 'parcelas_gastoalmoco'
+            'parcelas_comissaoarquiteto', 'parcelas_gastoalmoco','parcelas_folhapagamento'
         ]
         
         for related in modelos_filhos:
@@ -594,6 +594,15 @@ class GastoGeral(SoftDeleteMixin):
         related_name='gasto_geral_origem'
     )
 
+    parcelamento = models.ForeignKey(
+        ParcelamentoPagar, 
+        on_delete=models.CASCADE,
+        null=True, 
+        blank=True,
+        related_name='parcelas_%(class)s',
+        verbose_name="Vínculo de Parcelamento"
+    )
+
     class Meta:
         verbose_name = "Gasto Geral"
         verbose_name_plural = "Gastos Gerais (Almoço, Material, etc.)"
@@ -641,6 +650,15 @@ class GastoGasolina(SoftDeleteMixin):
         null=True, 
         blank=True, 
         related_name='gasto_gasolina_origem'
+    )
+
+    parcelamento = models.ForeignKey(
+        ParcelamentoPagar, 
+        on_delete=models.CASCADE,
+        null=True, 
+        blank=True,
+        related_name='parcelas_%(class)s',
+        verbose_name="Vínculo de Parcelamento"
     )
 
     class Meta:

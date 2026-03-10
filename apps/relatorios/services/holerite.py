@@ -28,11 +28,10 @@ class HoleriteExcelService:
             'top': border_thick, 'right': border_thick, 'left': border_thin, 'bottom': border_thin
         })
         
-        # 1. GARANTIA DO SALÁRIO: Borda completa (fina)
         self.styles['salario_box'] = self.workbook.add_format({
             'font_name': font_main, 'font_size': 10, 'bold': True,
             'align': 'center', 'valign': 'vcenter',
-            'border': border_thin  # Borda em todos os lados
+            'border': border_thin  
         })
 
         self.styles['ref_box'] = self.workbook.add_format({
@@ -42,23 +41,18 @@ class HoleriteExcelService:
         })
 
         # --- Labels e Valores ---
-        
-        # 2. SOLUÇÃO DO PROBLEMA D3/D4:
-        # Adicionamos 'top': border_thin nos labels abaixo do cabeçalho.
-        # Isso força o desenho da linha divisória entre o Salário (linha de cima) e o Cargo (linha de baixo).
-        
         self.styles['label'] = self.workbook.add_format({
             'font_name': font_main, 'font_size': 7, 'color': '#555555', 
             'align': 'left', 'valign': 'top', 
             'left': border_thick, 'right': border_thin,
-            'top': border_thin  # <--- ADICIONADO: Garante a linha acima (fechando com o Salário)
+            'top': border_thin  
         })
         
         self.styles['label_end'] = self.workbook.add_format({
             'font_name': font_main, 'font_size': 7, 'color': '#555555', 
             'align': 'left', 'valign': 'top', 
             'right': border_thick,
-            'top': border_thin  # <--- ADICIONADO: Garante a linha acima (fechando com o Salário na col D)
+            'top': border_thin  
         })
         
         self.styles['value'] = self.workbook.add_format({
@@ -279,34 +273,9 @@ class HoleriteExcelService:
 
         return r + 2
 
+    def gerar_recibo(self, dados, nome_aba="Holerite"):
+        """ Função espelho para manter compatibilidade caso algum fluxo chame assim """
+        self.adicionar_holerite(dados, nome_aba)
+
     def close(self):
         self.workbook.close()
-
-# --- Exemplo de Uso ---
-if __name__ == "__main__":
-    # Dados Mock
-    dados_exemplo = {
-        'empregador': {'nome': 'Minha Empresa Ltda', 'cnpj': '12.345.678/0001-99'},
-        'cabecalho': {'titulo': 'Recibo de Pagamento', 'referencia': '01/2024'},
-        'funcionario': {'nome': 'JOÃO DA SILVA', 'codigo': '001', 'admissao': '01/01/2020', 'cargo': 'ANALISTA DE SISTEMAS'},
-        'bases': {'salario_base': 12500.00},
-        'eventos': [
-            {'codigo': '001', 'descricao': 'Salário Base', 'ref': '30d', 'vencimento': 12500.00},
-            {'codigo': '002', 'descricao': 'Horas Extras 50%', 'ref': '10h', 'vencimento': 850.50},
-            {'codigo': '101', 'descricao': 'INSS', 'ref': '14%', 'desconto': 876.95},
-            {'codigo': '102', 'descricao': 'IRRF', 'ref': '27.5%', 'desconto': 2100.40},
-        ],
-        'totais': {'bruto': 13350.50, 'descontos': 2977.35, 'liquido': 10373.15},
-        'data_pagamento': date(2024, 2, 5)
-    }
-
-    output = io.BytesIO()
-    service = HoleriteExcelService(output)
-    
-    service.adicionar_holerite_duplo(dados_exemplo, dados_exemplo)
-    service.close()
-
-    output.seek(0)
-    with open("holerite_com_borda.xlsx", "wb") as f:
-        f.write(output.read())
-    print("Arquivo 'holerite_com_borda.xlsx' gerado com sucesso!")

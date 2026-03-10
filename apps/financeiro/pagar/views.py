@@ -47,22 +47,15 @@ MODEL_FORM_MAP = {
     'Cheque': {'model': Cheque, 'form': ChequeForm, 'title': 'Novo Gasto com Cheque'},
     'FolhaPagamento': {'model': FolhaPagamento, 'form': FolhaPagamentoForm, 'title': 'Folha pagamento'},
     'ComissaoArquiteto': {'model': ComissaoArquiteto, 'form': ComissaoArquitetoForm, 'title': 'Comissão Arquitetos'},
-'GastoGasolina': {'model': GastoGasolina, 'form': GastoGasolinaForm, 'title': 'Novo Gasto com Gasolina'},
     'GastoAlmoco': {'model': GastoAlmoco, 'form': GastoAlmocoForm, 'title': 'Novo Almoço'}, 
 }
+
 # ----------------------------------------------------
 # AUXILIARES
 # ----------------------------------------------------
 
 def _get_gasto_object_info(pk, tipo=None):
-    """
-    Recupera o objeto de gasto de forma segura.
-    CORREÇÃO DE SEGURANÇA: Remove a iteração de 'fallback' que causava colisão de IDs.
-    O parâmetro 'tipo' agora é obrigatório para identificar a tabela correta.
-    """
     if not tipo:
-        # Segurança: Retorna None se o tipo não for especificado.
-        # IDs não são únicos entre tabelas diferentes.
         return None
     
     if tipo in MODEL_FORM_MAP:
@@ -77,8 +70,6 @@ def _get_gasto_object_info(pk, tipo=None):
     return None
 
 def sort_key(obj):
-    """Garantir ordenação compatível entre todos os modelos."""
-    # Tenta usar a anotação 'data_sort' se criada na view, senão usa lógica padrão
     if hasattr(obj, 'data_sort') and obj.data_sort:
         return obj.data_sort
 
@@ -94,28 +85,23 @@ def sort_key(obj):
 # VIEW - LISTAGEM UNIFICADA
 # ----------------------------------------------------
 
-
-
 @login_required
 def pagar_list(request):
-    # 1. Parâmetros de Filtro (Backend)
     mes = request.GET.get('mes')
     ano = request.GET.get('ano')
     
     data_inicio_get = request.GET.get('data_inicio')
     data_fim_get = request.GET.get('data_fim')
     
-    search_query = request.GET.get('q', '').strip() # Busca textual
-    status_filter = request.GET.get('status', '')   # Filtro de Status
-    tipo_filter = request.GET.get('tipo', '')       # Filtro de Categoria
-    sort_order = request.GET.get('order', 'desc')   # Ordenação
+    search_query = request.GET.get('q', '').strip() 
+    status_filter = request.GET.get('status', '')   
+    tipo_filter = request.GET.get('tipo', '')       
+    sort_order = request.GET.get('order', 'desc')   
 
     start_date = None
     end_date = None
     usar_filtro_personalizado = False
 
-    # 2. Lógica de Data: Prioridade para o Intervalo Personalizado
-    # Se o usuário preencheu QUALQUER data (Início ou Fim), ativamos o modo personalizado
     if data_inicio_get:
         try:
             start_date = datetime.strptime(data_inicio_get, '%Y-%m-%d').date()
@@ -130,15 +116,11 @@ def pagar_list(request):
         except ValueError:
             pass
 
-    # 3. Definição do Intervalo Final
     if usar_filtro_personalizado:
-        # Se estamos usando filtro personalizado, zeramos mês/ano para não confundir a interface
         mes = None
         ano = None
-        # start_date e end_date já foram definidos acima (podendo ser None se for intervalo aberto)
         
     elif mes and ano:
-        # Se NÃO tem data personalizada, tentamos o filtro padrão de Mês/Ano
         try:
             mes = int(mes)
             ano = int(ano)
@@ -150,9 +132,6 @@ def pagar_list(request):
         except ValueError:
             pass 
             
-    # NOTA: Se chegar aqui com start_date e end_date como None, a busca será TOTAL (sem filtro de data).
-
-    # 4. Inicialização de Listas e Totais
     cat_operacional = ['GastoGeral', 'GastoGasolina', 'GastoAlmoco']
     cat_folha = ['FolhaPagamento']
     cat_comissao = ['ComissaoArquiteto']
@@ -169,37 +148,27 @@ def pagar_list(request):
     STATUS_PAGO_LIST = ['Pago', 'PG', 'Recebido', 'COM']
     select_opts = ['banco_origem', 'movimento_banco'] 
 
-    # 5. Loop nos Modelos (Query Unificada)
     for key, data in MODEL_FORM_MAP.items():
-        # --- FILTRO DE TIPO ---
         if tipo_filter and tipo_filter != key:
             continue
 
         ModelClass = data['model']
         
-        # Definição do campo de data por modelo
         campo_data = 'data_vencimento'
         if key in ['GastoGeral', 'GastoGasolina','GastoAlmoco']: campo_data = 'data_gasto'
         elif key == 'Cheque': campo_data = 'data_emissao'
         elif key == 'FolhaPagamento': campo_data = 'data_referencia'
         elif key == 'ComissaoArquiteto': campo_data = 'data_vencimento'
         
-        # Filtros Base
         filtros = Q(is_deleted=False)
         
-        # --- APLICAÇÃO DO FILTRO DE DATA ---
         if start_date and end_date:
-            # Intervalo Fechado (De X até Y)
             filtros &= Q(**{f"{campo_data}__range": (start_date, end_date)})
         elif start_date:
-            # Apenas Data Início (A partir de X...)
             filtros &= Q(**{f"{campo_data}__gte": start_date})
         elif end_date:
-            # Apenas Data Fim (...Até Y)
             filtros &= Q(**{f"{campo_data}__lte": end_date})
-        # Se ambos forem None, não aplica filtro (busca tudo)
 
-        # --- FILTRO DE STATUS ---
         if status_filter:
             if status_filter == 'Pago':
                 filtros &= Q(status__in=STATUS_PAGO_LIST)
@@ -208,7 +177,6 @@ def pagar_list(request):
             elif status_filter == 'Atrasado':
                  filtros &= Q(status='Atrasado')
 
-        # --- BUSCA TEXTUAL ---
         if search_query:
             if key == 'FolhaPagamento':
                 filtros &= Q(funcionario__nome__icontains=search_query)
@@ -225,7 +193,6 @@ def pagar_list(request):
 
         qs = ModelClass.objects.filter(filtros)
 
-        # Otimização (select_related)
         related_fields = []
         if key == 'FolhaPagamento':
             related_fields.append('funcionario')
@@ -238,7 +205,6 @@ def pagar_list(request):
         if related_fields:
             qs = qs.select_related(*related_fields)
 
-        # --- ANOTAÇÕES DE VALOR ---
         val_expr = None
         if key == 'FolhaPagamento':
             val_expr = (F('salario_real') + F('ferias_terco') + F('empreitada') + F('decimo_terceiro') + F('horas_extras_valor'))
@@ -252,21 +218,14 @@ def pagar_list(request):
                 When(status__in=STATUS_PAGO_LIST, valor_pago__isnull=False, then=F('valor_pago')),
                 default=F('valor'), output_field=DecimalField()
             )
-        elif key in ['GastoGeral', 'GastoGasolina']:
+        elif key in ['GastoGeral', 'GastoGasolina', 'GastoAlmoco']:
             val_expr = F('valor_total')
-
-        elif key == 'GastoAlmoco': 
-            val_expr = F('valor_total')
-            
         else:
             val_expr = F('valor')
 
         qs = qs.annotate(val_cons=val_expr, data_sort=F(campo_data))
-        
-        # Trava de Segurança (limite técnico para não travar o servidor se buscar TUDO)
         qs = qs[:2000]
 
-        # Execução e Agregação Python
         resultados = list(qs)
         
         for item in resultados:
@@ -280,13 +239,11 @@ def pagar_list(request):
 
         total_registros += len(resultados)
 
-        # Distribuição nas listas
         if key in cat_operacional: list_operacional.extend(resultados)
         elif key in cat_folha: list_folha.extend(resultados)
         elif key in cat_comissao: list_comissao.extend(resultados)
         else: list_contas.extend(resultados)
 
-    # 6. Ordenação Global em Memória
     reverse_sort = True if sort_order == 'desc' else False
     
     def apply_sort(lista):
@@ -308,7 +265,6 @@ def pagar_list(request):
         'tipos_disponiveis': MODEL_FORM_MAP.keys(),
         'form_selecao': form_selecao,
         
-        # Contexto atualizado com os novos filtros
         'filtros_ativos': {
             'mes': mes, 
             'ano': ano, 
@@ -322,6 +278,7 @@ def pagar_list(request):
         'mes_atual': mes if mes else '',
         'ano_atual': ano if ano else '',
     })
+
 # ----------------------------------------------------
 # VIEW - CRIAÇÃO
 # ----------------------------------------------------
@@ -341,18 +298,8 @@ def pagar_create(request):
             form = FormClass(request.POST)
 
             if form.is_valid():
-                # Não fazemos obj.save() aqui para parcelamentos, o serviço cuida disso
-                
-                qtd_parcelas = form.cleaned_data.get('parcelas')
-                
-                # 1. Recupera a classe do Model (ex: Boleto, Cheque) para passar ao serviço
                 ModelClass = MODEL_FORM_MAP[tipo]['model']
-
-                # 2. Verifica se é parcelamento
-
                 gerar_lancamentos_parcelados(form, ModelClass, user=request.user)
-
-
                 return redirect('pagar:pagar_list')
 
             return render(request, template_name, {
@@ -368,7 +315,6 @@ def pagar_create(request):
             'tipo_form': tipo_form, 'title': title,
         })
 
-    # GET
     tipo = request.GET.get('tipo')
     if tipo and tipo in MODEL_FORM_MAP:
         FormClass = MODEL_FORM_MAP[tipo]['form']
@@ -388,7 +334,6 @@ def pagar_create(request):
 @login_required
 def pagar_edit(request, pk):
     tipo = request.GET.get('tipo') 
-    # Correção: O tipo é mandatório agora para evitar colisão de IDs
     found = _get_gasto_object_info(pk, tipo=tipo)
     
     if not found: 
@@ -436,8 +381,6 @@ def pagar_delete(request, pk):
 @login_required
 def folha_mensal_view(request):
     hoje = date.today()
-    
-    # Adicionado bloco try/except para capturar parâmetros inválidos
     try:
         mes = int(request.GET.get('mes', hoje.month))
         ano = int(request.GET.get('ano', hoje.year))
@@ -449,10 +392,10 @@ def folha_mensal_view(request):
     
     data_ref = date(ano, mes, 1)
     
-
+    # OTIMIZAÇÃO: Busca também os benefícios com prefetch_related para evitar N+1
     queryset = FolhaPagamento.objects.filter(
         data_referencia=data_ref
-    ).select_related('funcionario').order_by('funcionario__nome')
+    ).select_related('funcionario').prefetch_related('funcionario__beneficios').order_by('funcionario__nome')
 
     FolhaFormSet = modelformset_factory(
         FolhaPagamento,
@@ -482,9 +425,12 @@ def folha_mensal_view(request):
     else:
         formset = FolhaFormSet(queryset=queryset)
 
-    # Cálculo do total também otimizado para evitar loop python desnecessário se não precisar
-    # Mas aqui o queryset é pequeno (número de funcionários), então sum() é aceitável.
-    total_liquido = sum(item.total_funcionario for item in queryset)
+    # Cálculo do total LÍQUIDO considerando os benefícios descontados do funcionário
+    total_liquido = 0
+    for item in queryset:
+        beneficios_total = sum(b.valor_desconto for b in item.funcionario.beneficios.all() if b.valor_desconto)
+        liq = float(item.total_funcionario) - float(item.vale) - float(item.adiantamento) - float(beneficios_total)
+        total_liquido += liq
 
     lista_meses = [
         (1, 'Janeiro'), (2, 'Fevereiro'), (3, 'Março'), (4, 'Abril'),
@@ -506,13 +452,11 @@ def folha_mensal_view(request):
 
 @login_required
 def folha_pagar_todos(request):
-    # Adicionado bloco try/except para proteger a ação
     try:
         mes = int(request.GET.get('mes'))
         ano = int(request.GET.get('ano'))
     except (ValueError, TypeError):
         messages.error(request, "Parâmetros de mês e ano em falta ou inválidos na URL.")
-        # Redireciona para uma rota segura em vez de quebrar (ajuste a rota se necessário)
         return redirect(request.META.get('HTTP_REFERER', '/')) 
 
     data_ref = date(ano, mes, 1)
@@ -536,7 +480,8 @@ def folha_exportar_excel(request):
         
     data_ref = date(ano, mes, 1)
     
-    pagamentos = FolhaPagamento.objects.filter(data_referencia=data_ref).order_by('funcionario__nome')
+    # Pre-fetching os benefícios
+    pagamentos = FolhaPagamento.objects.filter(data_referencia=data_ref).prefetch_related('funcionario__beneficios').order_by('funcionario__nome')
     excel_file = FuncionarioFolhaExcelService.gerar_relatorio_folha(pagamentos)
     
     response = HttpResponse(excel_file, content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
@@ -568,7 +513,7 @@ def folha_fechar_mes(request):
 
             from apps.relatorios.services.follha_pagamento import \
                 FuncionarioFolhaExcelService
-            pagamentos = FolhaPagamento.objects.filter(data_referencia=data_ref).select_related('funcionario', 'funcionario__dados_trabalhistas').order_by('funcionario__nome')
+            pagamentos = FolhaPagamento.objects.filter(data_referencia=data_ref).select_related('funcionario', 'funcionario__dados_trabalhistas').prefetch_related('funcionario__beneficios').order_by('funcionario__nome')
             excel_file = FuncionarioFolhaExcelService.gerar_relatorio_folha(pagamentos)
 
     except Exception as e:
@@ -589,7 +534,6 @@ def _preparar_dados_holerite(folha, tipo_holerite):
     ano = folha.data_referencia.year
     ultimo_dia = calendar.monthrange(ano, mes)[1]
     
-    # 1. INICIALIZAÇÃO CORRETA DA LISTA (ANTES DOS IFS)
     eventos = [] 
     
     if tipo_holerite == 'adiantamento':
@@ -604,7 +548,6 @@ def _preparar_dados_holerite(folha, tipo_holerite):
         titulo = "RECIBO DE FÉRIAS"
         data_pagamento = date.today() 
         
-        # Lógica de Férias (Unificada aqui)
         if folha.ferias_terco <= 0 and folha.val_ferias <= 0: 
             return None
         
@@ -641,9 +584,6 @@ def _preparar_dados_holerite(folha, tipo_holerite):
         funcao = "Não Informado"
         admissao = ""
 
-    # 2. ADIÇÃO DE EVENTOS PARA OUTROS TIPOS (ADIANTAMENTO, 13º, MENSAL)
-    # Note que removemos a reinicialização 'eventos = []' que existia aqui e o bloco 'ferias' redundante
-    
     if tipo_holerite == 'adiantamento':
         if folha.adiantamento <= 0: return None
         eventos.append({'codigo': '001', 'descricao': 'ADIANTAMENTO SALARIAL', 'ref': '', 'vencimento': float(folha.adiantamento), 'desconto': 0.0})
@@ -653,7 +593,6 @@ def _preparar_dados_holerite(folha, tipo_holerite):
         eventos.append({'codigo': '004', 'descricao': '13º SALÁRIO', 'ref': '', 'vencimento': float(folha.decimo_terceiro), 'desconto': 0.0})
 
     elif tipo_holerite == 'ferias':
-        # Já processado no bloco inicial, passamos direto para não duplicar
         pass
 
     else: 
@@ -669,6 +608,18 @@ def _preparar_dados_holerite(folha, tipo_holerite):
         if folha.vale > 0:
             eventos.append({'codigo': '102', 'descricao': 'VALES / OUTROS DESCONTOS', 'ref': '', 'vencimento': 0.0, 'desconto': float(folha.vale)})
 
+        # NOVO: Inserir Benefícios Registados no Funcionário como Descontos
+        for beneficio in funcionario.beneficios.all():
+            if beneficio.valor_desconto > 0:
+                eventos.append({
+                    'codigo': '200', 
+                    'descricao': f"DESCONTO - {beneficio.nome.upper()}", 
+                    'ref': '', 
+                    'vencimento': 0.0, 
+                    'desconto': float(beneficio.valor_desconto)
+                })
+
+    # O Salário Líquido é recalculado subtraindo perfeitamente TUDO (incluindo Benefícios)
     total_vencimentos = sum(e['vencimento'] for e in eventos)
     total_descontos = sum(e['desconto'] for e in eventos)
     valor_liquido = total_vencimentos - total_descontos
@@ -685,7 +636,7 @@ def _preparar_dados_holerite(folha, tipo_holerite):
 
 @login_required
 def baixar_holerite_view(request, pk):
-    folha = get_object_or_404(FolhaPagamento, pk=pk)
+    folha = get_object_or_404(FolhaPagamento.objects.prefetch_related('funcionario__beneficios'), pk=pk)
     tipo_holerite = request.GET.get('tipo', 'mensal')
     dados = _preparar_dados_holerite(folha, tipo_holerite)
     
@@ -716,7 +667,7 @@ def baixar_holerite_lote_view(request):
 
     folhas = FolhaPagamento.objects.filter(
         data_referencia__year=ano, data_referencia__month=mes, is_deleted=False
-    ).select_related('funcionario', 'funcionario__dados_trabalhistas').order_by('funcionario__nome')
+    ).select_related('funcionario', 'funcionario__dados_trabalhistas').prefetch_related('funcionario__beneficios').order_by('funcionario__nome')
 
     lista_dados = []
     for folha in folhas:
@@ -762,6 +713,128 @@ def baixar_holerite_lote_view(request):
     response = HttpResponse(output, content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
     response['Content-Disposition'] = f'attachment; filename="{filename}"'
     return response
+
+# ... as outras views continuam idênticas ...
+
+@login_required
+def download_holerite_view(request, folha_id):
+    folha = FolhaPagamento.objects.prefetch_related('funcionario__beneficios').get(id=folha_id)
+    funcionario = folha.funcionario
+    dados_trabalhistas = getattr(funcionario, 'dados_trabalhistas', None)
+
+    titulo = "RECIBO DE PAGAMENTO DE SALÁRIO"
+    if "13" in (folha.observacoes or ""):
+        titulo = "RECIBO DE 13º SALÁRIO"
+    elif "Ferias" in (folha.observacoes or ""):
+        titulo = "RECIBO DE FÉRIAS"
+
+    eventos = []
+    
+    if folha.salario_real > 0:
+        eventos.append({
+            'codigo': '001', 
+            'descricao': 'SALÁRIO BASE', 
+            'ref': '30d', 
+            'vencimento': float(folha.salario_real),
+            'desconto': 0.0
+        })
+
+    if folha.horas_extras_valor > 0:
+        eventos.append({
+            'codigo': '002', 
+            'descricao': 'HORAS EXTRAS', 
+            'ref': '', 
+            'vencimento': float(folha.horas_extras_valor),
+            'desconto': 0.0
+        })
+
+    if folha.ferias_terco > 0:
+        eventos.append({
+            'codigo': '003',
+            'descricao': '1/3 FÉRIAS CONSTITUCIONAL',
+            'vencimento': float(folha.ferias_terco),
+            'desconto': 0.0
+        })
+        
+    if folha.adiantamento > 0:
+        eventos.append({
+            'codigo': '101',
+            'descricao': 'ADIANTAMENTO SALARIAL',
+            'vencimento': 0.0,
+            'desconto': float(folha.adiantamento)
+        })
+
+    if getattr(folha, 'vale', 0) > 0:
+        eventos.append({
+            'codigo': '102',
+            'descricao': 'VALES / OUTROS DESCONTOS',
+            'vencimento': 0.0,
+            'desconto': float(folha.vale)
+        })
+
+    # NOVO: Inserir Benefícios Registados no Funcionário como Descontos
+    for beneficio in funcionario.beneficios.all():
+        if beneficio.valor_desconto > 0:
+            eventos.append({
+                'codigo': '200',
+                'descricao': f"DESCONTO - {beneficio.nome.upper()}",
+                'ref': '',
+                'vencimento': 0.0,
+                'desconto': float(beneficio.valor_desconto)
+            })
+
+    total_vencimentos = sum(e.get('vencimento', 0) for e in eventos)
+    total_descontos = sum(e.get('desconto', 0) for e in eventos)
+    
+    dados_holerite = {
+        'empregador': {
+            'nome': 'ZIRK MARCENARIA E INTERIORES',
+            'cnpj': '00.000.000/0001-00',
+            'endereco': 'Rua Exemplo, 123, Bairro, Cidade-UF'
+        },
+        'funcionario': {
+            'codigo': str(funcionario.id),
+            'nome': funcionario.nome.upper(),
+            'cbo': dados_trabalhistas.cbo if dados_trabalhistas else '',
+            'cargo': dados_trabalhistas.funcao.upper() if dados_trabalhistas else 'NÃO INFORMADO',
+            'admissao': (dados_trabalhistas.data_admissao_marcenaria or dados_trabalhistas.data_admissao_contabilidade).strftime('%d/%m/%Y') if dados_trabalhistas else ''
+
+        },
+        'cabecalho': {
+            'titulo': titulo,
+            'referencia': folha.data_referencia.strftime('%m/%Y')
+        },
+        'eventos': eventos,
+        'totais': {
+            'bruto': total_vencimentos,
+            'descontos': total_descontos,
+            'liquido': total_vencimentos - total_descontos # Recalculado e alinhado!
+        },
+        'bases': {
+            'salario_base': float(folha.salario_real),
+            'inss_base': float(folha.salario_real),
+            'fgts_base': float(folha.salario_real),
+            'fgts_mes': float(folha.salario_real) * 0.08
+        }
+    }
+
+    output = io.BytesIO()
+    service = HoleriteExcelService(output)
+    service.adicionar_holerite(dados_holerite) # Adicionado fallback seguro
+    service.close()
+    
+    output.seek(0)
+    
+    filename = f"Holerite_{funcionario.nome}_{folha.data_referencia.strftime('%m-%Y')}.xlsx"
+    response = HttpResponse(
+        output,
+        content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    )
+    response['Content-Disposition'] = f'attachment; filename="{filename}"'
+    
+    return response
+
+
 
 @login_required
 def parcelamento_detail(request, pk):

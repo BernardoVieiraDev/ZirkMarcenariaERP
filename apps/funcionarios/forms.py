@@ -1,5 +1,9 @@
 from django import forms
-from .models import Funcionario, EnderecoFuncionario, DocumentosFuncionario, DadosTrabalhistas
+from django.forms import inlineformset_factory
+
+from .models import (BeneficioFuncionario, DadosTrabalhistas,
+                     DocumentosFuncionario, EnderecoFuncionario, Funcionario)
+
 
 class FuncionarioForm(forms.ModelForm):
     class Meta:
@@ -51,3 +55,20 @@ class DadosTrabalhistasForm(forms.ModelForm):
             'data_admissao': 'Data de Admissão',  # exemplo adicional
         }
 
+class BeneficioFuncionarioForm(forms.ModelForm):
+    class Meta:
+        model = BeneficioFuncionario
+        fields = ['nome', 'valor_desconto']
+        widgets = {
+            'nome': forms.TextInput(attrs={'placeholder': 'Ex: Odontológico'}),
+            'valor_desconto': forms.NumberInput(attrs={'step': '0.01', 'placeholder': 'Ex: 300.00'})
+        }
+
+# Cria o FormSet (Gerenciador de múltiplos formulários)
+BeneficioFormSet = inlineformset_factory(
+    Funcionario, 
+    BeneficioFuncionario, 
+    form=BeneficioFuncionarioForm, 
+    extra=1, # Começa com 1 espaço em branco
+    can_delete=True # Permite excluir benefícios existentes
+)
