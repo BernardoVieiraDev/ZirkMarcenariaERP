@@ -5,15 +5,6 @@
 {% block content %}
 <div class="container-fluid mt-4">
 
-    {% if messages %}
-        {% for message in messages %}
-            <div class="alert alert-{{ message.tags }} alert-dismissible fade show shadow-sm border-0" role="alert" style="border-radius: var(--radius);">
-                <i class="fas {% if message.tags == 'success' %}fa-check-circle{% elif message.tags == 'danger' %}fa-exclamation-circle{% else %}fa-info-circle{% endif %} me-2"></i>
-                {{ message }}
-                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-            </div>
-        {% endfor %}
-    {% endif %}
 
     <div class="card border-0 shadow-sm mb-4" style="background: var(--surface); border-radius: 12px;">
         <div class="card-body p-4">
@@ -83,10 +74,34 @@
                         </ul>
                     </div>
 
-                    <a href="{% url 'pagar:folha_exportar' %}?mes={{ mes_atual }}&ano={{ ano_atual }}" class="btn ghost d-flex align-items-center gap-2 px-3" title="Baixar Planilha Excel">
-                        <i class="fas fa-file-excel text-success"></i>
-                        <span class="fw-bold small d-none d-lg-block">Exportar Excel</span>
-                    </a>
+                    <div class="dropdown">
+                        <button class="btn d-flex align-items-center gap-2 px-3 border border-success text-success" type="button" data-bs-toggle="dropdown" style="background: rgba(25, 135, 84, 0.05); border-radius: 8px;">
+                            <i class="fas fa-file-excel"></i> 
+                            <div class="text-start lh-1">
+                                <span class="d-block fw-bold small">Planilhas Excel</span>
+                            </div>
+                            <i class="fas fa-chevron-down ms-1 small opacity-75"></i>
+                        </button>
+                        <ul class="dropdown-menu shadow border-0" style="border-radius: 8px;">
+                            <li><h6 class="dropdown-header text-uppercase small fw-bold text-muted">Qual planilha baixar?</h6></li>
+                            <li>
+                                <a class="dropdown-item py-2" href="{% url 'pagar:folha_exportar' %}?mes={{ mes_atual }}&ano={{ ano_atual }}&tipo=salario">
+                                    💵 Salário a Pagar
+                                </a>
+                            </li>
+                            <li>
+                                <a class="dropdown-item py-2" href="{% url 'pagar:folha_exportar' %}?mes={{ mes_atual }}&ano={{ ano_atual }}&tipo=adiantamento">
+                                    💰 Adiantamentos
+                                </a>
+                            </li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li>
+                                <a class="dropdown-item py-2" href="{% url 'pagar:folha_exportar' %}?mes={{ mes_atual }}&ano={{ ano_atual }}&tipo=decimo">
+                                    🎄 13º Salário 
+                                </a>
+                            </li>
+                        </ul>
+                    </div>
 
                     <a href="{% url 'relatorios:folha_exportar_decimo' %}?mes={{ mes_atual }}&ano={{ ano_atual }}" class="btn ghost d-flex align-items-center gap-2 px-3" title="Baixar Planilha 13º">
                         <i class="fas fa-gift text-danger"></i>

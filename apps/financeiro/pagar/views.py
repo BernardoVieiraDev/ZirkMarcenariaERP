@@ -479,13 +479,35 @@ def folha_exportar_excel(request):
         ano = hoje.year
         
     data_ref = date(ano, mes, 1)
+    tipo = request.GET.get('tipo', 'salario') # Padrão é salário
     
     # Pre-fetching os benefícios
     pagamentos = FolhaPagamento.objects.filter(data_referencia=data_ref).prefetch_related('funcionario__beneficios').order_by('funcionario__nome')
-    excel_file = FuncionarioFolhaExcelService.gerar_relatorio_folha(pagamentos)
+    
+    # Roteamento baseado no tipo escolhido
+    if tipo == 'adiantamento':
+        pagamentos_filtrados = pagamentos.filter(adiantamento__gt=0)
+        if not pagamentos_filtrados.exists():
+            messages.warning(request, "Não há adiantamentos registrados para este mês.")
+            return redirect(request.META.get('HTTP_REFERER', '/'))
+        excel_file = FuncionarioFolhaExcelService.gerar_relatorio_adiantamento(pagamentos_filtrados)
+        filename = f'Adiantamento_{mes}_{ano}.xlsx'
+        
+    elif tipo == 'decimo':
+        pagamentos_filtrados = pagamentos.filter(decimo_terceiro__gt=0)
+        if not pagamentos_filtrados.exists():
+            messages.warning(request, "Não há 13º salário registrado para este mês.")
+            return redirect(request.META.get('HTTP_REFERER', '/'))
+        excel_file = FuncionarioFolhaExcelService.gerar_relatorio_decimo(pagamentos_filtrados)
+        filename = f'Decimo_Terceiro_{mes}_{ano}.xlsx'
+        
+    else:
+        # Salário normal
+        excel_file = FuncionarioFolhaExcelService.gerar_relatorio_salario(pagamentos)
+        filename = f'Salario_Folha_{mes}_{ano}.xlsx'
     
     response = HttpResponse(excel_file, content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
-    response['Content-Disposition'] = f'attachment; filename=Folha_{mes}_{ano}.xlsx'
+    response['Content-Disposition'] = f'attachment; filename={filename}'
     return response
 
 @login_required
