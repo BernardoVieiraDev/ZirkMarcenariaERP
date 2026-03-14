@@ -49,7 +49,7 @@ class Funcionario(SoftDeleteMixin):
     nome_pai = models.CharField(max_length=200, blank=True, null=True)
     nome_mae = models.CharField(max_length=200, blank=True, null=True)
 
-    numero_filhos = models.PositiveIntegerField(default=0)
+    numero_filhos = models.PositiveIntegerField(default=0, null=True, blank=True)
     chave_pix = models.CharField(max_length=255, verbose_name="Chave PIX", null=True, blank=True)
 
     def __str__(self):
@@ -141,13 +141,13 @@ class BeneficioFuncionario(SoftDeleteMixin):
         return f"{self.nome} - R$ {self.valor_desconto}"
 
 class EnderecoFuncionario(SoftDeleteMixin):
-    funcionario = models.OneToOneField(Funcionario, on_delete=models.CASCADE, related_name="endereco")
-    endereco = models.CharField(max_length=255)
-    numero = models.CharField(max_length=10)
-    bairro = models.CharField(max_length=100)
-    cidade = models.CharField(max_length=100)
-    uf = models.CharField(max_length=2)
-    cep = models.CharField(max_length=10)
+    funcionario = models.OneToOneField(Funcionario, on_delete=models.CASCADE, related_name="endereco", null=True, blank=True)
+    endereco = models.CharField(max_length=255, null=True, blank=True)
+    numero = models.CharField(max_length=10, null=True, blank=True)
+    bairro = models.CharField(max_length=100, null=True, blank=True)
+    cidade = models.CharField(max_length=100, null=True, blank=True)
+    uf = models.CharField(max_length=2, null=True, blank=True)
+    cep = models.CharField(max_length=10, null=True, blank=True)
 
 
 class TipoDocumentoPis(models.TextChoices):
