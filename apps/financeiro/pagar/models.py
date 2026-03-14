@@ -339,6 +339,7 @@ class GastoContabilidade(GastoBase):
         ('INSS', 'INSS'),
         ('IR', 'Imposto de Renda'),
         ('SeguroFuncionarios', 'Seguro dos Funcionarios'),
+        ('Sindicato', 'Sindicato'),
     ]
     tipo_gasto = models.CharField(max_length=20, choices=TIPO_CHOICES, verbose_name="Tipo de Encargo")
     

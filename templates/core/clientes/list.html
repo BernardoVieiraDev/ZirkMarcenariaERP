@@ -169,7 +169,7 @@
         <div class="search-bar-row">
             <form method="GET" class="rh-search">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-                <input type="text" name="q" placeholder="Buscar por nome ou CPF..." value="{{ request.GET.q }}">
+                <input type="text" name="q" placeholder="Buscar por nome, CPF ou CNPJ..." value="{{ request.GET.q }}">
             </form>
         </div>
 
@@ -177,7 +177,7 @@
             <thead>
                 <tr>
                     <th>Cliente</th>
-                    <th>CPF</th>
+                    <th>CPF / CNPJ</th>
                     <th>Telefone</th>
                     <th style="width: 140px;">Ações</th>
                 </tr>
@@ -233,6 +233,70 @@
     // URL para busca de CEP gerada pelo Django no template principal
     const URL_BUSCA_CEP = "{% url 'clientes:buscar_cep' %}";
 
+    // --- FUNÇÕES GLOBAIS DO MODAL DE CLIENTES ---
+    
+    window.toggleTipoPessoa = function() {
+        const formModal = document.getElementById('cliente-form-modal');
+        if (!formModal) return;
+
+        const radioPJ = formModal.querySelector('input[name="tipo_pessoa"][value="J"]');
+        const isPJ = radioPJ ? radioPJ.checked : false;
+        
+        formModal.querySelectorAll('.pf-field').forEach(el => {
+            el.style.display = isPJ ? 'none' : 'block';
+            const input = el.querySelector('input');
+            if(input) input.disabled = isPJ; 
+        });
+        
+        formModal.querySelectorAll('.pj-field').forEach(el => {
+            el.style.display = isPJ ? 'block' : 'none';
+            const input = el.querySelector('input');
+            if(input) input.disabled = !isPJ;
+        });
+        
+        const labelNome = formModal.querySelector('#label_nome_completo');
+        if (labelNome) {
+            labelNome.innerText = isPJ ? 'Razão Social' : 'Nome Completo';
+        }
+    };
+
+    // Delegação de Eventos para as máscaras de CPF, CNPJ e Telefone
+    if (!window.mascarasIniciadas) {
+        document.addEventListener('input', function(e) {
+            if (!e.target || !e.target.name) return;
+
+            if (e.target.name === 'cpf') {
+                let v = e.target.value.replace(/\D/g, "");
+                v = v.replace(/(\d{3})(\d)/, "$1.$2");
+                v = v.replace(/(\d{3})(\d)/, "$1.$2");
+                v = v.replace(/(\d{3})(\d{1,2})$/, "$1-$2");
+                e.target.value = v.substring(0, 14); 
+            }
+            
+            if (e.target.name === 'cnpj') {
+                let v = e.target.value.replace(/\D/g, "");
+                v = v.replace(/^(\d{2})(\d)/, "$1.$2");
+                v = v.replace(/^(\d{2})\.(\d{3})(\d)/, "$1.$2.$3");
+                v = v.replace(/\.(\d{3})(\d)/, ".$1/$2");
+                v = v.replace(/(\d{4})(\d)/, "$1-$2");
+                e.target.value = v.substring(0, 18); 
+            }
+
+            if (e.target.name === 'telefone') {
+                let v = e.target.value.replace(/\D/g, "");
+                if (v.length > 10) {
+                    v = v.replace(/^(\d{2})(\d{5})(\d{4}).*/, "($1) $2-$3");
+                } else {
+                    v = v.replace(/^(\d{2})(\d{4})(\d{0,4}).*/, "($1) $2-$3");
+                }
+                e.target.value = v.substring(0, 15);
+            }
+        });
+        window.mascarasIniciadas = true;
+    }
+
+    // --- CONTROLE DO MODAL ---
+
     function openActionModal(url) {
         const modal = document.getElementById('modalAcoes');
         const content = document.getElementById('modalAcoesContent');
@@ -244,7 +308,12 @@
             .then(res => res.text())
             .then(html => {
                 content.innerHTML = html;
-                initModalScripts(content); // Inicializa scripts do modal (CEP e Form Submit)
+                initModalScripts(content); 
+                
+                // EXECUTA A TROCA ASSIM QUE O HTML FOR INJETADO
+                if (typeof window.toggleTipoPessoa === 'function') {
+                    window.toggleTipoPessoa();
+                }
             });
     }
 
@@ -257,7 +326,6 @@
         if (e.target === this) closeModal();
     });
 
-    // Função central para inicializar scripts do modal
     function initModalScripts(container) {
         initCepScripts(container);
         initFormSubmit(container);
@@ -268,12 +336,11 @@
         const cepInputs = container.querySelectorAll('input[name$="-cep"]');
         
         cepInputs.forEach(input => {
-            // Remove listeners antigos (se houver clone) e adiciona novo
             const newClone = input.cloneNode(true);
             input.parentNode.replaceChild(newClone, input);
             
             newClone.addEventListener('blur', function() {
-                const prefix = this.name.split('-')[0]; // ex: 'residencial' ou 'obra'
+                const prefix = this.name.split('-')[0];
                 const cep = this.value.replace(/\D/g, '');
                 
                 if (cep.length === 8) {
@@ -327,19 +394,21 @@
             })
             .then(response => {
                 if (response.ok) {
-                    // Verifica se é JSON de sucesso ou HTML de erro
                     const contentType = response.headers.get("content-type");
                     if (contentType && contentType.indexOf("application/json") !== -1) {
                         return response.json().then(data => {
                             if (data.success) {
-                                window.location.reload(); // Recarrega a lista
+                                window.location.reload(); 
                             }
                         });
                     } else {
-                        // Se retornou HTML, é porque deu erro de validação
                         return response.text().then(html => {
                             container.innerHTML = html;
-                            initModalScripts(container); // Reativa os scripts no novo HTML
+                            initModalScripts(container); 
+                            // Re-executa a troca em caso de erro de validação do formulário
+                            if (typeof window.toggleTipoPessoa === 'function') {
+                                window.toggleTipoPessoa();
+                            }
                         });
                     }
                 }

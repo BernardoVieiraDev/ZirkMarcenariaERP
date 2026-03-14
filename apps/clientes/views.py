@@ -60,13 +60,16 @@ def lista_clientes(request):
     
     term = request.GET.get('q')
     if term:
-        qs = qs.filter(Q(nome_completo__icontains=term) | Q(cpf__icontains=term))
+        # Busca por nome, cpf ou cnpj
+        qs = qs.filter(Q(nome_completo__icontains=term) | Q(cpf__icontains=term) | Q(cnpj__icontains=term))
 
     context = {
         'clientes': qs,
         'total_clientes': qs.count(),
     }
     return render(request, 'core/clientes/list.html', context)
+
+
 
 @login_required
 def criar_cliente(request):

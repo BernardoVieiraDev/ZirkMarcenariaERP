@@ -6,9 +6,23 @@ from apps.configuracoes.mixin import SoftDeleteMixin
 
 
 class Cliente(SoftDeleteMixin):
-    nome_completo = models.CharField(max_length=255, verbose_name="Nome Completo")
+    TIPO_PESSOA_CHOICES = [
+        ('F', 'Pessoa Física'),
+        ('J', 'Pessoa Jurídica'),
+    ]
+    
+    tipo_pessoa = models.CharField(max_length=1, choices=TIPO_PESSOA_CHOICES, default='F', verbose_name="Tipo de Pessoa")
+    nome_completo = models.CharField(max_length=255, verbose_name="Nome Completo / Razão Social")
+    
+    # Dados Pessoa Física
     cpf = models.CharField(max_length=14, verbose_name="CPF", unique=True, null=True, blank=True)
     rg = models.CharField(max_length=20, verbose_name="RG", null=True, blank=True)
+    
+    # Dados Pessoa Jurídica
+    cnpj = models.CharField(max_length=18, verbose_name="CNPJ", unique=True, null=True, blank=True)
+    inscricao_estadual = models.CharField(max_length=30, verbose_name="Inscrição Estadual", null=True, blank=True)
+    
+    # Contatos e Outros
     telefone = models.CharField(max_length=20, verbose_name="Telefone", null=True, blank=True)
     email = models.EmailField(max_length=255, verbose_name="E-mail", null=True, blank=True)
     data_cadastro = models.DateTimeField(auto_now_add=True)
@@ -27,6 +41,18 @@ class Cliente(SoftDeleteMixin):
         if self.cpf and len(self.cpf) == 11:
             return f"{self.cpf[:3]}.{self.cpf[3:6]}.{self.cpf[6:9]}-{self.cpf[9:]}"
         return self.cpf
+
+    @property
+    def cnpj_formatado(self):
+        if self.cnpj and len(self.cnpj) == 14:
+            return f"{self.cnpj[:2]}.{self.cnpj[2:5]}.{self.cnpj[5:8]}/{self.cnpj[8:12]}-{self.cnpj[12:]}"
+        return self.cnpj
+
+    @property
+    def documento_principal(self):
+        if self.tipo_pessoa == 'J' and self.cnpj:
+            return self.cnpj_formatado
+        return self.cpf_formatado
 
 
 class EnderecoCliente(models.Model):

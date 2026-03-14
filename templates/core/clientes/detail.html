@@ -9,13 +9,22 @@
 
     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px;">
         <div style="background: white; border-radius: 16px; padding: 24px; border: 1px solid #e2e8f0; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
-            <h3 style="font-size: 16px; font-weight: 600; color: #3b82f6; margin-bottom: 16px; text-transform: uppercase;">Dados Pessoais</h3>
-            <p><strong>CPF:</strong> {{ cliente.cpf_formatado }}</p>
-            <p><strong>RG:</strong> {{ cliente.rg|default:"-" }}</p>
-            <p><strong>Telefone:</strong> {{ cliente.telefone }}</p>
-            <p><strong>E-mail:</strong> {{ cliente.email|default:"-" }}</p>
-            <p><strong>Chave PIX:</strong> {{ cliente.chave_pix|default:"-" }}</p>
-        </div>
+                    <h3 style="font-size: 16px; font-weight: 600; color: #3b82f6; margin-bottom: 16px; text-transform: uppercase;">
+                        {% if cliente.tipo_pessoa == 'J' %}Dados da Empresa{% else %}Dados Pessoais{% endif %}
+                    </h3>
+                    
+                    {% if cliente.tipo_pessoa == 'J' %}
+                        <p><strong>CNPJ:</strong> {{ cliente.cnpj_formatado|default:"-" }}</p>
+                        <p><strong>Insc. Estadual:</strong> {{ cliente.inscricao_estadual|default:"-" }}</p>
+                    {% else %}
+                        <p><strong>CPF:</strong> {{ cliente.cpf_formatado|default:"-" }}</p>
+                        <p><strong>RG:</strong> {{ cliente.rg|default:"-" }}</p>
+                    {% endif %}
+                    
+                    <p><strong>Telefone:</strong> {{ cliente.telefone }}</p>
+                    <p><strong>E-mail:</strong> {{ cliente.email|default:"-" }}</p>
+                    <p><strong>Chave PIX:</strong> {{ cliente.chave_pix|default:"-" }}</p>
+                </div>
 
         <div style="background: white; border-radius: 16px; padding: 24px; border: 1px solid #e2e8f0; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
             <h3 style="font-size: 16px; font-weight: 600; color: #f59e0b; margin-bottom: 16px; text-transform: uppercase;">Endereços</h3>
