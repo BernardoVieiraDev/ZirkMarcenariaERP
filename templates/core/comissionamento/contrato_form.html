@@ -64,9 +64,10 @@
 </section>
 
 <script>
-    document.addEventListener("DOMContentLoaded", function() {
-        // Pega o checkbox e a div que contém os campos
-        // 'id_gerar_financeiro' é o ID padrão que o Django gera para esse campo
+    // Usamos uma função nomeada para lidar corretamente com a injeção do modal via AJAX,
+    // garantindo que o código rode mesmo que a página inteira já tenha sido carregada.
+    function initContratoForm() {
+        // --- 1. Lógica do Financeiro (Já existente) ---
         const checkbox = document.getElementById("id_gerar_financeiro"); 
         const areaFinanceira = document.getElementById("financeiro-fields");
         
@@ -82,6 +83,44 @@
             checkbox.addEventListener("change", alternarFinanceiro);
             alternarFinanceiro(); // Executa ao carregar a página para definir o estado inicial
         }
-    });
+
+        // --- 2. NOVA LÓGICA: Cálculo Automático da RT em Tempo Real ---
+        const inputValorServico = document.getElementById("id_valor_servico");
+        const inputPercentual = document.getElementById("id_percentual");
+        const inputValorRT = document.getElementById("id_valor_rt");
+
+        function calcularRT() {
+            if (inputValorServico && inputPercentual && inputValorRT) {
+                // Removemos formatações incorretas e trocamos vírgula por ponto
+                let valServicoStr = inputValorServico.value.replace(',', '.');
+                let valPercentualStr = inputPercentual.value.replace(',', '.');
+
+                let valorServico = parseFloat(valServicoStr) || 0;
+                let percentual = parseFloat(valPercentualStr) || 0;
+
+                // Se ambos os valores existirem e forem maiores que zero, faz o cálculo
+                if (valorServico > 0 && percentual > 0) {
+                    let valorRT = (valorServico * percentual) / 100;
+                    inputValorRT.value = valorRT.toFixed(2); // Retorna com 2 casas decimais
+                } else {
+                    inputValorRT.value = ''; // Limpa o campo se não houver valores para calcular
+                }
+            }
+        }
+
+        // Adiciona um ouvinte para disparar o cálculo sempre que o usuário digitar ou alterar os campos
+        if (inputValorServico && inputPercentual) {
+            inputValorServico.addEventListener("input", calcularRT);
+            inputPercentual.addEventListener("input", calcularRT);
+        }
+    }
+
+    // Como o modal é carregado dinamicamente via AJAX, o evento DOMContentLoaded 
+    // pode não disparar novamente. Esta verificação garante que a função rode sempre.
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initContratoForm);
+    } else {
+        initContratoForm();
+    }
 </script>
 {% endblock %}
